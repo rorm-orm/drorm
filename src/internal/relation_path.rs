@@ -172,5 +172,5 @@ impl<M: Model> JoinAlias for M {
 impl<F: Field, P: Path> JoinAlias for PathStep<F, P> {
     sealed!(impl);
 
-    const ALIAS: &'static str = ConstString::join_alias(&[P::ALIAS, "__", F::NAME]).as_str();
+    const ALIAS: &'static str = ConstString::join_alias(&[P::ALIAS, F::NAME]).as_str();
 }

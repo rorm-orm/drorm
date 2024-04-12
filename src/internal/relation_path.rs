@@ -3,7 +3,7 @@
 use std::marker::PhantomData;
 
 use crate::fields::types::{BackRef, ForeignModelByField};
-use crate::internal::const_concat::ConstString;
+use crate::internal::const_concat::{ConstString, ConstVec};
 use crate::internal::field::foreign_model::{ForeignModelField, ForeignModelTrait};
 use crate::internal::field::{Field, SingleColumnField};
 use crate::internal::query_context::QueryContext;
@@ -67,7 +67,7 @@ where
     type Origin = P::Origin;
 
     fn add_to_context(context: &mut QueryContext) {
-        <Self as PathImpl<_>>::add_to_context(context);
+        context.add_relation_path::<F, P>();
     }
 }
 impl<FF, F, P> PathImpl<ForeignModelByField<FF>> for PathStep<F, P>
@@ -79,15 +79,9 @@ where
     sealed!(impl);
 
     type ResolvedRelatedField = FF;
-
-    const JOIN_FIELDS: [[&'static str; 2]; 2] = [
-        [Self::ALIAS, Self::ResolvedRelatedField::NAME],
-        [P::ALIAS, F::NAME],
-    ];
-
-    fn add_to_context(context: &mut QueryContext) {
-        context.add_relation_path::<FF::Model, F, P>();
-    }
+    type FromField = FF;
+    type ToField = F;
+    type JoinedModel = FF::Model;
 }
 impl<FF, F, P> PathImpl<Option<ForeignModelByField<FF>>> for PathStep<F, P>
 where
@@ -98,15 +92,9 @@ where
     sealed!(impl);
 
     type ResolvedRelatedField = FF;
-
-    const JOIN_FIELDS: [[&'static str; 2]; 2] = [
-        [Self::ALIAS, Self::ResolvedRelatedField::NAME],
-        [P::ALIAS, F::NAME],
-    ];
-
-    fn add_to_context(context: &mut QueryContext) {
-        context.add_relation_path::<FF::Model, F, P>();
-    }
+    type FromField = FF;
+    type ToField = F;
+    type JoinedModel = FF::Model;
 }
 impl<FMF, F, P> PathImpl<BackRef<FMF>> for PathStep<F, P>
 where
@@ -118,18 +106,9 @@ where
     sealed!(impl);
 
     type ResolvedRelatedField = FMF;
-
-    const JOIN_FIELDS: [[&'static str; 2]; 2] = [
-        [Self::ALIAS, Self::ResolvedRelatedField::NAME],
-        [
-            P::ALIAS,
-            <<FMF as Field>::Type as ForeignModelTrait>::RelatedField::NAME,
-        ],
-    ];
-
-    fn add_to_context(context: &mut QueryContext) {
-        context.add_relation_path::<FMF::Model, F, P>();
-    }
+    type FromField = FMF;
+    type ToField = <<FMF as Field>::Type as ForeignModelTrait>::RelatedField;
+    type JoinedModel = FMF::Model;
 }
 /// Implementation for [`PathStep`]
 ///
@@ -145,15 +124,12 @@ pub trait PathImpl<RawType> {
     /// The related field the [`PathStep`]'s field points to.
     type ResolvedRelatedField: Field;
 
-    /// The two field joined on.
-    const JOIN_FIELDS: [[&'static str; 2]; 2];
-
-    /// Add all joins required to use this path to the query context
-    fn add_to_context(context: &mut QueryContext);
+    type FromField: Field;
+    type ToField: Field;
+    type JoinedModel: Model;
 }
 /// Shorthand for accessing [`PathImpl::ResolvedRelatedField`](PathImpl::ResolvedRelatedField).
-pub type ResolvedRelatedField<F, P> =
-    <PathStep<F, P> as PathImpl<<F as Field>::Type>>::ResolvedRelatedField;
+pub type ResolvedRelatedField<F, P> = <PathStep<F, P> as PathImpl<<F as Field>::Type>>::ToField;
 
 /// Trait shared by [`Path`] and [`FieldProxy`](super::field::FieldProxy) which provides a unique join alias at compile time.s
 pub trait JoinAlias {

@@ -104,9 +104,8 @@ impl QueryContext {
     /// Recursively add a relation path to the builder
     ///
     /// The generic parameters are the parameters defining the outer most [PathStep].
-    pub(crate) fn add_relation_path<M, F, P>(&mut self)
+    pub(crate) fn add_relation_path<F, P>(&mut self)
     where
-        M: Model,
         F: Field,
         P: Path,
         PathStep<F, P>: PathImpl<F::Type>,
@@ -119,8 +118,14 @@ impl QueryContext {
             self.joins.push(
                 TempJoinData::Static {
                     alias: PathStep::<F, P>::ALIAS,
-                    table_name: M::TABLE,
-                    fields: PathStep::<F, P>::JOIN_FIELDS,
+                    table_name: <PathStep<F, P> as PathImpl<_>>::JoinedModel::TABLE,
+                    fields: [
+                        [
+                            <PathStep<F, P> as JoinAlias>::ALIAS,
+                            <PathStep<F, P> as PathImpl<_>>::FromField::NAME,
+                        ],
+                        [P::ALIAS, <PathStep<F, P> as PathImpl<_>>::ToField::NAME],
+                    ],
                 }
                 .into(),
             );

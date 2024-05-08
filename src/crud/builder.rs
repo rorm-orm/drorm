@@ -8,19 +8,15 @@ use crate::sealed;
 pub trait ConditionMarker<'a>: 'a + Send {
     sealed!(trait);
 
-    /// Prepare a query context to be able to handle this condition by registering all implicit joins.
-    fn add_to_builder(&self, context: &mut QueryContext);
-
-    /// Convert the condition into rorm-sql's format using a query context's registered joins.
-    fn into_option(self) -> Option<Box<dyn Condition<'a>>>;
+    /// Calls [`Condition::build`] if `Self: Condition`
+    /// or returns `None` if `Self = ()`
+    fn build(&self, context: &mut QueryContext<'a>) -> Option<usize>;
 }
 
 impl<'a> ConditionMarker<'a> for () {
     sealed!(impl);
 
-    fn add_to_builder(&self, _context: &mut QueryContext) {}
-
-    fn into_option(self) -> Option<Box<dyn Condition<'a>>> {
+    fn build(&self, _context: &mut QueryContext<'a>) -> Option<usize> {
         None
     }
 }
@@ -28,11 +24,7 @@ impl<'a> ConditionMarker<'a> for () {
 impl<'a, T: Condition<'a>> ConditionMarker<'a> for T {
     sealed!(impl);
 
-    fn add_to_builder(&self, context: &mut QueryContext) {
-        Condition::add_to_context(self, context);
-    }
-
-    fn into_option(self) -> Option<Box<dyn Condition<'a>>> {
-        Some(self.boxed())
+    fn build(&self, context: &mut QueryContext<'a>) -> Option<usize> {
+        Some(context.add_condition(self))
     }
 }

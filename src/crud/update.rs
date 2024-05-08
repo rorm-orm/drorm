@@ -183,18 +183,14 @@ where
 {
     /// Perform the update operation
     pub async fn exec(self) -> Result<u64, Error> {
-        let context = QueryContext::new();
+        let mut context = QueryContext::new();
         let columns: Vec<_> = self
             .columns
             .iter()
             .map(|(name, value)| (*name, value.as_sql()))
             .collect();
-
-        let condition = self.condition.into_option();
-        let condition = condition
-            .as_ref()
-            .map(|condition| condition.as_sql(&context));
-
+        let condition_index = self.condition.build(&mut context);
+        let condition = context.get_condition_opt(condition_index);
         database::update(self.executor, M::TABLE, &columns, condition.as_ref()).await
     }
 }

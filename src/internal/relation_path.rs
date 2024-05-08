@@ -3,7 +3,7 @@
 use std::marker::PhantomData;
 
 use crate::fields::types::{BackRef, ForeignModelByField};
-use crate::internal::const_concat::{ConstString, ConstVec};
+use crate::internal::const_concat::ConstString;
 use crate::internal::field::foreign_model::{ForeignModelField, ForeignModelTrait};
 use crate::internal::field::{Field, SingleColumnField};
 use crate::internal::query_context::QueryContext;
@@ -49,7 +49,9 @@ impl<M: Model> Path for M {
 
     const IS_ORIGIN: bool = true;
 
-    fn add_to_context(_context: &mut QueryContext) {}
+    fn add_to_context(context: &mut QueryContext) {
+        context.add_origin_path::<Self>()
+    }
 }
 
 /// A single step in a [`Path`]

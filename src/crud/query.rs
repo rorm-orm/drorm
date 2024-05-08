@@ -40,11 +40,11 @@ use crate::sealed;
 #[must_use]
 pub struct QueryBuilder<E, S, C, LO> {
     executor: E,
-    ctx: QueryContext,
     selector: S,
     condition: C,
     lim_off: LO,
     ordering: Vec<OrderByEntry<'static>>,
+    modify_ctx: Vec<fn(&mut QueryContext)>,
 }
 
 impl<'ex, E, S> QueryBuilder<E, S, (), ()>
@@ -56,11 +56,11 @@ where
     pub fn new(executor: E, selector: S, _: <S::Model as Model>::QueryPermission) -> Self {
         QueryBuilder {
             executor,
-            ctx: QueryContext::new(),
             selector,
             condition: (),
             lim_off: (),
             ordering: Vec::new(),
+            modify_ctx: Vec::new(),
         }
     }
 }
@@ -69,9 +69,9 @@ impl<E, S, LO> QueryBuilder<E, S, (), LO> {
     /// Add a condition to the query
     pub fn condition<'c, C: Condition<'c>>(self, condition: C) -> QueryBuilder<E, S, C, LO> {
         #[rustfmt::skip]
-        let QueryBuilder { executor, ctx, selector, lim_off, ordering, .. } = self;
+        let QueryBuilder { executor, selector, lim_off, ordering, modify_ctx, .. } = self;
         #[rustfmt::skip]
-        return QueryBuilder { executor, ctx, selector, condition, lim_off, ordering, };
+        return QueryBuilder { executor, selector, condition, lim_off, ordering, modify_ctx, };
     }
 }
 
@@ -82,9 +82,9 @@ where
     /// Add a limit to the query
     pub fn limit(self, limit: u64) -> QueryBuilder<E, S, C, Limit<O>> {
         #[rustfmt::skip]
-        let QueryBuilder { executor, ctx, selector, condition,  lim_off, ordering, } = self;
+        let QueryBuilder { executor, selector, condition,  lim_off, ordering, modify_ctx, } = self;
         #[rustfmt::skip]
-        return QueryBuilder { executor, ctx, selector, condition, lim_off: Limit { limit, offset: lim_off }, ordering, };
+        return QueryBuilder { executor, selector, condition, lim_off: Limit { limit, offset: lim_off }, ordering, modify_ctx, };
     }
 }
 
@@ -95,10 +95,10 @@ where
     /// Add a offset to the query
     pub fn offset(self, offset: u64) -> QueryBuilder<E, S, C, LO::Result> {
         #[rustfmt::skip]
-        let QueryBuilder { executor, ctx, selector, condition, lim_off, ordering, .. } = self;
+        let QueryBuilder { executor, selector, condition, lim_off, ordering, modify_ctx, .. } = self;
         let lim_off = lim_off.add_offset(offset);
         #[rustfmt::skip]
-        return QueryBuilder { executor, ctx, selector, condition, lim_off, ordering, };
+        return QueryBuilder { executor, selector, condition, lim_off, ordering, modify_ctx, };
     }
 }
 
@@ -106,13 +106,13 @@ impl<E, S, C> QueryBuilder<E, S, C, ()> {
     /// Add a offset to the query
     pub fn range(self, range: impl FiniteRange<u64>) -> QueryBuilder<E, S, C, Limit<u64>> {
         #[rustfmt::skip]
-        let QueryBuilder { executor, ctx, selector, condition, ordering,  .. } = self;
+        let QueryBuilder { executor, selector, condition, ordering, modify_ctx,  .. } = self;
         let limit = Limit {
             limit: range.len(),
             offset: range.start(),
         };
         #[rustfmt::skip]
-        return QueryBuilder { executor, ctx, selector, condition, lim_off: limit, ordering, };
+        return QueryBuilder { executor, selector, condition, lim_off: limit, ordering, modify_ctx, };
     }
 }
 
@@ -128,7 +128,7 @@ where
         F: Field,
         P: Path<Origin = S::Model>,
     {
-        P::add_to_context(&mut self.ctx);
+        self.modify_ctx.push(P::add_to_context);
         self.ordering.push(OrderByEntry {
             ordering: order,
             table_name: Some(P::ALIAS),
@@ -167,20 +167,18 @@ where
     C: ConditionMarker<'c>,
 {
     /// Retrieve and decode all matching rows
-    pub async fn all(mut self) -> Result<Vec<S::Result>, Error>
+    pub async fn all(self) -> Result<Vec<S::Result>, Error>
     where
         LO: LimitMarker,
     {
-        let decoder = self.selector.select(&mut self.ctx);
-        self.condition.add_to_builder(&mut self.ctx);
+        let mut ctx = QueryContext::new();
 
-        let columns = self.ctx.get_selects();
-        let joins = self.ctx.get_joins();
+        let decoder = self.selector.select(&mut ctx);
+        let condition_index = self.condition.build(&mut ctx);
 
-        let condition = self.condition.into_option();
-        let condition = condition
-            .as_ref()
-            .map(|condition| condition.as_sql(&self.ctx));
+        let columns = ctx.get_selects();
+        let joins = ctx.get_joins();
+        let condition = ctx.get_condition_opt(condition_index);
 
         database::query::<All>(
             self.executor,
@@ -202,52 +200,47 @@ where
     }
 
     /// Retrieve and decode the query as a stream
-    pub fn stream<'stream>(mut self) -> QueryStream<'stream, 'c, S::Decoder>
+    pub fn stream<'stream>(self) -> QueryStream<'stream, 'c, S::Decoder>
     where
         'e: 'stream,
         'c: 'stream,
         S: 'stream,
         LO: LimitMarker,
     {
-        let decoder = self.selector.select(&mut self.ctx);
-        self.condition.add_to_builder(&mut self.ctx);
+        let mut ctx = QueryContext::new();
 
-        QueryStream::new(
-            decoder,
-            self.ctx,
-            self.condition.into_option(),
-            move |ctx, conditions| {
-                let condition = conditions.map(|c| c.as_sql(ctx));
-                database::query::<Stream>(
-                    self.executor,
-                    S::Model::TABLE,
-                    ctx.get_selects().as_slice(),
-                    ctx.get_joins().as_slice(),
-                    condition.as_ref(),
-                    self.ordering.as_slice(),
-                    self.lim_off.into_option(),
-                )
-            },
-        )
+        let decoder = self.selector.select(&mut ctx);
+        let condition_index = self.condition.build(&mut ctx);
+
+        QueryStream::new(decoder, ctx, move |ctx| {
+            let condition = ctx.get_condition_opt(condition_index);
+            database::query::<Stream>(
+                self.executor,
+                S::Model::TABLE,
+                ctx.get_selects().as_slice(),
+                ctx.get_joins().as_slice(),
+                condition.as_ref(),
+                self.ordering.as_slice(),
+                self.lim_off.into_option(),
+            )
+        })
     }
 
     /// Retrieve and decode exactly one matching row
     ///
     /// An error is returned if no value could be retrieved.
-    pub async fn one(mut self) -> Result<S::Result, Error>
+    pub async fn one(self) -> Result<S::Result, Error>
     where
         LO: OffsetMarker,
     {
-        let decoder = self.selector.select(&mut self.ctx);
-        self.condition.add_to_builder(&mut self.ctx);
+        let mut ctx = QueryContext::new();
 
-        let columns = self.ctx.get_selects();
-        let joins = self.ctx.get_joins();
+        let decoder = self.selector.select(&mut ctx);
+        let condition_index = self.condition.build(&mut ctx);
 
-        let condition = self.condition.into_option();
-        let condition = condition
-            .as_ref()
-            .map(|condition| condition.as_sql(&self.ctx));
+        let columns = ctx.get_selects();
+        let joins = ctx.get_joins();
+        let condition = ctx.get_condition_opt(condition_index);
 
         let row = database::query::<One>(
             self.executor,
@@ -265,20 +258,18 @@ where
     }
 
     /// Try to retrieve and decode a matching row
-    pub async fn optional(mut self) -> Result<Option<S::Result>, Error>
+    pub async fn optional(self) -> Result<Option<S::Result>, Error>
     where
         LO: OffsetMarker,
     {
-        let decoder = self.selector.select(&mut self.ctx);
-        self.condition.add_to_builder(&mut self.ctx);
+        let mut ctx = QueryContext::new();
 
-        let columns = self.ctx.get_selects();
-        let joins = self.ctx.get_joins();
+        let decoder = self.selector.select(&mut ctx);
+        let condition_index = self.condition.build(&mut ctx);
 
-        let condition = self.condition.into_option();
-        let condition = condition
-            .as_ref()
-            .map(|condition| condition.as_sql(&self.ctx));
+        let columns = ctx.get_selects();
+        let joins = ctx.get_joins();
+        let condition = ctx.get_condition_opt(condition_index);
 
         let row = database::query::<Optional>(
             self.executor,
@@ -434,7 +425,6 @@ mod query_stream {
     use rorm_db::executor::{QueryStrategyResult, Stream};
     use rorm_db::Error;
 
-    use crate::conditions::Condition;
     use crate::crud::decoder::Decoder;
     use crate::internal::query_context::QueryContext;
 
@@ -449,9 +439,7 @@ mod query_stream {
     pub struct QueryStream<'this, 'cond: 'this, D> {
         decoder: D,
 
-        ctx: Box<QueryContext>,
-
-        condition: Option<Box<dyn Condition<'cond>>>,
+        ctx: Box<QueryContext<'cond>>,
 
         #[pin]
         stream: <Stream as QueryStrategyResult>::Result<'this>,
@@ -460,11 +448,9 @@ mod query_stream {
     impl<'this, 'cond: 'this, D> QueryStream<'this, 'cond, D> {
         pub(crate) fn new(
             decoder: D,
-            ctx: QueryContext,
-            condition: Option<Box<dyn Condition<'cond>>>,
+            ctx: QueryContext<'cond>,
             stream_builder: impl FnOnce(
                 &'this QueryContext,
-                Option<&'this dyn Condition<'cond>>,
             ) -> <Stream as QueryStrategyResult>::Result<'this>,
         ) -> Self {
             unsafe fn change_lifetime<'old, 'new: 'old, T: 'new + ?Sized>(
@@ -477,15 +463,10 @@ mod query_stream {
                 let ctx = Box::new(ctx);
                 let ctx_ref: &'this QueryContext = change_lifetime(ctx.as_ref());
 
-                let condition_ref: Option<&'this dyn Condition<'cond>> = condition
-                    .as_deref()
-                    .map(|condition| change_lifetime(condition));
-
-                let stream = stream_builder(ctx_ref, condition_ref);
+                let stream = stream_builder(ctx_ref);
 
                 Self {
                     ctx,
-                    condition,
                     decoder,
                     stream,
                 }

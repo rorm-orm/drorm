@@ -48,13 +48,12 @@
 //! }
 //! ```
 
-use rorm_db::sql::{conditional, value};
-
 use super::Condition;
+use crate::internal::query_context::flat_conditions::FlatCondition;
 use crate::internal::query_context::QueryContext;
 
 /// Operator to join a collection's conditions with
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum CollectionOperator {
     /// Join the collection's conditions with AND
     And,
@@ -106,49 +105,25 @@ where
 }
 
 impl<'a, T: Condition<'a>> Condition<'a> for DynamicCollection<T> {
-    fn add_to_context(&self, context: &mut QueryContext) {
+    fn build(&self, context: &mut QueryContext<'a>) {
+        context
+            .conditions
+            .push(FlatCondition::StartCollection(self.operator));
         for cond in self.vector.iter() {
-            cond.add_to_context(context);
+            cond.build(context);
         }
-    }
-
-    fn as_sql(&self, context: &QueryContext) -> conditional::Condition {
-        (match self.operator {
-            CollectionOperator::And => conditional::Condition::Conjunction,
-            CollectionOperator::Or => conditional::Condition::Disjunction,
-        })(
-            self.vector
-                .iter()
-                .map(|condition| condition.as_sql(context))
-                .collect(),
-        )
+        context.conditions.push(FlatCondition::EndCollection);
     }
 }
 impl<'a, T: Condition<'a>> Condition<'a> for DynamicCollection<Option<T>> {
-    fn add_to_context(&self, context: &mut QueryContext) {
-        for cond in self.vector.iter().flatten() {
-            cond.add_to_context(context);
+    fn build(&self, context: &mut QueryContext<'a>) {
+        context
+            .conditions
+            .push(FlatCondition::StartCollection(self.operator));
+        for cond in self.vector.iter().flat_map(Option::as_ref) {
+            cond.build(context);
         }
-    }
-
-    fn as_sql(&self, context: &QueryContext) -> conditional::Condition {
-        let conditions: Vec<_> = self
-            .vector
-            .iter()
-            .flatten()
-            .map(|condition| condition.as_sql(context))
-            .collect();
-        if conditions.is_empty() {
-            conditional::Condition::Value(value::Value::Bool(match self.operator {
-                CollectionOperator::And => true,
-                CollectionOperator::Or => false,
-            }))
-        } else {
-            (match self.operator {
-                CollectionOperator::And => conditional::Condition::Conjunction,
-                CollectionOperator::Or => conditional::Condition::Disjunction,
-            })(conditions)
-        }
+        context.conditions.push(FlatCondition::EndCollection);
     }
 }
 
@@ -207,48 +182,27 @@ macro_rules! impl_static_collection {
     (impl $($generic:ident),+) => {
         #[allow(non_snake_case)] // the macro is simpler when generic variable are reused as value variables
         impl<'a, $($generic: Condition<'a>),+> Condition<'a> for StaticCollection<($($generic,)+)> {
-            fn add_to_context(&self, context: &mut QueryContext) {
+            fn build(&self, context: &mut QueryContext<'a>) {
+                context
+                    .conditions
+                    .push(FlatCondition::StartCollection(self.operator));
                 let ($($generic,)+) = &self.tuple;
-                $($generic.add_to_context(context);)+
-            }
-
-            fn as_sql(&self, context: &QueryContext) -> conditional::Condition {
-                let ($($generic,)+) = &self.tuple;
-                (match self.operator {
-                    CollectionOperator::And => conditional::Condition::Conjunction,
-                    CollectionOperator::Or => conditional::Condition::Disjunction,
-                })(vec![
-                    $($generic.as_sql(context),)+
-                ])
+                $($generic.build(context);)+
+                context.conditions.push(FlatCondition::EndCollection);
             }
         }
 
         #[allow(non_snake_case)] // the macro is simpler when generic variable are reused as value variables
         impl<'a, $($generic: Condition<'a>),+> Condition<'a> for StaticCollection<($(Option<$generic>,)+)> {
-            fn add_to_context(&self, context: &mut QueryContext) {
+            fn build(&self, context: &mut QueryContext<'a>) {
+                context
+                    .conditions
+                    .push(FlatCondition::StartCollection(self.operator));
                 let ($($generic,)+) = &self.tuple;
                 $(if let Some(cond) = $generic {
-                    cond.add_to_context(context);
+                    cond.build(context);
                 })+
-            }
-
-            fn as_sql(&self, context: &QueryContext) -> conditional::Condition {
-                let ($($generic,)+) = &self.tuple;
-                let mut conditions = Vec::new();
-                $(if let Some(cond) = $generic {
-                    conditions.push(cond.as_sql(context));
-                })+
-                if conditions.is_empty() {
-                    conditional::Condition::Value(value::Value::Bool(match self.operator {
-                        CollectionOperator::And => true,
-                        CollectionOperator::Or => false,
-                    }))
-                } else {
-                    (match self.operator {
-                        CollectionOperator::And => conditional::Condition::Conjunction,
-                        CollectionOperator::Or => conditional::Condition::Disjunction,
-                    })(conditions)
-                }
+                context.conditions.push(FlatCondition::EndCollection);
             }
         }
     };

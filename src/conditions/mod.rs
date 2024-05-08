@@ -6,25 +6,28 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 // use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-use rorm_db::sql::{conditional, value};
-
-use crate::internal::field::Field;
-use crate::internal::query_context::QueryContext;
-use crate::internal::relation_path::{JoinAlias, Path};
+use rorm_db::sql::value;
 
 pub mod collections;
-
 pub use collections::{DynamicCollection, StaticCollection};
 
 use crate::internal::field::access::FieldAccess;
+use crate::internal::field::Field;
+use crate::internal::query_context::flat_conditions::FlatCondition;
+use crate::internal::query_context::ids::PathId;
+use crate::internal::query_context::QueryContext;
+use crate::internal::relation_path::Path;
 
 /// Node in a condition tree
 pub trait Condition<'a>: 'a + Send + Sync {
-    /// Prepare a query context to be able to handle this condition by registering all implicit joins.
-    fn add_to_context(&self, context: &mut QueryContext);
-
-    /// Convert the condition into rorm-sql's format using a query context's registered joins.
-    fn as_sql(&self, context: &QueryContext) -> conditional::Condition;
+    /// Adds this condition to a query context's internal representation
+    ///
+    /// If you're not implementing `Condition`, you'll probably want [`QueryContext::add_condition`].
+    ///
+    /// If you are implementing `Condition` for a custom type,
+    /// please convert your type into one from [`rorm::conditions`](crate::conditions) first
+    /// and then simply forward `build`.
+    fn build(&self, context: &mut QueryContext<'a>);
 
     /// Convert the condition into a boxed trait object to erase its concrete type
     fn boxed(self) -> BoxedCondition<'a>
@@ -34,7 +37,7 @@ pub trait Condition<'a>: 'a + Send + Sync {
         Box::new(self)
     }
 
-    /// Convert the condition into a arced trait object to erase its concrete type while remaining cloneable
+    /// Convert the condition into an arced trait object to erase its concrete type while remaining cloneable
     fn arc(self) -> ArcCondition<'a>
     where
         Self: Sized,
@@ -50,15 +53,11 @@ pub type BoxedCondition<'a> = Box<dyn Condition<'a>>;
 pub type ArcCondition<'a> = Arc<dyn Condition<'a>>;
 
 impl<'a> Condition<'a> for BoxedCondition<'a> {
-    fn add_to_context(&self, context: &mut QueryContext) {
-        self.as_ref().add_to_context(context);
+    fn build(&self, context: &mut QueryContext<'a>) {
+        self.as_ref().build(context);
     }
 
-    fn as_sql(&self, context: &QueryContext) -> conditional::Condition {
-        self.as_ref().as_sql(context)
-    }
-
-    fn boxed(self) -> Box<dyn Condition<'a>>
+    fn boxed(self) -> BoxedCondition<'a>
     where
         Self: Sized,
     {
@@ -73,12 +72,15 @@ impl<'a> Condition<'a> for BoxedCondition<'a> {
     }
 }
 impl<'a> Condition<'a> for ArcCondition<'a> {
-    fn add_to_context(&self, context: &mut QueryContext) {
-        self.as_ref().add_to_context(context);
+    fn build(&self, context: &mut QueryContext<'a>) {
+        self.as_ref().build(context);
     }
 
-    fn as_sql(&self, context: &QueryContext) -> conditional::Condition {
-        self.as_ref().as_sql(context)
+    fn boxed(self) -> BoxedCondition<'a>
+    where
+        Self: Sized,
+    {
+        Box::from(self)
     }
 
     fn arc(self) -> ArcCondition<'a>
@@ -92,7 +94,7 @@ impl<'a> Condition<'a> for ArcCondition<'a> {
 /// A value
 ///
 /// However unlike rorm-sql's Value, this does not include an ident.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Value<'a> {
     /// null representation
     Null(value::NullType),
@@ -193,10 +195,10 @@ impl<'a> Value<'a> {
     }
 }
 impl<'a> Condition<'a> for Value<'a> {
-    fn add_to_context(&self, _context: &mut QueryContext) {}
-
-    fn as_sql(&self, _context: &QueryContext) -> conditional::Condition {
-        conditional::Condition::Value(self.as_sql())
+    fn build(&self, context: &mut QueryContext<'a>) {
+        let index = context.values.len();
+        context.values.push(self.clone());
+        context.conditions.push(FlatCondition::Value(index));
     }
 }
 
@@ -205,15 +207,12 @@ impl<'a> Condition<'a> for Value<'a> {
 pub struct Column<A: FieldAccess>(pub A);
 
 impl<'a, A: FieldAccess> Condition<'a> for Column<A> {
-    fn add_to_context(&self, context: &mut QueryContext) {
+    fn build(&self, context: &mut QueryContext<'a>) {
         A::Path::add_to_context(context);
-    }
-
-    fn as_sql(&self, _context: &QueryContext) -> conditional::Condition {
-        conditional::Condition::Value(value::Value::Column {
-            table_name: Some(<A::Path as JoinAlias>::ALIAS),
-            column_name: <A::Field as Field>::NAME,
-        })
+        context.conditions.push(FlatCondition::Column(
+            PathId::of::<A::Path>(),
+            <A::Field as Field>::NAME,
+        ))
     }
 }
 
@@ -230,7 +229,7 @@ pub struct Binary<A, B> {
     pub snd_arg: B,
 }
 /// A binary operator
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum BinaryOperator {
     /// Representation of "{} = {}" in SQL
     Equals,
@@ -254,27 +253,12 @@ pub enum BinaryOperator {
     NotRegexp,
 }
 impl<'a, A: Condition<'a>, B: Condition<'a>> Condition<'a> for Binary<A, B> {
-    fn add_to_context(&self, context: &mut QueryContext) {
-        self.fst_arg.add_to_context(context);
-        self.snd_arg.add_to_context(context);
-    }
-
-    fn as_sql(&self, context: &QueryContext) -> conditional::Condition {
-        conditional::Condition::BinaryCondition((match self.operator {
-            BinaryOperator::Equals => conditional::BinaryCondition::Equals,
-            BinaryOperator::NotEquals => conditional::BinaryCondition::NotEquals,
-            BinaryOperator::Greater => conditional::BinaryCondition::Greater,
-            BinaryOperator::GreaterOrEquals => conditional::BinaryCondition::GreaterOrEquals,
-            BinaryOperator::Less => conditional::BinaryCondition::Less,
-            BinaryOperator::LessOrEquals => conditional::BinaryCondition::LessOrEquals,
-            BinaryOperator::Like => conditional::BinaryCondition::Like,
-            BinaryOperator::NotLike => conditional::BinaryCondition::NotLike,
-            BinaryOperator::Regexp => conditional::BinaryCondition::Regexp,
-            BinaryOperator::NotRegexp => conditional::BinaryCondition::NotRegexp,
-        })(Box::new([
-            self.fst_arg.as_sql(context),
-            self.snd_arg.as_sql(context),
-        ])))
+    fn build(&self, context: &mut QueryContext<'a>) {
+        context
+            .conditions
+            .push(FlatCondition::BinaryCondition(self.operator));
+        self.fst_arg.build(context);
+        self.snd_arg.build(context);
     }
 }
 
@@ -294,7 +278,7 @@ pub struct Ternary<A, B, C> {
     pub trd_arg: C,
 }
 /// A ternary operator
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum TernaryOperator {
     /// Between represents "{} BETWEEN {} AND {}" from SQL
     Between,
@@ -302,21 +286,13 @@ pub enum TernaryOperator {
     NotBetween,
 }
 impl<'a, A: Condition<'a>, B: Condition<'a>, C: Condition<'a>> Condition<'a> for Ternary<A, B, C> {
-    fn add_to_context(&self, context: &mut QueryContext) {
-        self.fst_arg.add_to_context(context);
-        self.snd_arg.add_to_context(context);
-        self.trd_arg.add_to_context(context);
-    }
-
-    fn as_sql(&self, context: &QueryContext) -> conditional::Condition {
-        conditional::Condition::TernaryCondition((match self.operator {
-            TernaryOperator::Between => conditional::TernaryCondition::Between,
-            TernaryOperator::NotBetween => conditional::TernaryCondition::NotBetween,
-        })(Box::new([
-            self.fst_arg.as_sql(context),
-            self.snd_arg.as_sql(context),
-            self.trd_arg.as_sql(context),
-        ])))
+    fn build(&self, context: &mut QueryContext<'a>) {
+        context
+            .conditions
+            .push(FlatCondition::TernaryCondition(self.operator));
+        self.fst_arg.build(context);
+        self.snd_arg.build(context);
+        self.trd_arg.build(context);
     }
 }
 
@@ -330,7 +306,7 @@ pub struct Unary<A> {
     pub fst_arg: A,
 }
 /// A unary operator
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum UnaryOperator {
     /// Representation of SQL's "{} IS NULL"
     IsNull,
@@ -344,17 +320,10 @@ pub enum UnaryOperator {
     Not,
 }
 impl<'a, A: Condition<'a>> Condition<'a> for Unary<A> {
-    fn add_to_context(&self, context: &mut QueryContext) {
-        self.fst_arg.add_to_context(context);
-    }
-
-    fn as_sql(&self, context: &QueryContext) -> conditional::Condition {
-        conditional::Condition::UnaryCondition((match self.operator {
-            UnaryOperator::IsNull => conditional::UnaryCondition::IsNull,
-            UnaryOperator::IsNotNull => conditional::UnaryCondition::IsNotNull,
-            UnaryOperator::Exists => conditional::UnaryCondition::Exists,
-            UnaryOperator::NotExists => conditional::UnaryCondition::NotExists,
-            UnaryOperator::Not => conditional::UnaryCondition::Not,
-        })(Box::new(self.fst_arg.as_sql(context))))
+    fn build(&self, context: &mut QueryContext<'a>) {
+        context
+            .conditions
+            .push(FlatCondition::UnaryCondition(self.operator));
+        self.fst_arg.build(context);
     }
 }

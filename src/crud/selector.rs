@@ -9,7 +9,7 @@ use crate::internal::field::as_db_type::AsDbType;
 use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::{Field, FieldProxy, SingleColumnField};
 use crate::internal::query_context::QueryContext;
-use crate::internal::relation_path::{Path, PathImpl, PathStep, ResolvedRelatedField};
+use crate::internal::relation_path::{Path, PathField};
 use crate::model::{Model, PatchSelector};
 use crate::Patch;
 
@@ -50,13 +50,12 @@ where
 #[doc(hidden)]
 impl<F, P> FieldProxy<F, P>
 where
-    F: Field,
-    P: Path,
-    PathStep<F, P>: PathImpl<F::Type>,
+    F: Field + PathField<<F as Field>::Type>,
+    P: Path<Current = <F::ParentField as Field>::Model>,
 {
-    pub fn select_as<Ptch>(self) -> PatchSelector<Ptch, PathStep<F, P>>
+    pub fn select_as<Ptch>(self) -> PatchSelector<Ptch, P::Step<F>>
     where
-        Ptch: Patch<Model = <ResolvedRelatedField<F, P> as Field>::Model>,
+        Ptch: Patch<Model = <F::ChildField as Field>::Model>,
     {
         PatchSelector::new()
     }

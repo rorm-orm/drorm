@@ -44,8 +44,8 @@ use std::mem::ManuallyDrop;
 use crate::conditions::Value;
 use crate::internal::hmr::annotations::Annotations;
 use crate::internal::hmr::Source;
-use crate::internal::relation_path::{Path, PathImpl, PathStep};
-use crate::model::{ConstNew, GetField, Model};
+use crate::internal::relation_path::{Path, PathField};
+use crate::model::{ConstNew, Model};
 
 pub mod access;
 pub mod as_db_type;
@@ -54,11 +54,8 @@ pub mod foreign_model;
 pub mod modifier;
 
 use crate::fields::traits::FieldType;
-use crate::fields::types::{BackRef, ForeignModelByField};
 use crate::internal::array_utils::IntoArray;
 use crate::internal::const_concat::ConstString;
-use crate::internal::field::as_db_type::AsDbType;
-use crate::internal::field::foreign_model::{ForeignModelField, ForeignModelTrait};
 use crate::internal::field::modifier::{AnnotationsModifier, CheckModifier, ColumnsFromName};
 
 /// This trait is implemented by the `#[derive(Model)]` macro on unique unit struct for each of a model's fields.
@@ -230,44 +227,11 @@ where
     }
 }
 
-impl<FMF, BF, P> ContainerField<BackRef<FMF>, P> for BF
+impl<T, F, P> ContainerField<T, P> for F
 where
-    FMF: ForeignModelField,
-    BF: Field<Type = BackRef<FMF>>,
-    P: Path,
-    PathStep<BF, P>: PathImpl<BackRef<FMF>>,
+    T: FieldType,
+    F: Field<Type = T> + PathField<T>,
+    P: Path<Current = <F::ParentField as Field>::Model>,
 {
-    // type Target = <<ResolvedRelatedField<BF, P> as Field>::Model as Model>::Fields<PathStep<BF, P>>;
-    type Target = <FMF::Model as Model>::Fields<PathStep<BF, P>>;
-}
-
-impl<FF, FMF, P> ContainerField<ForeignModelByField<FF>, P> for FMF
-where
-    // bound in `impl FieldType for ForeignModelByField<FF>`
-    ForeignModelByField<FF>: ForeignModelTrait,
-    FF: SingleColumnField,
-    FF::Type: AsDbType,
-    FF::Model: GetField<FF>, // always true
-
-    FMF: Field<Type = ForeignModelByField<FF>>,
-    P: Path,
-    PathStep<FMF, P>: PathImpl<ForeignModelByField<FF>>,
-{
-    type Target = <FF::Model as Model>::Fields<PathStep<FMF, P>>;
-}
-
-impl<FF, FMF, P> ContainerField<Option<ForeignModelByField<FF>>, P> for FMF
-where
-    // bound in `impl FieldType for ForeignModelByField<FF>`
-    Option<ForeignModelByField<FF>>: ForeignModelTrait,
-    FF: SingleColumnField,
-    FF::Type: AsDbType,
-    FF::Model: GetField<FF>, // always true
-    Option<FF::Type>: AsDbType,
-
-    FMF: Field<Type = Option<ForeignModelByField<FF>>>,
-    P: Path,
-    PathStep<FMF, P>: PathImpl<Option<ForeignModelByField<FF>>>,
-{
-    type Target = <FF::Model as Model>::Fields<PathStep<FMF, P>>;
+    type Target = <<F::ChildField as Field>::Model as Model>::Fields<P::Step<F>>;
 }

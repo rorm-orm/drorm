@@ -186,7 +186,7 @@ impl<T: ForeignModelTrait, F: Field<Type = T>> AnnotationsModifier<F> for Foreig
 }
 
 /// Marker trait without actual bounds for fields of type foreign model
-pub trait ForeignModelField: Field {
+pub trait ForeignModelField: SingleColumnField {
     sealed!(trait);
 }
 

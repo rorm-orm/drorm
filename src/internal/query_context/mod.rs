@@ -9,7 +9,7 @@ use crate::conditions::{BinaryOperator, Condition, Value};
 use crate::internal::field::Field;
 use crate::internal::query_context::flat_conditions::{FlatCondition, GetConditionError};
 use crate::internal::query_context::ids::PathId;
-use crate::internal::relation_path::{JoinAlias, Path, PathImpl, PathStep};
+use crate::internal::relation_path::{Path, PathField};
 use crate::Model;
 
 pub mod flat_conditions;
@@ -205,30 +205,26 @@ impl<'v> QueryContext<'v> {
     /// The generic parameters are the parameters defining the outer most [PathStep].
     pub(crate) fn add_relation_path<F, P>(&mut self)
     where
-        F: Field,
-        P: Path,
-        PathStep<F, P>: PathImpl<F::Type>,
+        F: Field + PathField<<F as Field>::Type>,
+        P: Path<Current = <F::ParentField as Field>::Model>,
     {
-        let path_id = PathId::of::<PathStep<F, P>>();
+        let path_id = PathId::of::<P::Step<F>>();
         if !self.join_aliases.contains_key(&path_id) {
             P::add_to_context(self);
 
-            let join_alias = <PathStep<F, P> as JoinAlias>::ALIAS;
+            let join_alias = <P::Step<F> as Path>::ALIAS;
             self.join_aliases.insert(path_id, join_alias.to_string());
             self.joins.push({
                 Join {
-                    table_name: <PathStep<F, P> as PathImpl<_>>::JoinedModel::TABLE,
+                    table_name: <<F as PathField<_>>::ChildField as Field>::Model::TABLE,
                     join_alias: path_id,
                     join_condition: self.conditions.len(),
                 }
             });
             self.conditions.extend([
                 FlatCondition::BinaryCondition(BinaryOperator::Equals),
-                FlatCondition::Column(path_id, <PathStep<F, P> as PathImpl<_>>::FromField::NAME),
-                FlatCondition::Column(
-                    PathId::of::<P>(),
-                    <PathStep<F, P> as PathImpl<_>>::ToField::NAME,
-                ),
+                FlatCondition::Column(path_id, <F as PathField<_>>::ChildField::NAME),
+                FlatCondition::Column(PathId::of::<P>(), <F as PathField<_>>::ParentField::NAME),
             ]);
         }
     }

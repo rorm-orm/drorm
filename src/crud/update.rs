@@ -1,25 +1,23 @@
 //! Update builder and macro
 
-use std::future::IntoFuture;
 use std::marker::PhantomData;
 
-use futures::future::BoxFuture;
 use rorm_db::database;
 use rorm_db::error::Error;
 use rorm_db::executor::Executor;
 
-use crate::conditions::{Condition, Value};
-use crate::crud::builder::ConditionMarker;
+use crate::conditions::{Condition, DynamicCollection, Value};
 use crate::internal::field::{FieldProxy, SingleColumnField};
 use crate::internal::query_context::QueryContext;
-use crate::Model;
+use crate::model::Identifiable;
+use crate::{Model, Patch};
 
 /// Wrapper around `Vec` to indicate on type level, that possible no column has been set yet.
 pub struct OptionalColumns<'a>(Vec<(&'static str, Value<'a>)>);
 
 /// Builder for update queries
 ///
-/// Is is recommended to start a builder using [`update!`](macro@crate::update).
+/// It is recommended to start a builder using [`update!`](macro@crate::update).
 ///
 /// ## Generics
 /// - `'rf`
@@ -38,21 +36,15 @@ pub struct OptionalColumns<'a>(Vec<(&'static str, Value<'a>)>);
 ///
 ///     List of columns and values to set.
 ///     This is a generic instead of just being a `Vec` in order to prevent the list from being empty.
-///
-/// - `C`: [`ConditionMarker<'rf>`](ConditionMarker)
-///
-///     An optional condition to filter the query by.
-///
 #[must_use]
-pub struct UpdateBuilder<'rf, E, M, L, C> {
+pub struct UpdateBuilder<'rf, E, M, L> {
     executor: E,
     columns: L,
-    condition: C,
 
-    _phantom: PhantomData<&'rf M>,
+    _phantom: PhantomData<(&'rf (), M)>,
 }
 
-impl<'rf, 'e, E, M> UpdateBuilder<'rf, E, M, (), ()>
+impl<'rf, 'e, E, M> UpdateBuilder<'rf, E, M, ()>
 where
     E: Executor<'e>,
     M: Model,
@@ -62,24 +54,13 @@ where
         Self {
             executor,
             columns: (),
-            condition: (),
 
             _phantom: PhantomData,
         }
     }
 }
 
-impl<'rf, E, M, L> UpdateBuilder<'rf, E, M, L, ()> {
-    /// Add a condition to the query
-    pub fn condition<C: Condition<'rf>>(self, condition: C) -> UpdateBuilder<'rf, E, M, L, C> {
-        #[rustfmt::skip]
-        let UpdateBuilder { executor, columns, _phantom, .. } = self;
-        #[rustfmt::skip]
-        return UpdateBuilder { executor, columns, _phantom, condition, };
-    }
-}
-
-impl<'rf, E, M, C> UpdateBuilder<'rf, E, M, (), C> {
+impl<'rf, E, M> UpdateBuilder<'rf, E, M, ()> {
     /// Prepare the builder to accept a dynamic (possibly zero) amount of set calls.
     ///
     /// Call [`finish_dyn_set`](UpdateBuilder::finish_dyn_set) to go back to normal operation.
@@ -88,15 +69,15 @@ impl<'rf, E, M, C> UpdateBuilder<'rf, E, M, (), C> {
     /// before executing the query.
     /// This can be troublesome, when you want to call it dynamically
     /// and can't ensure that at least one such call will happen.
-    pub fn begin_dyn_set(self) -> UpdateBuilder<'rf, E, M, OptionalColumns<'rf>, C> {
+    pub fn begin_dyn_set(self) -> UpdateBuilder<'rf, E, M, OptionalColumns<'rf>> {
         #[rustfmt::skip]
-        let UpdateBuilder { executor, _phantom, condition, .. } = self;
+        let UpdateBuilder { executor, _phantom, .. } = self;
         #[rustfmt::skip]
-        return UpdateBuilder { executor, columns: OptionalColumns(Vec::new()), _phantom, condition, };
+        return UpdateBuilder { executor, columns: OptionalColumns(Vec::new()), _phantom, };
     }
 }
 
-impl<'rf, E, M, C> UpdateBuilder<'rf, E, M, OptionalColumns<'rf>, C> {
+impl<'rf, E, M> UpdateBuilder<'rf, E, M, OptionalColumns<'rf>> {
     /// Add a column to update.
     ///
     /// Can be called multiple times.
@@ -127,22 +108,21 @@ impl<'rf, E, M, C> UpdateBuilder<'rf, E, M, OptionalColumns<'rf>, C> {
     /// If it hasn't, the "unset" builder will be returned as `Err`.
     pub fn finish_dyn_set(
         self,
-    ) -> Result<UpdateBuilderWithSet<'rf, E, M, C>, UpdateBuilderWithoutSet<'rf, E, M, C>> {
+    ) -> Result<UpdateBuilderWithSet<'rf, E, M>, UpdateBuilderWithoutSet<'rf, E, M>> {
         #[rustfmt::skip]
-        let UpdateBuilder { executor, _phantom, condition, columns } = self;
+        let UpdateBuilder { executor, _phantom, columns } = self;
         #[rustfmt::skip]
         return if columns.0.is_empty() {
-            Err(UpdateBuilder { executor, columns: (), _phantom, condition, })
+            Err(UpdateBuilder { executor, columns: (), _phantom, })
         } else {
-            Ok(UpdateBuilder { executor, columns: columns.0, _phantom, condition, })
+            Ok(UpdateBuilder { executor, columns: columns.0, _phantom, })
         };
     }
 }
-type UpdateBuilderWithoutSet<'rf, E, M, C> = UpdateBuilder<'rf, E, M, (), C>;
-type UpdateBuilderWithSet<'rf, E, M, C> =
-    UpdateBuilder<'rf, E, M, Vec<(&'static str, Value<'rf>)>, C>;
+type UpdateBuilderWithoutSet<'rf, E, M> = UpdateBuilder<'rf, E, M, ()>;
+type UpdateBuilderWithSet<'rf, E, M> = UpdateBuilder<'rf, E, M, Vec<(&'static str, Value<'rf>)>>;
 
-impl<'rf, E, M, C> UpdateBuilder<'rf, E, M, (), C>
+impl<'rf, E, M> UpdateBuilder<'rf, E, M, ()>
 where
     M: Model,
 {
@@ -153,15 +133,15 @@ where
         self,
         _field: FieldProxy<F, M>,
         value: F::Type,
-    ) -> UpdateBuilder<'rf, E, M, Vec<(&'static str, Value<'rf>)>, C> {
+    ) -> UpdateBuilder<'rf, E, M, Vec<(&'static str, Value<'rf>)>> {
         #[rustfmt::skip]
-        let UpdateBuilder { executor, _phantom, condition, .. } = self;
+        let UpdateBuilder { executor, _phantom, .. } = self;
         #[rustfmt::skip]
-        return UpdateBuilder { executor, columns: vec![(F::NAME, F::type_into_value(value))], _phantom, condition, };
+        return UpdateBuilder { executor, columns: vec![(F::NAME, F::type_into_value(value))], _phantom, };
     }
 }
 
-impl<'rf, E, M, C> UpdateBuilder<'rf, E, M, Vec<(&'static str, Value<'rf>)>, C>
+impl<'rf, E, M> UpdateBuilder<'rf, E, M, Vec<(&'static str, Value<'rf>)>>
 where
     M: Model,
 {
@@ -175,38 +155,58 @@ where
     }
 }
 
-impl<'ex, 'rf, E, M, C> UpdateBuilder<'rf, E, M, Vec<(&'static str, Value<'rf>)>, C>
+impl<'ex, 'rf, E, M> UpdateBuilder<'rf, E, M, Vec<(&'static str, Value<'rf>)>>
 where
     E: Executor<'ex>,
     M: Model,
-    C: ConditionMarker<'rf>,
 {
-    /// Perform the update operation
-    pub async fn exec(self) -> Result<u64, Error> {
+    /// Update a single row identified by a patch instance
+    ///
+    /// Note: The patch only provides the primary key, its other values will be ignored.
+    pub async fn single<P>(self, patch: &P) -> Result<u64, Error>
+    where
+        P: Patch<Model = M> + Identifiable,
+    {
+        self.condition(patch.as_condition()).await
+    }
+
+    /// Update a bulk of rows identified by patch instances
+    ///
+    /// Note: The patches only provide the primary key, their other values will be ignored.
+    pub async fn bulk<P>(self, patches: impl IntoIterator<Item = &P>) -> Result<u64, Error>
+    where
+        P: Patch<Model = M> + Identifiable,
+    {
+        self.condition(DynamicCollection::or(
+            patches
+                .into_iter()
+                .map(|patch| patch.as_condition())
+                .collect(),
+        ))
+        .await
+    }
+
+    /// Update all rows matching a condition
+    pub async fn condition<C: Condition<'rf>>(self, condition: C) -> Result<u64, Error> {
         let mut context = QueryContext::new();
         let columns: Vec<_> = self
             .columns
             .iter()
             .map(|(name, value)| (*name, value.as_sql()))
             .collect();
-        let condition_index = self.condition.build(&mut context);
-        let condition = context.get_condition_opt(condition_index);
-        database::update(self.executor, M::TABLE, &columns, condition.as_ref()).await
+        let condition_index = context.add_condition(&condition);
+        let condition = context.get_condition(condition_index);
+        database::update(self.executor, M::TABLE, &columns, Some(&condition)).await
     }
-}
 
-impl<'rf, E, M, C> IntoFuture for UpdateBuilder<'rf, E, M, Vec<(&'static str, Value<'rf>)>, C>
-where
-    E: Executor<'rf> + Send + 'rf,
-    M: Model + Sync,
-    C: ConditionMarker<'rf>,
-{
-    type Output = Result<u64, Error>;
-    type IntoFuture = BoxFuture<'rf, Self::Output>;
-
-    /// Convert a [`UpdateBuilder`] with columns into a future implicitly
-    fn into_future(self) -> Self::IntoFuture {
-        Box::pin(self.exec())
+    /// Update all rows
+    pub async fn all(self) -> Result<u64, Error> {
+        let columns: Vec<_> = self
+            .columns
+            .iter()
+            .map(|(name, value)| (*name, value.as_sql()))
+            .collect();
+        database::update(self.executor, M::TABLE, &columns, None).await
     }
 }
 

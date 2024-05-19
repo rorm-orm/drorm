@@ -85,7 +85,7 @@ where
         .await
     }
 
-    /// Delete all columns
+    /// Delete all rows
     pub async fn all(self) -> Result<u64, Error> {
         database::delete(self.executor, M::TABLE, None).await
     }

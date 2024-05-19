@@ -12,9 +12,6 @@ use crate::internal::query_context::QueryContext;
 use crate::model::Identifiable;
 use crate::{Model, Patch};
 
-/// Wrapper around `Vec` to indicate on type level, that possible no column has been set yet.
-pub struct OptionalColumns<'a>(Vec<(&'static str, Value<'a>)>);
-
 /// Builder for update queries
 ///
 /// It is recommended to start a builder using [`update!`](macro@crate::update).
@@ -32,19 +29,26 @@ pub struct OptionalColumns<'a>(Vec<(&'static str, Value<'a>)>);
 ///
 ///     The model from whose table to update rows.
 ///
-/// - `L`
+/// - `C`
 ///
-///     List of columns and values to set.
-///     This is a generic instead of just being a `Vec` in order to prevent the list from being empty.
+///     Type state storing whether `set` has been called at least once.
 #[must_use]
-pub struct UpdateBuilder<'rf, E, M, L> {
+pub struct UpdateBuilder<'rf, E, M, C> {
     executor: E,
-    columns: L,
+    columns: Vec<(&'static str, Value<'rf>)>,
 
-    _phantom: PhantomData<(&'rf (), M)>,
+    _phantom: PhantomData<(M, C)>,
 }
 
-impl<'rf, 'e, E, M> UpdateBuilder<'rf, E, M, ()>
+/// Marker types representing [`UpdateBuilder`]'s state
+#[doc(hidden)]
+pub mod columns {
+    pub struct Empty;
+    pub struct NonEmpty;
+    pub struct MaybeEmpty;
+}
+
+impl<'rf, 'e, E, M> UpdateBuilder<'rf, E, M, columns::Empty>
 where
     E: Executor<'e>,
     M: Model,
@@ -53,14 +57,23 @@ where
     pub fn new(executor: E, _: M::UpdatePermission) -> Self {
         Self {
             executor,
-            columns: (),
-
+            columns: Vec::new(),
             _phantom: PhantomData,
         }
     }
 }
 
-impl<'rf, E, M> UpdateBuilder<'rf, E, M, ()> {
+impl<'rf, 'e, E, M, C> UpdateBuilder<'rf, E, M, C> {
+    fn set_column_state<C2>(self) -> UpdateBuilder<'rf, E, M, C2> {
+        UpdateBuilder {
+            executor: self.executor,
+            columns: self.columns,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<'rf, E, M> UpdateBuilder<'rf, E, M, columns::Empty> {
     /// Prepare the builder to accept a dynamic (possibly zero) amount of set calls.
     ///
     /// Call [`finish_dyn_set`](UpdateBuilder::finish_dyn_set) to go back to normal operation.
@@ -69,22 +82,18 @@ impl<'rf, E, M> UpdateBuilder<'rf, E, M, ()> {
     /// before executing the query.
     /// This can be troublesome, when you want to call it dynamically
     /// and can't ensure that at least one such call will happen.
-    pub fn begin_dyn_set(self) -> UpdateBuilder<'rf, E, M, OptionalColumns<'rf>> {
-        #[rustfmt::skip]
-        let UpdateBuilder { executor, _phantom, .. } = self;
-        #[rustfmt::skip]
-        return UpdateBuilder { executor, columns: OptionalColumns(Vec::new()), _phantom, };
+    pub fn begin_dyn_set(self) -> UpdateBuilder<'rf, E, M, columns::MaybeEmpty> {
+        self.set_column_state()
     }
 }
 
-impl<'rf, E, M> UpdateBuilder<'rf, E, M, OptionalColumns<'rf>> {
+impl<'rf, E, M> UpdateBuilder<'rf, E, M, columns::MaybeEmpty> {
     /// Add a column to update.
     ///
     /// Can be called multiple times.
-    pub fn set<F: SingleColumnField>(self, _field: FieldProxy<F, M>, value: F::Type) -> Self {
-        let mut builder = self;
-        builder.columns.0.push((F::NAME, F::type_into_value(value)));
-        builder
+    pub fn set<F: SingleColumnField>(mut self, _field: FieldProxy<F, M>, value: F::Type) -> Self {
+        self.columns.push((F::NAME, F::type_into_value(value)));
+        self
     }
 
     /// Add a column to update if `value` is `Some`
@@ -108,21 +117,17 @@ impl<'rf, E, M> UpdateBuilder<'rf, E, M, OptionalColumns<'rf>> {
     /// If it hasn't, the "unset" builder will be returned as `Err`.
     pub fn finish_dyn_set(
         self,
-    ) -> Result<UpdateBuilderWithSet<'rf, E, M>, UpdateBuilderWithoutSet<'rf, E, M>> {
-        #[rustfmt::skip]
-        let UpdateBuilder { executor, _phantom, columns } = self;
-        #[rustfmt::skip]
-        return if columns.0.is_empty() {
-            Err(UpdateBuilder { executor, columns: (), _phantom, })
+    ) -> Result<UpdateBuilder<'rf, E, M, columns::NonEmpty>, UpdateBuilder<'rf, E, M, columns::Empty>>
+    {
+        if self.columns.is_empty() {
+            Err(self.set_column_state())
         } else {
-            Ok(UpdateBuilder { executor, columns: columns.0, _phantom, })
-        };
+            Ok(self.set_column_state())
+        }
     }
 }
-type UpdateBuilderWithoutSet<'rf, E, M> = UpdateBuilder<'rf, E, M, ()>;
-type UpdateBuilderWithSet<'rf, E, M> = UpdateBuilder<'rf, E, M, Vec<(&'static str, Value<'rf>)>>;
 
-impl<'rf, E, M> UpdateBuilder<'rf, E, M, ()>
+impl<'rf, E, M> UpdateBuilder<'rf, E, M, columns::Empty>
 where
     M: Model,
 {
@@ -130,32 +135,29 @@ where
     ///
     /// Can be called multiple times.
     pub fn set<F: SingleColumnField>(
-        self,
+        mut self,
         _field: FieldProxy<F, M>,
         value: F::Type,
-    ) -> UpdateBuilder<'rf, E, M, Vec<(&'static str, Value<'rf>)>> {
-        #[rustfmt::skip]
-        let UpdateBuilder { executor, _phantom, .. } = self;
-        #[rustfmt::skip]
-        return UpdateBuilder { executor, columns: vec![(F::NAME, F::type_into_value(value))], _phantom, };
+    ) -> UpdateBuilder<'rf, E, M, columns::NonEmpty> {
+        self.columns.push((F::NAME, F::type_into_value(value)));
+        self.set_column_state()
     }
 }
 
-impl<'rf, E, M> UpdateBuilder<'rf, E, M, Vec<(&'static str, Value<'rf>)>>
+impl<'rf, E, M> UpdateBuilder<'rf, E, M, columns::NonEmpty>
 where
     M: Model,
 {
     /// Add a column to update.
     ///
     /// Can be called multiple times.
-    pub fn set<F: SingleColumnField>(self, _field: FieldProxy<F, M>, value: F::Type) -> Self {
-        let mut builder = self;
-        builder.columns.push((F::NAME, F::type_into_value(value)));
-        builder
+    pub fn set<F: SingleColumnField>(mut self, _field: FieldProxy<F, M>, value: F::Type) -> Self {
+        self.columns.push((F::NAME, F::type_into_value(value)));
+        self
     }
 }
 
-impl<'ex, 'rf, E, M> UpdateBuilder<'rf, E, M, Vec<(&'static str, Value<'rf>)>>
+impl<'ex, 'rf, E, M> UpdateBuilder<'rf, E, M, columns::NonEmpty>
 where
     E: Executor<'ex>,
     M: Model,

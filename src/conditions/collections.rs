@@ -48,7 +48,7 @@
 //! }
 //! ```
 
-use super::Condition;
+use super::{BoxedCondition, Condition};
 use crate::internal::query_context::flat_conditions::FlatCondition;
 use crate::internal::query_context::QueryContext;
 
@@ -219,19 +219,23 @@ impl_static_collection!(H, G, F, E, D, C, B, A);
 macro_rules! create_collection {
     ($method:ident, $H:expr, $G:expr, $F:expr, $E:expr, $D:expr, $C:expr, $B:expr, $A:expr, $($other:expr),+ $(,)?) => {
         $crate::conditions::collections::DynamicCollection::ident(vec![
-            $H.boxed(),
-            $G.boxed(),
-            $F.boxed(),
-            $E.boxed(),
-            $D.boxed(),
-            $C.boxed(),
-            $B.boxed(),
-            $A.boxed(),
-            $($other.boxed()),+
+            $crate::conditions::collections::Condition::boxed($H),
+            $crate::conditions::collections::Condition::boxed($G),
+            $crate::conditions::collections::Condition::boxed($F),
+            $crate::conditions::collections::Condition::boxed($E),
+            $crate::conditions::collections::Condition::boxed($D),
+            $crate::conditions::collections::Condition::boxed($C),
+            $crate::conditions::collections::Condition::boxed($B),
+            $crate::conditions::collections::Condition::boxed($A),
+            $(
+                $crate::conditions::collections::Condition::boxed($other),
+            )+
         ])
     };
     ($method:ident, $($other:expr),+ $(,)?) => {
-        $crate::conditions::collections::StaticCollection::$method(($($other,)+))
+        $crate::conditions::collections::StaticCollection::$method(($(
+            $crate::conditions::collections::ensure_condition($other),
+        )+))
     }
 }
 
@@ -255,4 +259,9 @@ macro_rules! and {
     ($($condition:expr),+ $(,)?) => {
         $crate::create_collection!(and, $($condition),+);
     };
+}
+
+#[doc(hidden)]
+pub fn ensure_condition<'c, C: Condition<'c>>(value: C) -> C {
+    value
 }

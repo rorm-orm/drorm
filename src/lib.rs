@@ -38,7 +38,6 @@ pub mod prelude {
     pub use crate::model::{Model, Patch};
 }
 
-pub mod aggregate;
 pub mod conditions;
 pub mod crud;
 pub mod fields;

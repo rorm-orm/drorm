@@ -5,9 +5,11 @@ use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::Field;
 use crate::internal::imr;
 
+pub mod aggregate;
 pub mod cmp;
 
-pub use cmp::*;
+pub use self::aggregate::*;
+pub use self::cmp::*;
 use fancy_const::ConstFn;
 
 use crate::internal::const_concat::ConstString;

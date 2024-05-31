@@ -1,6 +1,13 @@
 //! Experimental trait to hide a [`FieldProxy`]s two generics behind a single one.
 
-use crate::fields::traits::{FieldEq, FieldLike, FieldOrd, FieldRegexp};
+use std::marker::PhantomData;
+
+use rorm_db::sql::aggregation::SelectAggregator;
+
+use crate::crud::selector::AggregatedColumn;
+use crate::fields::traits::{
+    FieldAvg, FieldCount, FieldEq, FieldLike, FieldMax, FieldMin, FieldOrd, FieldRegexp, FieldSum,
+};
 use crate::internal::field::{Field, FieldProxy};
 use crate::internal::relation_path::Path;
 
@@ -168,6 +175,76 @@ pub trait FieldAccess: Sized + Send + Sync + 'static {
         FieldType!(): FieldRegexp<'rhs, Rhs, Any>,
     {
         <FieldType!()>::field_not_regexp(self, rhs)
+    }
+
+    /// Returns the count of the number of times that the column is not null.
+    fn count(self) -> AggregatedColumn<Self, i64>
+    where
+        FieldType!(): FieldCount,
+    {
+        AggregatedColumn {
+            sql: SelectAggregator::Count,
+            alias: "count",
+            field_access: PhantomData,
+            result: PhantomData,
+        }
+    }
+
+    /// Returns the summary off all non-null values in the group.
+    /// If there are only null values in the group, this function will return null.
+    fn sum() -> AggregatedColumn<Self, <FieldType!() as FieldSum>::Result>
+    where
+        FieldType!(): FieldSum,
+    {
+        AggregatedColumn {
+            sql: SelectAggregator::Sum,
+            alias: "sum",
+            field_access: PhantomData,
+            result: PhantomData,
+        }
+    }
+
+    /// Returns the average value of all non-null values.
+    /// The result of avg is a floating point value, except all input values are null, than the
+    /// result will also be null.
+    fn avg() -> AggregatedColumn<Self, Option<f64>>
+    where
+        FieldType!(): FieldAvg,
+    {
+        AggregatedColumn {
+            sql: SelectAggregator::Avg,
+            alias: "avg",
+            field_access: PhantomData,
+            result: PhantomData,
+        }
+    }
+
+    /// Returns the maximum value of all values in the group.
+    /// If there are only null values in the group, this function will return null.
+    fn max() -> AggregatedColumn<Self, <FieldType!() as FieldMax>::Result>
+    where
+        FieldType!(): FieldMax,
+    {
+        AggregatedColumn {
+            sql: SelectAggregator::Max,
+            alias: "max",
+            field_access: PhantomData,
+            result: PhantomData,
+        }
+    }
+
+    /// Returns the minimum value of all values in the group.
+    /// If there are only null values in the group, this function will return null.
+    fn min() -> AggregatedColumn<Self, <FieldType!() as FieldMin>::Result>
+    where
+        FieldType!(): FieldMin,
+    {
+        AggregatedColumn {
+            sql: SelectAggregator::Min,
+            alias: "min",
+            field_access: PhantomData,
+            result: PhantomData,
+        }
     }
 }
 

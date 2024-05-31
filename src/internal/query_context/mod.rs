@@ -8,13 +8,13 @@ use std::fmt::Write;
 use rorm_db::sql::join_table::JoinType;
 use rorm_db::sql::ordering::Ordering;
 
-use crate::aggregate::AggregationFunc;
 use crate::conditions::{BinaryOperator, Condition, Value};
+use crate::crud::selector::AggregatedColumn;
 use crate::internal::field::Field;
 use crate::internal::query_context::flat_conditions::{FlatCondition, GetConditionError};
 use crate::internal::query_context::ids::PathId;
 use crate::internal::relation_path::{Path, PathField};
-use crate::Model;
+use crate::{FieldAccess, Model};
 
 pub mod flat_conditions;
 pub mod ids;
@@ -51,13 +51,17 @@ impl<'v> QueryContext<'v> {
     }
 
     /// Add a field to aggregate returning its index and alias
-    pub fn select_aggregation<A: AggregationFunc, F: Field, P: Path>(&mut self) -> (usize, String) {
+    pub fn select_aggregation<A: FieldAccess, R>(
+        &mut self,
+        column: AggregatedColumn<A, R>,
+    ) -> (usize, String) {
+        A::Path::add_to_context(self);
         let alias = format!("{}", NumberAsAZ(self.selects.len()));
         self.selects.push(Select {
-            table_name: PathId::of::<P>(),
-            column_name: F::NAME,
+            table_name: PathId::of::<A::Path>(),
+            column_name: A::Field::NAME,
             select_alias: alias.clone(),
-            aggregation: Some(A::SQL),
+            aggregation: Some(column.sql),
         });
         (self.selects.len() - 1, alias)
     }

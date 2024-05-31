@@ -2,7 +2,9 @@ use std::borrow::Cow;
 
 use crate::conditions::Value;
 use crate::db::sql::value::NullType;
-use crate::{impl_AsDbType, impl_FieldEq, impl_FieldOrd};
+use crate::{
+    impl_AsDbType, impl_FieldEq, impl_FieldMin_FieldMax, impl_FieldOrd, impl_FieldSum_FieldAvg,
+};
 
 impl_AsDbType!(bool, Bool, Value::Bool);
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, bool> for bool { Value::Bool });
@@ -15,6 +17,8 @@ impl_FieldOrd!(i16, i16, Value::I16);
 impl_FieldOrd!(Option<i16>, Option<i16>, |option: Self| option
     .map(Value::I16)
     .unwrap_or(Value::Null(NullType::I16)));
+impl_FieldSum_FieldAvg!(i16, sum_result: i64);
+impl_FieldMin_FieldMax!(i16);
 
 impl_AsDbType!(i32, I32, Value::I32);
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, i32> for i32 { Value::I32 });
@@ -23,6 +27,8 @@ impl_FieldOrd!(i32, i32, Value::I32);
 impl_FieldOrd!(Option<i32>, Option<i32>, |option: Self| option
     .map(Value::I32)
     .unwrap_or(Value::Null(NullType::I32)));
+impl_FieldSum_FieldAvg!(i32, sum_result: i64);
+impl_FieldMin_FieldMax!(i32);
 
 impl_AsDbType!(i64, I64, Value::I64);
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, i64> for i64 { Value::I64 });
@@ -31,6 +37,8 @@ impl_FieldOrd!(i64, i64, Value::I64);
 impl_FieldOrd!(Option<i64>, Option<i64>, |option: Self| option
     .map(Value::I64)
     .unwrap_or(Value::Null(NullType::I64)));
+impl_FieldSum_FieldAvg!(i64, sum_result: f64);
+impl_FieldMin_FieldMax!(i64);
 
 impl_AsDbType!(f32, F32, Value::F32);
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, f32> for f32 { Value::F32 });
@@ -39,6 +47,8 @@ impl_FieldOrd!(f32, f32, Value::F32);
 impl_FieldOrd!(Option<f32>, Option<f32>, |option: Self| option
     .map(Value::F32)
     .unwrap_or(Value::Null(NullType::F32)));
+impl_FieldSum_FieldAvg!(f32, sum_result: f32);
+impl_FieldMin_FieldMax!(f32);
 
 impl_AsDbType!(f64, F64, Value::F64);
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, f64> for f64 { Value::F64 });
@@ -47,6 +57,8 @@ impl_FieldOrd!(f64, f64, Value::F64);
 impl_FieldOrd!(Option<f64>, Option<f64>, |option: Self| option
     .map(Value::F64)
     .unwrap_or(Value::Null(NullType::F64)));
+impl_FieldSum_FieldAvg!(f64, sum_result: f64);
+impl_FieldMin_FieldMax!(f64);
 
 impl_AsDbType!(String, String, conv_string, conv_string);
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, &'rhs str> for String { conv_string });
@@ -61,6 +73,7 @@ impl_FieldOrd!(String, &'rhs str, conv_string);
 impl_FieldOrd!(String, &'rhs String, conv_string);
 impl_FieldOrd!(String, String, conv_string);
 impl_FieldOrd!(String, Cow<'rhs, str>, conv_string);
+impl_FieldMin_FieldMax!(String);
 fn conv_string<'a>(value: impl Into<Cow<'a, str>>) -> Value<'a> {
     Value::String(value.into())
 }

@@ -2,7 +2,7 @@ use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use rorm_db::sql::value::NullType;
 
 use crate::conditions::Value;
-use crate::{impl_AsDbType, impl_FieldEq, impl_FieldOrd};
+use crate::{impl_AsDbType, impl_FieldEq, impl_FieldMin_FieldMax, impl_FieldOrd};
 
 impl_AsDbType!(NaiveTime, ChronoNaiveTime, Value::ChronoNaiveTime);
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, NaiveTime> for NaiveTime { Value::ChronoNaiveTime });
@@ -11,6 +11,7 @@ impl_FieldOrd!(NaiveTime, NaiveTime, Value::ChronoNaiveTime);
 impl_FieldOrd!(Option<NaiveTime>, Option<NaiveTime>, |option: Self| option
     .map(Value::ChronoNaiveTime)
     .unwrap_or(Value::Null(NullType::ChronoNaiveTime)));
+impl_FieldMin_FieldMax!(NaiveTime);
 
 impl_AsDbType!(NaiveDate, ChronoNaiveDate, Value::ChronoNaiveDate);
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, NaiveDate> for NaiveDate { Value::ChronoNaiveDate });
@@ -19,6 +20,7 @@ impl_FieldOrd!(NaiveDate, NaiveDate, Value::ChronoNaiveDate);
 impl_FieldOrd!(Option<NaiveDate>, Option<NaiveDate>, |option: Self| option
     .map(Value::ChronoNaiveDate)
     .unwrap_or(Value::Null(NullType::ChronoNaiveDate)));
+impl_FieldMin_FieldMax!(NaiveDate);
 
 impl_AsDbType!(
     NaiveDateTime,
@@ -35,6 +37,7 @@ impl_FieldOrd!(
         .map(Value::ChronoNaiveDateTime)
         .unwrap_or(Value::Null(NullType::ChronoNaiveDateTime))
 );
+impl_FieldMin_FieldMax!(NaiveDateTime);
 
 impl_AsDbType!(DateTime<Utc>, ChronoDateTime, Value::ChronoDateTime);
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, DateTime<Utc>> for DateTime<Utc> { Value::ChronoDateTime });
@@ -47,3 +50,4 @@ impl_FieldOrd!(
         .map(Value::ChronoDateTime)
         .unwrap_or(Value::Null(NullType::ChronoDateTime))
 );
+impl_FieldMin_FieldMax!(DateTime<Utc>);

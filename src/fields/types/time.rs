@@ -2,7 +2,7 @@ use rorm_db::sql::value::NullType;
 use time::{Date, OffsetDateTime, PrimitiveDateTime, Time};
 
 use crate::conditions::Value;
-use crate::{impl_AsDbType, impl_FieldEq, impl_FieldOrd};
+use crate::{impl_AsDbType, impl_FieldEq, impl_FieldMin_FieldMax, impl_FieldOrd};
 
 impl_AsDbType!(Time, TimeTime, Value::TimeTime);
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, Time> for Time { Value::TimeTime });
@@ -11,6 +11,7 @@ impl_FieldOrd!(Time, Time, Value::TimeTime);
 impl_FieldOrd!(Option<Time>, Option<Time>, |option: Self| option
     .map(Value::TimeTime)
     .unwrap_or(Value::Null(NullType::TimeTime)));
+impl_FieldMin_FieldMax!(Time);
 
 impl_AsDbType!(Date, TimeDate, Value::TimeDate);
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, Date> for Date { Value::TimeDate });
@@ -19,6 +20,7 @@ impl_FieldOrd!(Date, Date, Value::TimeDate);
 impl_FieldOrd!(Option<Date>, Option<Date>, |option: Self| option
     .map(Value::TimeDate)
     .unwrap_or(Value::Null(NullType::TimeDate)));
+impl_FieldMin_FieldMax!(Date);
 
 impl_AsDbType!(
     OffsetDateTime,
@@ -35,6 +37,7 @@ impl_FieldOrd!(
         .map(Value::TimeOffsetDateTime)
         .unwrap_or(Value::Null(NullType::TimeOffsetDateTime))
 );
+impl_FieldMin_FieldMax!(OffsetDateTime);
 
 impl_AsDbType!(
     PrimitiveDateTime,
@@ -55,3 +58,4 @@ impl_FieldOrd!(
         .map(Value::TimePrimitiveDateTime)
         .unwrap_or(Value::Null(NullType::TimePrimitiveDateTime))
 );
+impl_FieldMin_FieldMax!(PrimitiveDateTime);

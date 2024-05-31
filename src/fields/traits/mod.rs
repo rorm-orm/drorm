@@ -2,6 +2,7 @@
 
 use rorm_db::sql::value::NullType;
 
+pub use self::aggregate::*;
 pub use self::cmp::*;
 use crate::conditions::Value;
 use crate::fields::utils::const_fn::ConstFn;
@@ -10,6 +11,7 @@ use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::hmr::annotations::Annotations;
 use crate::sealed;
 
+pub mod aggregate;
 pub mod cmp;
 
 /// Base trait for types which are allowed as fields in models

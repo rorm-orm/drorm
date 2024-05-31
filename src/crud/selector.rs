@@ -2,16 +2,17 @@
 
 use std::marker::PhantomData;
 
-use crate::aggregate::{AggregatedColumn, AggregationFunc};
+use rorm_db::row::DecodeOwned;
+use rorm_db::sql::aggregation::SelectAggregator;
+
 use crate::crud::decoder::{Decoder, DirectDecoder};
 use crate::fields::traits::FieldType;
-use crate::internal::field::as_db_type::AsDbType;
 use crate::internal::field::decoder::FieldDecoder;
-use crate::internal::field::{Field, FieldProxy, SingleColumnField};
+use crate::internal::field::{Field, FieldProxy};
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::{Path, PathField};
 use crate::model::{Model, PatchSelector};
-use crate::Patch;
+use crate::{FieldAccess, Patch};
 
 /// Something which "selects" a value from a certain table,
 /// by configuring a [`QueryContext`] and providing a [`Decoder`]
@@ -61,20 +62,26 @@ where
     }
 }
 
-impl<A, F, P> Selector for AggregatedColumn<A, F, P>
+/// A column to select and call an aggregation function on
+#[derive(Copy, Clone)]
+pub struct AggregatedColumn<A, R> {
+    pub(crate) sql: SelectAggregator,
+    pub(crate) alias: &'static str,
+    pub(crate) field_access: PhantomData<A>,
+    pub(crate) result: PhantomData<R>,
+}
+impl<A, R> Selector for AggregatedColumn<A, R>
 where
-    A: AggregationFunc,
-    F: SingleColumnField,
-    F::Type: AsDbType,
-    P: Path,
+    A: FieldAccess,
+    R: DecodeOwned,
 {
-    type Result = A::Result<<F::Type as AsDbType>::Primitive>;
-    type Model = P::Origin;
-    type Decoder = DirectDecoder<Self::Result>;
+    type Result = R;
+    type Model = <A::Path as Path>::Origin;
+    type Decoder = DirectDecoder<R>;
     const INSERT_COMPATIBLE: bool = false;
 
     fn select(self, ctx: &mut QueryContext) -> Self::Decoder {
-        let (index, column) = ctx.select_aggregation::<A, F, P>();
+        let (index, column) = ctx.select_aggregation(self);
         DirectDecoder {
             result: PhantomData,
             column,

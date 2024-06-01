@@ -172,9 +172,12 @@ pub trait ConstFn<Arg, Ret> {
 #[macro_export]
 macro_rules! const_fn {
     ($(#[$attr:meta])* $vis:vis fn $fun_name:ident($( $arg_name:tt : $arg_type:ty ),+ $(,)?) -> $ret_type:ty $body:block) => {
-        $(#[$attr])*
+        /// `ConstFn` version of
+        #[doc = concat!("[`", stringify!($fun_name), "`](fn@", stringify!($fun_name), ")")]
         #[allow(non_camel_case_types)]
         $vis struct $fun_name { phantom: ::core::marker::PhantomData<()> }
+
+        $(#[$attr])*
         $vis const fn $fun_name($( $arg_name : $arg_type ),*) -> $ret_type $body
         const _: () = {
             impl $crate::ConstFn<($($arg_type,)+), $ret_type> for $fun_name {
@@ -190,9 +193,12 @@ macro_rules! const_fn {
         };
     };
     ($(#[$attr:meta])* $vis:vis fn $fun_name:ident<const $gen_name:ident: $gen_type:ty> ($( $arg_name:tt : $arg_type:ty ),* $(,)?) -> $ret_type:ty $body:block) => {
-        $(#[$attr])*
+        /// `ConstFn` version of
+        #[doc = concat!("[`", stringify!($fun_name), "`](fn@", stringify!($fun_name), ")")]
         #[allow(non_camel_case_types)]
         $vis struct $fun_name<const $gen_name: $gen_type> { phantom: ::core::marker::PhantomData<()> }
+
+        $(#[$attr])*
         $vis const fn $fun_name<const $gen_name: $gen_type>($( $arg_name : $arg_type ),*) -> $ret_type $body
         const _: () = {
             impl<const $gen_name: $gen_type> $crate::ConstFn<($($arg_type,)*), $ret_type> for $fun_name<$gen_name> {
@@ -208,9 +214,12 @@ macro_rules! const_fn {
         };
     };
     ($(#[$attr:meta])* $vis:vis fn $fun_name:ident<$generic:ident $(: $bound:path)?> ($( $arg_name:tt : $arg_type:ty ),* $(,)?) -> $ret_type:ty $body:block) => {
-        $(#[$attr])*
+        /// `ConstFn` version of
+        #[doc = concat!("[`", stringify!($fun_name), "`](fn@", stringify!($fun_name), ")")]
         #[allow(non_camel_case_types)]
         $vis struct $fun_name<$generic $(:$bound)?> { phantom: ::core::marker::PhantomData<$generic> }
+
+        $(#[$attr])*
         $vis const fn $fun_name<$generic $(:$bound)?>($( $arg_name : $arg_type ),*) -> $ret_type $body
         const _: () = {
             impl<$generic $(:$bound)?> $crate::ConstFn<($($arg_type,)*), $ret_type> for $fun_name<$generic> {

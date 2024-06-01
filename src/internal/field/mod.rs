@@ -53,7 +53,6 @@ pub mod access;
 pub mod as_db_type;
 pub mod decoder;
 pub mod foreign_model;
-pub mod modifier;
 
 use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::internal::const_concat::ConstString;

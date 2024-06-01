@@ -87,5 +87,6 @@
 //! }
 //! ```
 
+pub mod const_fns;
 pub mod traits;
 pub mod types;

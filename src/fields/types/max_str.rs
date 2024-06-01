@@ -11,14 +11,12 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::conditions::Value;
 use crate::crud::decoder::Decoder;
+use crate::fields::const_fns::{merge_annotations, shared_linter_check, single_column_name};
 use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::fields::types::max_str_impl::{LenImpl, NumBytes};
 use crate::impl_FieldEq;
 use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
 use crate::internal::field::decoder::FieldDecoder;
-use crate::internal::field::modifier::{
-    merge_annotations, shared_linter_check, single_column_name,
-};
 use crate::internal::field::{Field, FieldProxy};
 use crate::internal::hmr;
 use crate::internal::hmr::annotations::{Annotations, MaxLength};

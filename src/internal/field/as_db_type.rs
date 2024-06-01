@@ -55,11 +55,11 @@ macro_rules! impl_AsDbType {
 
             type Decoder = $decoder;
 
-            type GetAnnotations = $crate::internal::field::modifier::set_null_annotations<1>;
+            type GetAnnotations = $crate::fields::const_fns::set_null_annotations;
 
             type Check = <$type as $crate::fields::traits::FieldType>::Check;
 
-            type GetNames = $crate::internal::field::modifier::single_column_name;
+            type GetNames = $crate::fields::const_fns::single_column_name;
         }
 
         impl $crate::internal::field::as_db_type::AsDbType for Option<$type> {
@@ -71,7 +71,7 @@ macro_rules! impl_AsDbType {
         impl_AsDbType!($type, $db_type, $into_value, |&value| $into_value(value));
     };
     ($type:ty, $db_type:ty, $into_value:expr, $as_value:expr) => {
-        impl_AsDbType!($type, $db_type, $into_value, $as_value, $crate::internal::field::modifier::shared_linter_check<1>);
+        impl_AsDbType!($type, $db_type, $into_value, $as_value, $crate::fields::const_fns::shared_linter_check<1>);
     };
     ($type:ty, $db_type:ty, $into_value:expr, $as_value:expr, $Check:ty) => {
         impl $crate::fields::traits::FieldType for $type {
@@ -96,11 +96,11 @@ macro_rules! impl_AsDbType {
 
             type Decoder = $crate::crud::decoder::DirectDecoder<Self>;
 
-            type GetAnnotations = $crate::internal::field::modifier::forward_annotations<1>;
+            type GetAnnotations = $crate::fields::const_fns::forward_annotations<1>;
 
             type Check = $Check;
 
-            type GetNames = $crate::internal::field::modifier::single_column_name;
+            type GetNames = $crate::fields::const_fns::single_column_name;
         }
 
         impl $crate::internal::field::as_db_type::AsDbType for $type {

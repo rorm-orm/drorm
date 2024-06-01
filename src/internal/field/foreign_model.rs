@@ -8,11 +8,11 @@ use rorm_declaration::imr;
 
 use crate::conditions::Value;
 use crate::crud::decoder::Decoder;
+use crate::fields::const_fns::single_column_name;
 use crate::fields::traits::{Array, FieldColumns};
 use crate::fields::types::ForeignModelByField;
 use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
 use crate::internal::field::decoder::FieldDecoder;
-use crate::internal::field::modifier::single_column_name;
 use crate::internal::field::{Field, FieldProxy, FieldType, SingleColumnField};
 use crate::internal::hmr;
 use crate::internal::hmr::annotations::Annotations;

@@ -4,11 +4,11 @@ use rorm_declaration::imr;
 use url::Url;
 
 use crate::conditions::Value;
-use crate::fields::traits::{Array, FieldColumns, FieldType};
-use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
-use crate::internal::field::modifier::{
+use crate::fields::const_fns::{
     forward_annotations, set_null_annotations, single_column_name, string_check,
 };
+use crate::fields::traits::{Array, FieldColumns, FieldType};
+use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
 use crate::internal::field::Field;
 use crate::internal::hmr;
 use crate::{impl_FieldEq, new_converting_decoder, Error};
@@ -73,7 +73,7 @@ impl FieldType for Option<Url> {
 
     type Decoder = OptionUrlDecoder;
 
-    type GetAnnotations = set_null_annotations<1>;
+    type GetAnnotations = set_null_annotations;
 
     type Check = string_check;
 

@@ -11,9 +11,9 @@ use rorm_declaration::imr;
 use crate::conditions::collections::CollectionOperator::Or;
 use crate::conditions::{Binary, BinaryOperator, Column, Condition, DynamicCollection, Value};
 use crate::crud::decoder::NoopDecoder;
+use crate::fields::const_fns::{forward_annotations, no_check, no_columns_names};
 use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::internal::field::foreign_model::{ForeignModelField, ForeignModelTrait};
-use crate::internal::field::modifier::{forward_annotations, no_check, no_columns_names};
 use crate::internal::field::{foreign_model, Field, FieldProxy, SingleColumnField};
 use crate::model::{GetField, Unrestricted};
 #[allow(unused_imports)] // clion needs this import to access Patch::field on a Model

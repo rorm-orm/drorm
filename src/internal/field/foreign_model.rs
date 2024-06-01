@@ -7,6 +7,7 @@ use rorm_declaration::imr;
 
 use crate::conditions::Value;
 use crate::crud::decoder::Decoder;
+use crate::fields::traits::{Array, FieldColumns};
 use crate::fields::types::ForeignModelByField;
 use crate::internal::field::as_db_type::AsDbType;
 use crate::internal::field::decoder::FieldDecoder;
@@ -30,23 +31,23 @@ where
     FF::Type: AsDbType,
     FF::Model: GetField<FF>, // always true
 {
-    type Columns<T> = [T; 1];
+    type Columns = Array<1>;
 
-    fn into_values(self) -> Self::Columns<Value<'static>> {
+    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         [FF::type_into_value(match self {
             ForeignModelByField::Key(value) => value,
             ForeignModelByField::Instance(model) => model.get_field(),
         })]
     }
 
-    fn as_values(&self) -> Self::Columns<Value<'_>> {
+    fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
         [FF::type_as_value(match self {
             ForeignModelByField::Key(value) => value,
             ForeignModelByField::Instance(model) => model.borrow_field(),
         })]
     }
 
-    fn get_imr<F: Field<Type = Self>>() -> Self::Columns<imr::Field> {
+    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
         [imr::Field {
             name: F::NAME.to_string(),
             db_type: <Self as ForeignModelTrait>::DbType::IMR,
@@ -75,16 +76,16 @@ where
     FF::Model: GetField<FF>, // always true
     Option<FF::Type>: AsDbType,
 {
-    type Columns<T> = [T; 1];
+    type Columns = Array<1>;
 
-    fn into_values(self) -> Self::Columns<Value<'static>> {
+    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         self.map(ForeignModelByField::into_values)
             .unwrap_or([Value::Null(
                 <<Option<FF::Type> as AsDbType>::DbType>::NULL_TYPE,
             )])
     }
 
-    fn as_values(&self) -> Self::Columns<Value<'_>> {
+    fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
         self.as_ref()
             .map(ForeignModelByField::as_values)
             .unwrap_or([Value::Null(
@@ -92,7 +93,7 @@ where
             )])
     }
 
-    fn get_imr<F: Field<Type = Self>>() -> Self::Columns<imr::Field> {
+    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
         [imr::Field {
             name: F::NAME.to_string(),
             db_type: <Self as ForeignModelTrait>::DbType::IMR,

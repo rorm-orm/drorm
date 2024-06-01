@@ -11,7 +11,7 @@ use rorm_declaration::imr;
 use crate::conditions::collections::CollectionOperator::Or;
 use crate::conditions::{Binary, BinaryOperator, Column, Condition, DynamicCollection, Value};
 use crate::crud::decoder::NoopDecoder;
-use crate::fields::traits::FieldType;
+use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::internal::field::foreign_model::{ForeignModelField, ForeignModelTrait};
 use crate::internal::field::modifier::{EraseAnnotations, NoCheck, NoColumnFromName};
 use crate::internal::field::{foreign_model, Field, FieldProxy, SingleColumnField};
@@ -41,17 +41,17 @@ impl<FMF: ForeignModelField> BackRef<FMF> {
 }
 
 impl<FMF: ForeignModelField> FieldType for BackRef<FMF> {
-    type Columns<T> = [T; 0];
+    type Columns = Array<0>;
 
-    fn into_values(self) -> Self::Columns<Value<'static>> {
+    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         []
     }
 
-    fn as_values(&self) -> Self::Columns<Value<'_>> {
+    fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
         []
     }
 
-    fn get_imr<F: Field<Type = Self>>() -> Self::Columns<imr::Field> {
+    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
         []
     }
 

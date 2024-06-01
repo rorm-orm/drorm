@@ -10,7 +10,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::conditions::Value;
 use crate::crud::decoder::Decoder;
-use crate::fields::traits::FieldType;
+use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::fields::types::max_str_impl::{LenImpl, NumBytes};
 use crate::impl_FieldEq;
 use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
@@ -182,17 +182,17 @@ impl<const MAX_LEN: usize, Impl> FieldType for MaxStr<MAX_LEN, Impl, String>
 where
     Impl: LenImpl + Default + 'static,
 {
-    type Columns<T> = [T; 1];
+    type Columns = Array<1>;
 
-    fn into_values(self) -> Self::Columns<Value<'static>> {
+    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         [Value::String(Cow::Owned(self.string))]
     }
 
-    fn as_values(&self) -> Self::Columns<Value<'_>> {
+    fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
         [Value::String(Cow::Borrowed(&self.string))]
     }
 
-    fn get_imr<F: Field<Type = Self>>() -> Self::Columns<imr::Field> {
+    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
         get_single_imr::<F>(imr::DbType::VarChar)
     }
 
@@ -247,9 +247,9 @@ impl<const MAX_LEN: usize, Impl> FieldType for Option<MaxStr<MAX_LEN, Impl, Stri
 where
     Impl: LenImpl + Default + 'static,
 {
-    type Columns<T> = [T; 1];
+    type Columns = Array<1>;
 
-    fn into_values(self) -> Self::Columns<Value<'static>> {
+    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         [if let Some(string) = self {
             Value::String(Cow::Owned(string.string))
         } else {
@@ -257,7 +257,7 @@ where
         }]
     }
 
-    fn as_values(&self) -> Self::Columns<Value<'_>> {
+    fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
         [if let Some(string) = self {
             Value::String(Cow::Borrowed(&string.string))
         } else {
@@ -265,7 +265,7 @@ where
         }]
     }
 
-    fn get_imr<F: Field<Type = Self>>() -> Self::Columns<imr::Field> {
+    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
         get_single_imr::<F>(imr::DbType::VarChar)
     }
 

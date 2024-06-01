@@ -53,8 +53,7 @@ pub mod decoder;
 pub mod foreign_model;
 pub mod modifier;
 
-use crate::fields::traits::FieldType;
-use crate::internal::array_utils::IntoArray;
+use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::internal::const_concat::ConstString;
 use crate::internal::field::modifier::{AnnotationsModifier, CheckModifier, ColumnsFromName};
 
@@ -110,15 +109,15 @@ pub trait SingleColumnField: Field {
 impl<F> SingleColumnField for F
 where
     F: Field,
-    for<'a> <F::Type as FieldType>::Columns<Value<'a>>: IntoArray<1>,
+    F::Type: FieldType<Columns = Array<1>>,
 {
     fn type_as_value(field: &Self::Type) -> Value {
-        let [value] = field.as_values().into_array();
+        let [value] = field.as_values();
         value
     }
 
     fn type_into_value(field: Self::Type) -> Value<'static> {
-        let [value] = field.into_values().into_array();
+        let [value] = field.into_values();
         value
     }
 }
@@ -189,7 +188,7 @@ impl<F: Field, P> FieldProxy<F, P> {
 }
 impl<F: Field, P> FieldProxy<F, P> {
     /// Get the names of the columns which store the field
-    pub const fn columns(_field: Self) -> <F::Type as FieldType>::Columns<&'static str> {
+    pub const fn columns(_field: Self) -> FieldColumns<F::Type, &'static str> {
         <F::Type as FieldType>::ColumnsFromName::<F>::COLUMNS
     }
 

@@ -8,7 +8,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::conditions::Value;
-use crate::fields::traits::FieldType;
+use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
 use crate::internal::field::modifier::{MergeAnnotations, SingleColumnCheck, SingleColumnFromName};
 use crate::internal::field::Field;
@@ -52,21 +52,21 @@ new_converting_decoder!(
     }
 );
 impl<T: Serialize + DeserializeOwned + 'static> FieldType for Json<T> {
-    type Columns<C> = [C; 1];
+    type Columns = Array<1>;
 
-    fn into_values(self) -> Self::Columns<Value<'static>> {
+    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         [Value::Binary(Cow::Owned(
             serde_json::to_vec(&self.0).unwrap(),
         ))] // TODO propagate error?
     }
 
-    fn as_values(&self) -> Self::Columns<Value<'_>> {
+    fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
         [Value::Binary(Cow::Owned(
             serde_json::to_vec(&self.0).unwrap(),
         ))] // TODO propagate error?
     }
 
-    fn get_imr<F: Field<Type = Self>>() -> Self::Columns<imr::Field> {
+    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
         get_single_imr::<F>(imr::DbType::Binary)
     }
 
@@ -96,20 +96,20 @@ new_converting_decoder!(
     }
 );
 impl<T: Serialize + DeserializeOwned + 'static> FieldType for Option<Json<T>> {
-    type Columns<C> = [C; 1];
+    type Columns = Array<1>;
 
-    fn into_values(self) -> Self::Columns<Value<'static>> {
+    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         self.map(Json::into_values)
             .unwrap_or([Value::Null(Binary::NULL_TYPE)])
     }
 
-    fn as_values(&self) -> Self::Columns<Value<'_>> {
+    fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
         self.as_ref()
             .map(Json::as_values)
             .unwrap_or([Value::Null(Binary::NULL_TYPE)])
     }
 
-    fn get_imr<F: Field<Type = Self>>() -> Self::Columns<imr::Field> {
+    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
         get_single_imr::<F>(imr::DbType::Binary)
     }
 

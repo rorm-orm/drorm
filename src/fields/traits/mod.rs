@@ -1,7 +1,6 @@
 //! Traits defining types which can be used as fields.
 
 use crate::conditions::Value;
-use crate::internal::array_utils::Array;
 use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::modifier::{AnnotationsModifier, CheckModifier, ColumnsFromName};
 use crate::internal::field::Field;
@@ -11,19 +10,21 @@ pub mod cmp;
 
 pub use cmp::*;
 
+use crate::sealed;
+
 /// Base trait for types which are allowed as fields in models
 pub trait FieldType: 'static {
     /// Array with length specific to the field type
-    type Columns<T>: Array<Item = T>;
+    type Columns: Columns;
 
     /// Construct an array of [`Value`] representing `self` in the database via ownership
-    fn into_values(self) -> Self::Columns<Value<'static>>;
+    fn into_values(self) -> FieldColumns<Self, Value<'static>>;
 
     /// Construct an array of [`Value`] representing `self` in the database via borrowing
-    fn as_values(&self) -> Self::Columns<Value<'_>>;
+    fn as_values(&self) -> FieldColumns<Self, Value<'_>>;
 
     /// Construct an array of [`imr::Field`] representing this type
-    fn get_imr<F: Field<Type = Self>>() -> Self::Columns<imr::Field>;
+    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field>;
 
     /// [`FieldDecoder`] to use for fields of this type
     type Decoder: FieldDecoder<Result = Self>;
@@ -42,4 +43,30 @@ pub trait FieldType: 'static {
 
     /// `const fn<F: Field>() -> Self::Columns<&'static str>`
     type ColumnsFromName<F: Field<Type = Self>>: ColumnsFromName<F>;
+}
+/// Shorthand for constructing an array with the length for the [`FieldType`]'s columns
+pub type FieldColumns<F, T> = <<F as FieldType>::Columns as Columns>::Array<T>;
+
+/// The trait for the [`FieldType`]'s `Columns` associated type.
+///
+/// It is implemented by [`Array`] and is equivalent to a fixed length.
+pub trait Columns {
+    sealed!(trait);
+
+    /// Array of length `NUM` to store columns' information in
+    type Array<T>: IntoIterator<Item = T>;
+
+    /// The number of columns
+    const NUM: usize;
+}
+
+/// Implementor of [`Columns`] used to specify the number of a [`FieldType`]'s columns
+pub struct Array<const N: usize>;
+
+impl<const N: usize> Columns for Array<N> {
+    sealed!(impl);
+
+    type Array<T> = [T; N];
+
+    const NUM: usize = N;
 }

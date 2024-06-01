@@ -2,7 +2,7 @@
 
 use std::marker::PhantomData;
 
-use crate::fields::traits::FieldType;
+use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::internal::const_concat::ConstString;
 use crate::internal::field::as_db_type::AsDbType;
 use crate::internal::field::Field;
@@ -121,23 +121,23 @@ impl<D: DbType, F: Field> CheckModifier<F> for SingleColumnCheck<D> {
 /// which is not definable using existing `Fn` traits.
 pub trait ColumnsFromName<F: Field> {
     /// The field's columns' names
-    const COLUMNS: <F::Type as FieldType>::Columns<&'static str>;
+    const COLUMNS: FieldColumns<F::Type, &'static str>;
 }
 
 /// [`ColumnsFromName`] for field types which map to no columns
 pub struct NoColumnFromName;
 impl<F: Field> ColumnsFromName<F> for NoColumnFromName
 where
-    F::Type: FieldType<Columns<&'static str> = [&'static str; 0]>,
+    F::Type: FieldType<Columns = Array<0>>,
 {
-    const COLUMNS: <F::Type as FieldType>::Columns<&'static str> = [];
+    const COLUMNS: FieldColumns<F::Type, &'static str> = [];
 }
 
 /// [`ColumnsFromName`] for field types which map to a single column
 pub struct SingleColumnFromName;
 impl<F: Field> ColumnsFromName<F> for SingleColumnFromName
 where
-    F::Type: FieldType<Columns<&'static str> = [&'static str; 1]>,
+    F::Type: FieldType<Columns = Array<1>>,
 {
-    const COLUMNS: <F::Type as FieldType>::Columns<&'static str> = [F::NAME];
+    const COLUMNS: FieldColumns<F::Type, &'static str> = [F::NAME];
 }

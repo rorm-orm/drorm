@@ -37,20 +37,20 @@ pub trait AsDbType: FieldType + Sized {
 macro_rules! impl_AsDbType {
     (Option<$type:ty>, $decoder:ty) => {
         impl $crate::fields::traits::FieldType for Option<$type> {
-            type Columns<T> = [T; 1];
+            type Columns = $crate::fields::traits::Array<1>;
 
-            fn into_values(self) -> Self::Columns<$crate::conditions::Value<'static>> {
+            fn into_values(self) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'static>> {
                 self.map(<$type>::into_values)
                     .unwrap_or([Value::Null(<<$type as $crate::internal::field::as_db_type::AsDbType>::DbType as $crate::internal::hmr::db_type::DbType>::NULL_TYPE)])
             }
 
-            fn as_values(&self) -> Self::Columns<$crate::conditions::Value<'_>> {
+            fn as_values(&self) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'_>> {
                 self.as_ref()
                     .map(<$type>::as_values)
                     .unwrap_or([Value::Null(<<$type as $crate::internal::field::as_db_type::AsDbType>::DbType as $crate::internal::hmr::db_type::DbType>::NULL_TYPE)])
             }
 
-            fn get_imr<F: $crate::internal::field::Field<Type = Self>>() -> Self::Columns<$crate::internal::imr::Field> {
+            fn get_imr<F: $crate::internal::field::Field<Type = Self>>() -> $crate::fields::traits::FieldColumns<Self, $crate::internal::imr::Field> {
                 $crate::internal::field::as_db_type::get_single_imr::<F>(
                     <<$type as $crate::internal::field::as_db_type::AsDbType>::DbType as $crate::internal::hmr::db_type::DbType>::IMR
                 )
@@ -85,20 +85,20 @@ macro_rules! impl_AsDbType {
     };
     ($type:ty, $db_type:ty, $into_value:expr, $as_value:expr) => {
         impl $crate::fields::traits::FieldType for $type {
-            type Columns<T> = [T; 1];
+            type Columns = $crate::fields::traits::Array<1>;
 
             #[inline(always)]
-            fn as_values(&self) -> Self::Columns<$crate::conditions::Value<'_>> {
+            fn as_values(&self) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'_>> {
                 #[allow(clippy::redundant_closure_call)] // clean way to pass code to a macro
                 [$as_value(self)]
             }
 
-            fn into_values(self) -> Self::Columns<$crate::conditions::Value<'static>> {
+            fn into_values(self) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'static>> {
                 #[allow(clippy::redundant_closure_call)] // clean way to pass code to a macro
                 [$into_value(self)]
             }
 
-            fn get_imr<F: $crate::internal::field::Field<Type = Self>>() -> Self::Columns<$crate::internal::imr::Field> {
+            fn get_imr<F: $crate::internal::field::Field<Type = Self>>() -> $crate::fields::traits::FieldColumns<Self, $crate::internal::imr::Field> {
                 $crate::internal::field::as_db_type::get_single_imr::<F>(
                     <$db_type as $crate::internal::hmr::db_type::DbType>::IMR
                 )

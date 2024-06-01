@@ -4,7 +4,7 @@ use rorm_declaration::imr;
 use url::Url;
 
 use crate::conditions::Value;
-use crate::fields::traits::FieldType;
+use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
 use crate::internal::field::modifier::{MergeAnnotations, SingleColumnCheck, SingleColumnFromName};
 use crate::internal::field::Field;
@@ -15,18 +15,18 @@ impl_FieldEq!(impl<'rhs> FieldEq<'rhs, &'rhs Url> for Url {|url: &'rhs Url| Valu
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, Url> for Url {|url: Url| Value::String(Cow::Owned(url.into()))});
 
 impl FieldType for Url {
-    type Columns<T> = [T; 1];
+    type Columns = Array<1>;
 
-    fn into_values(self) -> Self::Columns<Value<'static>> {
+    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         [Value::String(Cow::Owned(self.into()))]
     }
 
     #[inline(always)]
-    fn as_values(&self) -> Self::Columns<Value<'_>> {
+    fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
         [Value::String(Cow::Borrowed(self.as_str()))]
     }
 
-    fn get_imr<F: Field<Type = Self>>() -> Self::Columns<imr::Field> {
+    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
         get_single_imr::<F>(imr::DbType::VarChar)
     }
 
@@ -51,21 +51,21 @@ new_converting_decoder!(
 );
 
 impl FieldType for Option<Url> {
-    type Columns<T> = [T; 1];
+    type Columns = Array<1>;
 
-    fn into_values(self) -> Self::Columns<Value<'static>> {
+    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         self.map(<Url>::into_values).unwrap_or([Value::Null(
             <<Url as AsDbType>::DbType as hmr::db_type::DbType>::NULL_TYPE,
         )])
     }
 
-    fn as_values(&self) -> Self::Columns<Value<'_>> {
+    fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
         self.as_ref().map(<Url>::as_values).unwrap_or([Value::Null(
             <<Url as AsDbType>::DbType as hmr::db_type::DbType>::NULL_TYPE,
         )])
     }
 
-    fn get_imr<F: Field<Type = Self>>() -> Self::Columns<imr::Field> {
+    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
         get_single_imr::<F>(imr::DbType::VarChar)
     }
 

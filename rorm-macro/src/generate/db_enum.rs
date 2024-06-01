@@ -44,7 +44,7 @@ pub fn generate_db_enum(parsed: &ParsedDbEnum) -> TokenStream {
                 )
             }
 
-            type GetAnnotations = ::rorm::fields::utils::get_annotations::forward_annotations<1>;
+            type GetAnnotations = get_db_enum_annotations;
 
             type Check = ::rorm::fields::utils::check::shared_linter_check<1>;
 
@@ -66,16 +66,20 @@ pub fn generate_db_enum(parsed: &ParsedDbEnum) -> TokenStream {
             impl ::rorm::internal::field::as_db_type::AsDbType for #ident {
                 type Primitive = ::rorm::db::choice::Choice;
                 type DbType = ::rorm::internal::hmr::db_type::Choices;
-
-                const IMPLICIT: Option<::rorm::internal::hmr::annotations::Annotations> = Some({
-                    let mut annos = ::rorm::internal::hmr::annotations::Annotations::empty();
-                    annos.choices = Some(::rorm::internal::hmr::annotations::Choices(CHOICES));
-                    annos
-                });
             }
             ::rorm::impl_FieldEq!(impl<'rhs> FieldEq<'rhs, #ident> for #ident {
                 |value: #ident| { let [value] = <#ident as ::rorm::fields::traits::FieldType>::into_values(value); value }
             });
+
+            ::rorm::const_fn! {
+                pub fn get_db_enum_annotations(
+                    field: ::rorm::internal::hmr::annotations::Annotations
+                ) -> [::rorm::internal::hmr::annotations::Annotations; 1] {
+                    let mut field = field;
+                    field.choices = Some(::rorm::internal::hmr::annotations::Choices(CHOICES));
+                    [field]
+                }
+            }
         };
     }
 }

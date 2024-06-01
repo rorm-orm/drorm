@@ -3,7 +3,6 @@
 use rorm_db::sql::value::NullType;
 
 use super::AsImr;
-use crate::internal::hmr::annotations::AnnotationIndex;
 use crate::{imr, sealed};
 
 /// Trait to associate the type-level db types with their runtime db types
@@ -15,9 +14,6 @@ pub trait DbType: 'static {
 
     /// Type to pass to rorm-sql for null
     const NULL_TYPE: NullType;
-
-    /// Annotations required by this type
-    const REQUIRED: &'static [AnnotationIndex] = &[];
 }
 
 impl<T: DbType> AsImr for T {
@@ -29,7 +25,7 @@ impl<T: DbType> AsImr for T {
 }
 
 macro_rules! impl_db_types {
-        ($(#[doc = $doc:literal] $type:ident, $variant:ident, $(requires $required:expr, )?)*) => {
+        ($(#[doc = $doc:literal] $type:ident, $variant:ident,)*) => {
             $(
                 #[doc = $doc]
                 pub struct $type;
@@ -39,8 +35,6 @@ macro_rules! impl_db_types {
                     const IMR: imr::DbType = imr::DbType::$type;
 
                     const NULL_TYPE: NullType = NullType::$variant;
-
-                    $(const REQUIRED: &'static [AnnotationIndex] = &$required;)?
                 }
             )*
         };
@@ -50,7 +44,6 @@ impl_db_types!(
     /// Type level version of [`imr::DbType::VarChar`]
     VarChar,
     String,
-    requires[AnnotationIndex::MaxLength],
     /// Type level version of [`imr::DbType::Binary`]
     Binary,
     Binary,

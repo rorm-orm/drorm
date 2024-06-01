@@ -15,6 +15,7 @@ Since 0.6.3
 - changed name generation for join and column aliases
 - redesigned associated type `Columns` on trait `FieldType`
 - replace field modifiers with const fns
+- removed `AsDbType::IMPLICIT`
 
 Notes for publishing
 --------------------

@@ -189,6 +189,24 @@ macro_rules! const_fn {
             }
         };
     };
+    ($(#[$attr:meta])* $vis:vis fn $fun_name:ident<const $gen_name:ident: $gen_type:ty> ($( $arg_name:tt : $arg_type:ty ),* $(,)?) -> $ret_type:ty $body:block) => {
+        $(#[$attr])*
+        #[allow(non_camel_case_types)]
+        $vis struct $fun_name<const $gen_name: $gen_type> { phantom: ::core::marker::PhantomData<()> }
+        $vis const fn $fun_name<const $gen_name: $gen_type>($( $arg_name : $arg_type ),*) -> $ret_type $body
+        const _: () = {
+            impl<const $gen_name: $gen_type> $crate::ConstFn<($($arg_type,)*), $ret_type> for $fun_name<$gen_name> {
+                type Body<Arg: $crate::Contains<($($arg_type,)*)>> = Body<Arg, $gen_name>;
+            }
+            $vis struct Body<Arg: $crate::Contains<($($arg_type,)*)>, const $gen_name: $gen_type>(::std::marker::PhantomData<Arg>);
+            impl<Arg: $crate::Contains<($($arg_type,)*)>, const $gen_name: $gen_type> $crate::Contains<$ret_type> for Body<Arg, $gen_name> {
+                const ITEM: $ret_type = {
+                    let ($($arg_name,)*) = Arg::ITEM;
+                    $fun_name::<$gen_name>($($arg_name,)*)
+                };
+            }
+        };
+    };
     ($(#[$attr:meta])* $vis:vis fn $fun_name:ident<$generic:ident $(: $bound:path)?> ($( $arg_name:tt : $arg_type:ty ),* $(,)?) -> $ret_type:ty $body:block) => {
         $(#[$attr])*
         #[allow(non_camel_case_types)]

@@ -21,6 +21,21 @@ const_fn! {
     }
 }
 
+const_fn! {
+    fn sum<const N: usize>(numbers: [i32; N]) -> i32 {
+        let mut total = 0;
+
+        let mut slices = numbers.as_slice();
+        while let [number, tail @ ..] = slices {
+            slices = tail;
+
+            total = total + *number;
+        }
+
+        total
+    }
+}
+
 fn main() {
     type One = I32<1>;
     type Two = I32<2>;

@@ -2,14 +2,16 @@
 
 use crate::conditions::Value;
 use crate::internal::field::decoder::FieldDecoder;
-use crate::internal::field::modifier::{AnnotationsModifier, CheckModifier, ColumnsFromName};
 use crate::internal::field::Field;
 use crate::internal::imr;
 
 pub mod cmp;
 
 pub use cmp::*;
+use fancy_const::ConstFn;
 
+use crate::internal::const_concat::ConstString;
+use crate::internal::hmr::annotations::Annotations;
 use crate::sealed;
 
 /// Base trait for types which are allowed as fields in models
@@ -29,20 +31,20 @@ pub trait FieldType: 'static {
     /// [`FieldDecoder`] to use for fields of this type
     type Decoder: FieldDecoder<Result = Self>;
 
-    /// `const fn<F: Field>() -> Option<Annotations>`
-    /// to allow modifying the a field's annotations which is of this type
-    ///
-    /// For example can be used to set `nullable` implicitly for `Option<_>`.
-    type AnnotationsModifier<F: Field<Type = Self>>: AnnotationsModifier<F>;
+    /// Get the columns' names from the field's name
+    type GetNames: ConstFn<(&'static str,), FieldColumns<Self, &'static str>>;
 
-    /// `const fn<F: Field>() -> Result<(), &'static str>`
-    /// to allow custom compile time checks.
-    ///
-    /// For example can be used to ensure `String` has a `max_lenght`.
-    type CheckModifier<F: Field<Type = Self>>: CheckModifier<F>;
+    /// Get the columns' annotations from the field's annotations
+    type GetAnnotations: ConstFn<(Annotations,), FieldColumns<Self, Annotations>>;
 
-    /// `const fn<F: Field>() -> Self::Columns<&'static str>`
-    type ColumnsFromName<F: Field<Type = Self>>: ColumnsFromName<F>;
+    /// Check a field's annotations to be compatible with this type
+    ///
+    /// The function gets the annotations explicitly set by the model author
+    /// as well as the result from [`FieldType::GetAnnotations`].
+    type Check: ConstFn<
+        (Annotations, FieldColumns<Self, Annotations>),
+        Result<(), ConstString<1024>>,
+    >;
 }
 /// Shorthand for constructing an array with the length for the [`FieldType`]'s columns
 pub type FieldColumns<F, T> = <<F as FieldType>::Columns as Columns>::Array<T>;

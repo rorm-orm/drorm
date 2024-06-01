@@ -41,6 +41,8 @@
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 
+use fancy_const::{ConstFn, Contains};
+
 use crate::conditions::Value;
 use crate::internal::hmr::annotations::Annotations;
 use crate::internal::hmr::Source;
@@ -55,7 +57,6 @@ pub mod modifier;
 
 use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::internal::const_concat::ConstString;
-use crate::internal::field::modifier::{AnnotationsModifier, CheckModifier, ColumnsFromName};
 
 /// This trait is implemented by the `#[derive(Model)]` macro on unique unit struct for each of a model's fields.
 ///
@@ -78,15 +79,11 @@ pub trait Field: 'static + Copy {
     /// List of annotations which were set by the user
     const EXPLICIT_ANNOTATIONS: Annotations;
 
-    /// List of annotations which are passed to db, if this field is a single column
-    const EFFECTIVE_ANNOTATIONS: Option<Annotations> =
-        { <Self::Type as FieldType>::AnnotationsModifier::<Self>::MODIFIED };
-
-    /// Compile time check and it error message
-    ///
-    /// The const is accessed and reported in the `#[derive(Model)]`.
-    const CHECK: Result<(), ConstString<1024>> =
-        <Self::Type as FieldType>::CheckModifier::<Self>::RESULT;
+    /// List of annotations which are passed to db
+    const EFFECTIVE_ANNOTATIONS: FieldColumns<Self::Type, Annotations> =
+        <<<Self::Type as FieldType>::GetAnnotations as ConstFn<_, _>>::Body<(
+            contains::ExplicitAnnotations<Self>,
+        )> as Contains<_>>::ITEM;
 
     /// Optional definition of the location of field in the source code
     const SOURCE: Option<Source>;
@@ -98,8 +95,21 @@ pub trait Field: 'static + Copy {
     fn new() -> Self;
 }
 
+/// Check a [`Field`] for correctness by evaluating its [`FieldType`]'s `Check`
+///
+/// This function is called and its error reported by the `#[derive(Model)]` macro.
+pub const fn check<F: Field>() -> Result<(), ConstString<1024>> {
+    <<<F::Type as FieldType>::Check as ConstFn<_, _>>::Body<(
+        contains::ExplicitAnnotations<F>,
+        contains::EffectiveAnnotations<F>,
+    )> as Contains<_>>::ITEM
+}
+
 /// A field which is stored in db via a single column
 pub trait SingleColumnField: Field {
+    /// The annotations which are passed to db
+    const EFFECTIVE_ANNOTATION: Annotations;
+
     /// Borrow an instance of the field's type as a [`Value`]
     fn type_as_value(field: &Self::Type) -> Value;
 
@@ -111,6 +121,11 @@ where
     F: Field,
     F::Type: FieldType<Columns = Array<1>>,
 {
+    const EFFECTIVE_ANNOTATION: Annotations = {
+        let [annos] = Self::EFFECTIVE_ANNOTATIONS;
+        annos
+    };
+
     fn type_as_value(field: &Self::Type) -> Value {
         let [value] = field.as_values();
         value
@@ -189,7 +204,9 @@ impl<F: Field, P> FieldProxy<F, P> {
 impl<F: Field, P> FieldProxy<F, P> {
     /// Get the names of the columns which store the field
     pub const fn columns(_field: Self) -> FieldColumns<F::Type, &'static str> {
-        <F::Type as FieldType>::ColumnsFromName::<F>::COLUMNS
+        <<<F::Type as FieldType>::GetNames as ConstFn<_, _>>::Body<(contains::Name<F>,)> as Contains<
+            _,
+        >>::ITEM
     }
 
     /// Get the underlying field to call its methods
@@ -233,4 +250,33 @@ where
     P: Path<Current = <F::ParentField as Field>::Model>,
 {
     type Target = <<F::ChildField as Field>::Model as Model>::Fields<P::Step<F>>;
+}
+
+/// Helper structs implementing [`Contains`] to expose
+/// - [`Field::NAME`]
+/// - [`Field::EXPLICIT_ANNOTATIONS`]
+/// - [`Field::EFFECTIVE_ANNOTATIONS`]
+mod contains {
+    use std::marker::PhantomData;
+
+    use fancy_const::Contains;
+
+    use crate::fields::traits::FieldColumns;
+    use crate::internal::field::Field;
+    use crate::internal::hmr::annotations::Annotations;
+
+    pub struct ExplicitAnnotations<F: Field>(PhantomData<F>);
+    impl<F: Field> Contains<Annotations> for ExplicitAnnotations<F> {
+        const ITEM: Annotations = F::EXPLICIT_ANNOTATIONS;
+    }
+
+    pub struct EffectiveAnnotations<F: Field>(PhantomData<F>);
+    impl<F: Field> Contains<FieldColumns<F::Type, Annotations>> for EffectiveAnnotations<F> {
+        const ITEM: FieldColumns<F::Type, Annotations> = F::EFFECTIVE_ANNOTATIONS;
+    }
+
+    pub struct Name<F: Field>(PhantomData<F>);
+    impl<F: Field> Contains<&'static str> for Name<F> {
+        const ITEM: &'static str = F::NAME;
+    }
 }

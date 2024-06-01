@@ -10,7 +10,9 @@ use serde::Serialize;
 use crate::conditions::Value;
 use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
-use crate::internal::field::modifier::{MergeAnnotations, SingleColumnCheck, SingleColumnFromName};
+use crate::internal::field::modifier::{
+    forward_annotations, set_null_annotations, shared_linter_check, single_column_name,
+};
 use crate::internal::field::Field;
 use crate::internal::hmr::db_type::{Binary, DbType};
 use crate::new_converting_decoder;
@@ -72,11 +74,11 @@ impl<T: Serialize + DeserializeOwned + 'static> FieldType for Json<T> {
 
     type Decoder = JsonDecoder<T>;
 
-    type AnnotationsModifier<F: Field<Type = Self>> = MergeAnnotations<Self>;
+    type GetAnnotations = forward_annotations<1>;
 
-    type CheckModifier<F: Field<Type = Self>> = SingleColumnCheck<Binary>;
+    type Check = shared_linter_check<1>;
 
-    type ColumnsFromName<F: Field<Type = Self>> = SingleColumnFromName;
+    type GetNames = single_column_name;
 }
 impl<T: Serialize + DeserializeOwned + 'static> AsDbType for Json<T> {
     type Primitive = Vec<u8>;
@@ -115,11 +117,11 @@ impl<T: Serialize + DeserializeOwned + 'static> FieldType for Option<Json<T>> {
 
     type Decoder = OptionJsonDecoder<T>;
 
-    type AnnotationsModifier<F: Field<Type = Self>> = MergeAnnotations<Self>;
+    type GetAnnotations = set_null_annotations<1>;
 
-    type CheckModifier<F: Field<Type = Self>> = SingleColumnCheck<Binary>;
+    type Check = shared_linter_check<1>;
 
-    type ColumnsFromName<F: Field<Type = Self>> = SingleColumnFromName;
+    type GetNames = single_column_name;
 }
 impl<T: Serialize + DeserializeOwned + 'static> AsDbType for Option<Json<T>> {
     type Primitive = Option<Vec<u8>>;

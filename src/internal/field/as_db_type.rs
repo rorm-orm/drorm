@@ -3,6 +3,7 @@
 use rorm_db::row::DecodeOwned;
 use rorm_declaration::imr;
 
+use crate::fields::traits::Array;
 use crate::internal::field::{Field, FieldType};
 use crate::internal::hmr::annotations::Annotations;
 use crate::internal::hmr::db_type::DbType;
@@ -58,11 +59,11 @@ macro_rules! impl_AsDbType {
 
             type Decoder = $decoder;
 
-            type AnnotationsModifier<F: $crate::internal::field::Field<Type = Self>> = $crate::internal::field::modifier::MergeAnnotations<Self>;
+            type GetAnnotations = $crate::internal::field::modifier::set_null_annotations<1>;
 
-            type CheckModifier<F: $crate::internal::field::Field<Type = Self>> = $crate::internal::field::modifier::SingleColumnCheck<<$type as $crate::internal::field::as_db_type::AsDbType>::DbType>;
+            type Check = <$type as $crate::fields::traits::FieldType>::Check;
 
-            type ColumnsFromName<F: $crate::internal::field::Field<Type = Self>> = $crate::internal::field::modifier::SingleColumnFromName;
+            type GetNames = $crate::internal::field::modifier::single_column_name;
         }
 
         impl $crate::internal::field::as_db_type::AsDbType for Option<$type> {
@@ -84,6 +85,9 @@ macro_rules! impl_AsDbType {
         impl_AsDbType!($type, $db_type, $into_value, |&value| $into_value(value));
     };
     ($type:ty, $db_type:ty, $into_value:expr, $as_value:expr) => {
+        impl_AsDbType!($type, $db_type, $into_value, $as_value, $crate::internal::field::modifier::shared_linter_check<1>);
+    };
+    ($type:ty, $db_type:ty, $into_value:expr, $as_value:expr, $Check:ty) => {
         impl $crate::fields::traits::FieldType for $type {
             type Columns = $crate::fields::traits::Array<1>;
 
@@ -106,11 +110,11 @@ macro_rules! impl_AsDbType {
 
             type Decoder = $crate::crud::decoder::DirectDecoder<Self>;
 
-            type AnnotationsModifier<F: $crate::internal::field::Field<Type = Self>> = $crate::internal::field::modifier::MergeAnnotations<Self>;
+            type GetAnnotations = $crate::internal::field::modifier::forward_annotations<1>;
 
-            type CheckModifier<F: $crate::internal::field::Field<Type = Self>> = $crate::internal::field::modifier::SingleColumnCheck<$db_type>;
+            type Check = $Check;
 
-            type ColumnsFromName<F: $crate::internal::field::Field<Type = Self>> = $crate::internal::field::modifier::SingleColumnFromName;
+            type GetNames = $crate::internal::field::modifier::single_column_name;
         }
 
         impl $crate::internal::field::as_db_type::AsDbType for $type {
@@ -124,13 +128,15 @@ macro_rules! impl_AsDbType {
 }
 
 /// Default implementation of [`FieldType::get_imr`] for field with a single column
-pub fn get_single_imr<F: Field>(db_type: imr::DbType) -> [imr::Field; 1] {
+pub fn get_single_imr<F>(db_type: imr::DbType) -> [imr::Field; 1]
+where
+    F: Field,
+    F::Type: FieldType<Columns = Array<1>>,
+{
     [imr::Field {
         name: F::NAME.to_string(),
         db_type,
-        annotations: F::EFFECTIVE_ANNOTATIONS
-            .unwrap_or_else(Annotations::empty)
-            .as_imr(),
+        annotations: F::EFFECTIVE_ANNOTATIONS[0].as_imr(),
         source_defined_at: F::SOURCE.map(|s| s.as_imr()),
     }]
 }

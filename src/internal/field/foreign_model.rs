@@ -2,6 +2,7 @@
 
 use std::marker::PhantomData;
 
+use fancy_const::const_fn;
 use rorm_db::{Error, Row};
 use rorm_declaration::imr;
 
@@ -9,16 +10,14 @@ use crate::conditions::Value;
 use crate::crud::decoder::Decoder;
 use crate::fields::traits::{Array, FieldColumns};
 use crate::fields::types::ForeignModelByField;
-use crate::internal::field::as_db_type::AsDbType;
+use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
 use crate::internal::field::decoder::FieldDecoder;
-use crate::internal::field::modifier::{
-    AnnotationsModifier, SingleColumnCheck, SingleColumnFromName,
-};
+use crate::internal::field::modifier::single_column_name;
 use crate::internal::field::{Field, FieldProxy, FieldType, SingleColumnField};
 use crate::internal::hmr;
 use crate::internal::hmr::annotations::Annotations;
 use crate::internal::hmr::db_type::DbType;
-use crate::internal::hmr::{AsImr, Source};
+use crate::internal::hmr::Source;
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
 use crate::model::{GetField, Model};
@@ -29,6 +28,7 @@ where
     Self: ForeignModelTrait,
     FF: SingleColumnField,
     FF::Type: AsDbType,
+    FF::Type: FieldType<Columns = Array<1>>,
     FF::Model: GetField<FF>, // always true
 {
     type Columns = Array<1>;
@@ -48,24 +48,16 @@ where
     }
 
     fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
-        [imr::Field {
-            name: F::NAME.to_string(),
-            db_type: <Self as ForeignModelTrait>::DbType::IMR,
-            annotations: F::EFFECTIVE_ANNOTATIONS
-                .unwrap_or_else(Annotations::empty)
-                .as_imr(),
-            source_defined_at: F::SOURCE.map(|s| s.as_imr()),
-        }]
+        get_single_imr::<F>(<Self as ForeignModelTrait>::DbType::IMR)
     }
 
     type Decoder = ForeignModelByFieldDecoder<FF>;
 
-    type AnnotationsModifier<F: Field<Type = Self>> = ForeignAnnotations<Self>;
+    type GetAnnotations = foreign_annotations<Self>;
 
-    type CheckModifier<F: Field<Type = Self>> =
-        SingleColumnCheck<<Self as ForeignModelTrait>::DbType>;
+    type Check = <FF::Type as FieldType>::Check;
 
-    type ColumnsFromName<F: Field<Type = Self>> = SingleColumnFromName;
+    type GetNames = single_column_name;
 }
 
 impl<FF> FieldType for Option<ForeignModelByField<FF>>
@@ -73,6 +65,7 @@ where
     Self: ForeignModelTrait,
     FF: SingleColumnField,
     FF::Type: AsDbType,
+    FF::Type: FieldType<Columns = Array<1>>,
     FF::Model: GetField<FF>, // always true
     Option<FF::Type>: AsDbType,
 {
@@ -94,24 +87,16 @@ where
     }
 
     fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
-        [imr::Field {
-            name: F::NAME.to_string(),
-            db_type: <Self as ForeignModelTrait>::DbType::IMR,
-            annotations: F::EFFECTIVE_ANNOTATIONS
-                .unwrap_or_else(Annotations::empty)
-                .as_imr(),
-            source_defined_at: F::SOURCE.map(|s| s.as_imr()),
-        }]
+        get_single_imr::<F>(<Self as ForeignModelTrait>::DbType::IMR)
     }
 
     type Decoder = OptionForeignModelByFieldDecoder<FF>;
 
-    type AnnotationsModifier<F: Field<Type = Self>> = ForeignAnnotations<Self>;
+    type GetAnnotations = foreign_annotations<Self>;
 
-    type CheckModifier<F: Field<Type = Self>> =
-        SingleColumnCheck<<Self as ForeignModelTrait>::DbType>;
+    type Check = <FF::Type as FieldType>::Check;
 
-    type ColumnsFromName<F: Field<Type = Self>> = SingleColumnFromName;
+    type GetNames = single_column_name;
 }
 
 #[doc(hidden)]
@@ -164,26 +149,23 @@ where
     }
 }
 
-/// [`AnnotationsModifier`] which:
-/// - sets `nullable`
-/// - copies `max_length` from the foreign key
-/// - sets `foreign`
-pub struct ForeignAnnotations<T: ForeignModelTrait>(pub PhantomData<T>);
-impl<T: ForeignModelTrait, F: Field<Type = T>> AnnotationsModifier<F> for ForeignAnnotations<T> {
-    const MODIFIED: Option<Annotations> = {
-        let mut annos = F::EXPLICIT_ANNOTATIONS;
+const_fn! {
+    /// - sets `nullable`
+    /// - copies `max_length` from the foreign key
+    /// - sets `foreign`
+    pub fn foreign_annotations<T: ForeignModelTrait>(field: Annotations) -> [Annotations; 1] {
+        let mut annos = field;
         annos.nullable = T::IS_OPTION;
         if annos.max_length.is_none() {
-            if let Some(target_annos) = <RF<F> as Field>::EFFECTIVE_ANNOTATIONS {
-                annos.max_length = target_annos.max_length;
-            }
+            let target_annos = <T::RelatedField as SingleColumnField>::EFFECTIVE_ANNOTATION;
+            annos.max_length = target_annos.max_length;
         }
         annos.foreign = Some(hmr::annotations::ForeignKey {
-            table_name: <RF<F> as Field>::Model::TABLE,
-            column_name: <RF<F> as Field>::NAME,
+            table_name: <T::RelatedField as Field>::Model::TABLE,
+            column_name: <T::RelatedField as Field>::NAME,
         });
-        Some(annos)
-    };
+        [annos]
+    }
 }
 
 /// Marker trait without actual bounds for fields of type foreign model
@@ -298,6 +280,7 @@ impl_FieldEq!(
     where
         FF: SingleColumnField,
         FF::Type: AsDbType,
+        FF::Type: FieldType<Columns = Array<1>>,
         FF::Model: GetField<FF>, // always true
     { <FF as SingleColumnField>::type_into_value }
 );
@@ -306,6 +289,7 @@ impl_FieldEq!(
     where
         FF: SingleColumnField,
         FF::Type: AsDbType,
+        FF::Type: FieldType<Columns = Array<1>>,
         Option<FF::Type>: AsDbType,
         FF::Model: GetField<FF>, // always true
     { <FF as SingleColumnField>::type_into_value }
@@ -316,6 +300,7 @@ impl_FieldEq!(
     where
         FF: SingleColumnField,
         FF::Type: AsDbType,
+        FF::Type: FieldType<Columns = Array<1>>,
         FF::Model: GetField<FF>, // always true
     { <FF as SingleColumnField>::type_as_value }
 );
@@ -324,6 +309,7 @@ impl_FieldEq!(
     where
         FF: SingleColumnField,
         FF::Type: AsDbType,
+        FF::Type: FieldType<Columns = Array<1>>,
         Option<FF::Type>: AsDbType,
         FF::Model: GetField<FF>, // always true
     { <FF as SingleColumnField>::type_as_value }

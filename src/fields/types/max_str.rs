@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::marker::PhantomData;
 use std::ops::Deref;
 
+use fancy_const::Contains;
 use rorm_db::sql::value::NullType;
 use rorm_db::{Error, Row};
 use rorm_declaration::imr;
@@ -15,7 +16,9 @@ use crate::fields::types::max_str_impl::{LenImpl, NumBytes};
 use crate::impl_FieldEq;
 use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
 use crate::internal::field::decoder::FieldDecoder;
-use crate::internal::field::modifier::{MergeAnnotations, SingleColumnCheck, SingleColumnFromName};
+use crate::internal::field::modifier::{
+    merge_annotations, shared_linter_check, single_column_name,
+};
 use crate::internal::field::{Field, FieldProxy};
 use crate::internal::hmr;
 use crate::internal::hmr::annotations::{Annotations, MaxLength};
@@ -197,9 +200,9 @@ where
     }
 
     type Decoder = MaxStrDecoder<MAX_LEN, Impl>;
-    type AnnotationsModifier<F: Field<Type = Self>> = MergeAnnotations<Self>;
-    type CheckModifier<F: Field<Type = Self>> = SingleColumnCheck<hmr::db_type::VarChar>;
-    type ColumnsFromName<F: Field<Type = Self>> = SingleColumnFromName;
+    type GetAnnotations = merge_annotations<ImplicitMaxLength<MAX_LEN>>;
+    type Check = shared_linter_check<1>;
+    type GetNames = single_column_name;
 }
 
 pub struct MaxStrDecoder<const MAX_LEN: usize, Impl: LenImpl> {
@@ -270,9 +273,9 @@ where
     }
 
     type Decoder = OptionMaxStrDecoder<MAX_LEN, Impl>;
-    type AnnotationsModifier<F: Field<Type = Self>> = MergeAnnotations<Self>;
-    type CheckModifier<F: Field<Type = Self>> = SingleColumnCheck<hmr::db_type::VarChar>;
-    type ColumnsFromName<F: Field<Type = Self>> = SingleColumnFromName;
+    type GetAnnotations = merge_annotations<ImplicitMaxLengthAndNullable<MAX_LEN>>;
+    type Check = shared_linter_check<1>;
+    type GetNames = single_column_name;
 }
 
 pub struct OptionMaxStrDecoder<const MAX_LEN: usize, Impl: LenImpl> {
@@ -304,6 +307,26 @@ where
             })
             .transpose()
     }
+}
+
+/// Type passed to [`merge_annotations`] to set the `max_length` annotation;
+pub struct ImplicitMaxLength<const MAX_LEN: usize>;
+impl<const MAX_LEN: usize> Contains<Annotations> for ImplicitMaxLength<MAX_LEN> {
+    const ITEM: Annotations = {
+        let mut annos = Annotations::empty();
+        annos.max_length = Some(MaxLength(MAX_LEN as i32));
+        annos
+    };
+}
+/// Type passed to [`merge_annotations`] to set the `max_length` and `nullable` annotation;
+pub struct ImplicitMaxLengthAndNullable<const MAX_LEN: usize>;
+impl<const MAX_LEN: usize> Contains<Annotations> for ImplicitMaxLengthAndNullable<MAX_LEN> {
+    const ITEM: Annotations = {
+        let mut annos = Annotations::empty();
+        annos.max_length = Some(MaxLength(MAX_LEN as i32));
+        annos.nullable = true;
+        annos
+    };
 }
 
 impl<const MAX_LEN: usize, Impl> FieldDecoder for OptionMaxStrDecoder<MAX_LEN, Impl>

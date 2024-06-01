@@ -12,6 +12,7 @@ use crate::conditions::Value;
 use crate::crud::decoder::Decoder;
 use crate::fields::traits::FieldType;
 use crate::fields::types::max_str_impl::{LenImpl, NumBytes};
+use crate::impl_FieldEq;
 use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
 use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::modifier::{MergeAnnotations, SingleColumnCheck, SingleColumnFromName};
@@ -321,6 +322,18 @@ where
             generics: PhantomData,
         }
     }
+}
+
+impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, &'rhs str> for MaxStr<MAX_LEN, Impl> { conv_string });
+impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, &'rhs String> for MaxStr<MAX_LEN, Impl> { conv_string });
+impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, String> for MaxStr<MAX_LEN, Impl> { conv_string });
+impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Cow<'rhs, str>> for MaxStr<MAX_LEN, Impl> { conv_string });
+impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Option<&'rhs str>> for Option<MaxStr<MAX_LEN, Impl>> { |option: Option<_>| option.map(conv_string).unwrap_or(Value::Null(NullType::String)) });
+impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Option<&'rhs String>> for Option<MaxStr<MAX_LEN, Impl>> { |option: Option<_>| option.map(conv_string).unwrap_or(Value::Null(NullType::String)) });
+impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Option<String>> for Option<MaxStr<MAX_LEN, Impl>> { |option: Option<_>| option.map(conv_string).unwrap_or(Value::Null(NullType::String)) });
+impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Option<Cow<'rhs, str>>> for Option<MaxStr<MAX_LEN, Impl>> { |option: Option<_>| option.map(conv_string).unwrap_or(Value::Null(NullType::String)) });
+fn conv_string<'a>(value: impl Into<Cow<'a, str>>) -> Value<'a> {
+    Value::String(value.into())
 }
 
 #[cfg(feature = "utoipa")]

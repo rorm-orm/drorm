@@ -107,9 +107,11 @@ pub trait FieldRegexp<'rhs, Rhs: 'rhs, Any = ()>: FieldType {
 #[allow(non_snake_case)] // makes it clearer that a trait and which trait is meant
 #[macro_export]
 macro_rules! impl_FieldEq {
-    (impl<'rhs $(, $($generics:ident),+)?> FieldEq<'rhs, $rhs:ty $(, $any:ty)?> for $lhs:ty $(where $( $bound_left:path : $bound_right:path ,)*)? { $into_value:expr }) => {
-        impl<'rhs $(, $($generics),+)?> $crate::fields::traits::cmp::FieldEq<'rhs, $rhs $(, $any)?> for $lhs
-        $(where $( $bound_left : $bound_right ,)*)?
+    (impl<'rhs $(, $generic:ident $( $const_name:ident : $const_type:ty )?)*> FieldEq<'rhs, $rhs:ty $(, $any:ty)?> for $lhs:ty $(where $( $bound_left:path : $bound_right:path ,)*)? { $into_value:expr }) => {
+        impl<'rhs $(, $generic $($const_name : $const_type)?)*> $crate::fields::traits::cmp::FieldEq<'rhs, $rhs $(, $any)?> for $lhs
+        where
+            $lhs: $crate::fields::traits::FieldType,
+            $($( $bound_left : $bound_right ,)*)?
         {
             type EqCond<A: $crate::FieldAccess> = $crate::conditions::Binary<$crate::conditions::Column<A>, $crate::conditions::Value<'rhs>>;
             fn field_equals<A: $crate::FieldAccess>(access: A, value: $rhs) -> Self::EqCond<A> {

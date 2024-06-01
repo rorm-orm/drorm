@@ -45,9 +45,26 @@ const_fn! {
 }
 
 const_fn! {
-    /// [`FieldType::Check`] which does nothing.
-    pub fn no_check<const N: usize>(_field: Annotations, _columns: [Annotations; N]) -> Result<(), ConstString<1024>> {
-        Ok(())
+    /// [`FieldType::Check`] which checks the explicit annotations to be empty.
+    pub fn disallow_annotations_check<const N: usize>(field: Annotations, _columns: [Annotations; N]) -> Result<(), ConstString<1024>> {
+        match field {
+            Annotations {
+                auto_create_time: None,
+                auto_update_time: None,
+                auto_increment: None,
+                choices: None,
+                default: None,
+                index: None,
+                max_length: None,
+                on_delete: None,
+                on_update: None,
+                primary_key: None,
+                unique: None,
+                nullable: false,
+                foreign: None,
+            } => Ok(()),
+            _ => Err(ConstString::error(&["BackRef doesn't take any annotations"])),
+        }
     }
 }
 

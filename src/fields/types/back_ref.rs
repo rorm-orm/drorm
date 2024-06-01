@@ -11,7 +11,7 @@ use rorm_declaration::imr;
 use crate::conditions::collections::CollectionOperator::Or;
 use crate::conditions::{Binary, BinaryOperator, Column, Condition, DynamicCollection, Value};
 use crate::crud::decoder::NoopDecoder;
-use crate::fields::const_fns::{forward_annotations, no_check, no_columns_names};
+use crate::fields::const_fns::{disallow_annotations_check, forward_annotations, no_columns_names};
 use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::internal::field::foreign_model::{ForeignModelField, ForeignModelTrait};
 use crate::internal::field::{foreign_model, Field, FieldProxy, SingleColumnField};
@@ -59,7 +59,7 @@ impl<FMF: ForeignModelField> FieldType for BackRef<FMF> {
 
     type GetAnnotations = forward_annotations<0>;
 
-    type Check = no_check<0>;
+    type Check = disallow_annotations_check<0>;
 
     type GetNames = no_columns_names;
 }

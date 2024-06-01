@@ -279,6 +279,6 @@ macro_rules! update {
         )
     };
     ($db:expr, $model:path, perm = $perm:expr) => {
-        $crate::crud::update::UpdateBuilder::<_, $model, _, _>::new($db, $perm)
+        $crate::crud::update::UpdateBuilder::<_, $model, _>::new($db, $perm)
     };
 }

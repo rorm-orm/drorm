@@ -5,7 +5,6 @@ use rorm_declaration::imr;
 
 use crate::fields::traits::Array;
 use crate::internal::field::{Field, FieldType};
-use crate::internal::hmr::annotations::Annotations;
 use crate::internal::hmr::db_type::DbType;
 use crate::internal::hmr::AsImr;
 
@@ -18,9 +17,6 @@ pub trait AsDbType: FieldType + Sized {
 
     /// The database type as defined in the Intermediate Model Representation
     type DbType: DbType;
-
-    /// Annotations implied by this type
-    const IMPLICIT: Option<Annotations> = None;
 }
 
 /// Provides the "default" implementation of [`AsDbType`] and [`FieldType`] of kind `AsDbType`.
@@ -69,16 +65,6 @@ macro_rules! impl_AsDbType {
         impl $crate::internal::field::as_db_type::AsDbType for Option<$type> {
             type Primitive = Option<<$type as $crate::internal::field::as_db_type::AsDbType>::Primitive>;
             type DbType = <$type as $crate::internal::field::as_db_type::AsDbType>::DbType;
-
-            const IMPLICIT: Option<$crate::internal::hmr::annotations::Annotations> = {
-                let mut annos = if let Some(annos) = <$type as $crate::internal::field::as_db_type::AsDbType>::IMPLICIT {
-                    annos
-                } else {
-                    $crate::internal::hmr::annotations::Annotations::empty()
-                };
-                annos.nullable = true;
-                Some(annos)
-            };
         }
     };
     ($type:ty, $db_type:ty, $into_value:expr) => {

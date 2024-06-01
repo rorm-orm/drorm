@@ -162,10 +162,6 @@ where
 {
     type Primitive = String;
     type DbType = hmr::db_type::VarChar;
-    const IMPLICIT: Option<Annotations> = Some(Annotations {
-        max_length: Some(MaxLength(MAX_LEN as i32)),
-        ..Annotations::empty()
-    });
 }
 
 impl<const MAX_LEN: usize, Impl> AsDbType for Option<MaxStr<MAX_LEN, Impl, String>>
@@ -174,11 +170,6 @@ where
 {
     type Primitive = String;
     type DbType = hmr::db_type::VarChar;
-    const IMPLICIT: Option<Annotations> = Some(Annotations {
-        max_length: Some(MaxLength(MAX_LEN as i32)),
-        nullable: true,
-        ..Annotations::empty()
-    });
 }
 
 impl<const MAX_LEN: usize, Impl> FieldType for MaxStr<MAX_LEN, Impl, String>

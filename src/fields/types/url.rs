@@ -82,16 +82,6 @@ impl FieldType for Option<Url> {
 impl AsDbType for Option<Url> {
     type Primitive = Option<<Url as AsDbType>::Primitive>;
     type DbType = <Url as AsDbType>::DbType;
-
-    const IMPLICIT: Option<hmr::annotations::Annotations> = {
-        let mut annos = if let Some(annos) = <Url as AsDbType>::IMPLICIT {
-            annos
-        } else {
-            hmr::annotations::Annotations::empty()
-        };
-        annos.nullable = true;
-        Some(annos)
-    };
 }
 new_converting_decoder!(
     pub OptionUrlDecoder,

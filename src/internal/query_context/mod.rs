@@ -1,5 +1,6 @@
 //! The query context holds some of a query's data which rorm-db borrows.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use rorm_db::sql::join_table::JoinType;
@@ -87,7 +88,7 @@ impl<'v> QueryContext<'v> {
                     join_type: JoinType::Join,
                     table_name,
                     join_alias: self.join_aliases.get(join_alias).unwrap(),
-                    join_condition: Box::leak(Box::new(self.get_condition(*join_condition))), // TODO LEAK!!!
+                    join_condition: Cow::Owned(self.get_condition(*join_condition)),
                 },
             )
             .collect()

@@ -102,6 +102,26 @@ where
             len_impl: &self.len_impl,
         }
     }
+
+    /// Borrow the wrapped string as `&str`
+    pub fn as_str(&self) -> &str {
+        &self.string
+    }
+
+    /// Unwraps the inner string
+    pub fn into_inner(self) -> Str {
+        self.string
+    }
+}
+
+impl<const MAX_LEN: usize, Impl, Str> fmt::Display for MaxStr<MAX_LEN, Impl, Str>
+where
+    Str: Deref<Target = str>,
+    Impl: LenImpl,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.string)
+    }
 }
 
 /// Error returned by [`MaxStr`]'s constructors when the input string is too long

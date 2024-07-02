@@ -1,4 +1,3 @@
-use crate::internal::const_concat::ConstString;
 use crate::internal::field::foreign_model::{ForeignModelField, ForeignModelTrait};
 use crate::internal::field::{Field, SingleColumnField};
 use crate::internal::query_context::QueryContext;
@@ -20,11 +19,9 @@ impl<M: Model> Path for M {
         F: Field + PathField<<F as Field>::Type>,
         F::ParentField: Field<Model = Self::Current>;
 
-    fn add_to_context(context: &mut QueryContext) {
+    fn add_to_context<'ctx>(context: &'ctx mut QueryContext) -> &'ctx str {
         context.add_origin_path::<Self>()
     }
-
-    const ALIAS: &'static str = M::TABLE;
 }
 
 impl<F, P> Path for (F, P)
@@ -43,11 +40,9 @@ where
         F2: Field + PathField<<F2 as Field>::Type>,
         F2::ParentField: Field<Model = Self::Current>;
 
-    fn add_to_context(context: &mut QueryContext) {
-        context.add_relation_path::<F, P>();
+    fn add_to_context<'ctx>(context: &'ctx mut QueryContext) -> &'ctx str {
+        context.add_relation_path::<F, P>()
     }
-
-    const ALIAS: &'static str = ConstString::join_alias(&[P::ALIAS, F::NAME]).as_str();
 }
 
 impl<FF, F> PathField<ForeignModelByField<FF>> for F

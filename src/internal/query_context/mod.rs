@@ -38,8 +38,11 @@ impl<'v> QueryContext<'v> {
 
     /// Add a field to select returning its index and alias
     pub fn select_field<F: Field, P: Path>(&mut self) -> (usize, String) {
-        P::add_to_context(self);
-        let alias = format!("{path}__{field}", path = P::ALIAS, field = F::NAME);
+        let alias = format!(
+            "{path}__{field}",
+            path = P::add_to_context(self),
+            field = F::NAME
+        );
         self.selects.push(Select {
             table_name: PathId::of::<P>(),
             column_name: F::NAME,
@@ -51,10 +54,9 @@ impl<'v> QueryContext<'v> {
 
     /// Add a field to aggregate returning its index and alias
     pub fn select_aggregation<A: AggregationFunc, F: Field, P: Path>(&mut self) -> (usize, String) {
-        P::add_to_context(self);
         let alias = format!(
             "{path}__{field}___{func}",
-            path = P::ALIAS,
+            path = P::add_to_context(self),
             field = F::NAME,
             func = A::NAME,
         );
@@ -217,10 +219,11 @@ impl<'v> QueryContext<'v> {
     /// **Use [`Path::add_to_context`], this method is its impl detail!**
     ///
     /// Add the origin model to the builder
-    pub(crate) fn add_origin_path<M: Model>(&mut self) {
+    pub(crate) fn add_origin_path<M: Model>(&mut self) -> &'static str {
         self.join_aliases
             .entry(PathId::of::<M>())
             .or_insert_with(|| M::TABLE.to_string());
+        M::TABLE
     }
 
     /// **Use [`Path::add_to_context`], this method is its impl detail!**
@@ -228,17 +231,19 @@ impl<'v> QueryContext<'v> {
     /// Recursively add a relation path to the builder
     ///
     /// The generic parameters are the parameters defining the outer most [PathStep].
-    pub(crate) fn add_relation_path<F, P>(&mut self)
+    pub(crate) fn add_relation_path<F, P>(&mut self) -> &str
     where
         F: Field + PathField<<F as Field>::Type>,
         P: Path<Current = <F::ParentField as Field>::Model>,
     {
         let path_id = PathId::of::<P::Step<F>>();
         if !self.join_aliases.contains_key(&path_id) {
-            P::add_to_context(self);
-
-            let join_alias = <P::Step<F> as Path>::ALIAS;
-            self.join_aliases.insert(path_id, join_alias.to_string());
+            let alias = format!(
+                "{field}__{path}",
+                field = F::NAME,
+                path = P::add_to_context(self)
+            );
+            self.join_aliases.insert(path_id, alias);
             self.joins.push({
                 Join {
                     table_name: <<F as PathField<_>>::ChildField as Field>::Model::TABLE,
@@ -252,6 +257,7 @@ impl<'v> QueryContext<'v> {
                 FlatCondition::Column(PathId::of::<P>(), <F as PathField<_>>::ParentField::NAME),
             ]);
         }
+        self.join_aliases.get(&path_id).unwrap()
     }
 }
 

@@ -91,46 +91,6 @@ impl ConstString<1024> {
     }
 }
 
-impl ConstString<2048> {
-    pub(crate) const OOM_ERROR: Self = {
-        match ConstString::new().push_str("The error message is longer than 1024 bytes. Try using shorter names or contact the library authors.") {
-            Some(ok) => ok,
-            None => unreachable!(), // The error message is less than 2048 bytes
-        }
-    };
-
-    pub(crate) const fn join_alias(mut strings: &[&str]) -> Self {
-        let mut string = Self::new();
-
-        let [head, tail @ ..] = strings else {
-            return string;
-        };
-        strings = tail;
-        match string.push_str(head) {
-            Some(some) => {
-                string = some;
-            }
-            None => {
-                return Self::OOM_ERROR;
-            }
-        }
-
-        sugar! {
-            for slice in strings {
-                match string.push_str("__") {
-                    Some(some) => match some.push_str(slice) {
-                        Some(some) => {string = some;},
-                        None => return Self::OOM_ERROR,
-                    }
-                    None => return Self::OOM_ERROR,
-                }
-
-            }
-        }
-        string
-    }
-}
-
 /// A contiguous growable array type for const expressions.
 ///
 /// ## Required invariant

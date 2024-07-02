@@ -2,11 +2,9 @@
 
 mod impls;
 
-use crate::internal::field::Field;
-use crate::internal::field::SingleColumnField;
+use crate::internal::field::{Field, SingleColumnField};
 use crate::internal::query_context::QueryContext;
-use crate::sealed;
-use crate::Model;
+use crate::{sealed, Model};
 
 /// Trait to store a relation path in generics
 ///
@@ -82,10 +80,7 @@ pub trait Path: 'static {
     //    SubPath: Path<Origin = Self::Current>;
 
     /// Add all joins required to use this path to the query context
-    fn add_to_context(context: &mut QueryContext);
-
-    /// Unique join alias
-    const ALIAS: &'static str;
+    fn add_to_context<'ctx>(context: &'ctx mut QueryContext) -> &'ctx str;
 }
 
 /// A field representing a db relation which can be used to construct paths.

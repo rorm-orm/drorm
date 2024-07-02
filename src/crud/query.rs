@@ -6,7 +6,7 @@ use rorm_db::database;
 use rorm_db::error::Error;
 use rorm_db::executor::{All, Executor, One, Optional, Stream};
 use rorm_db::sql::limit_clause::LimitClause;
-use rorm_db::sql::ordering::{OrderByEntry, Ordering};
+use rorm_db::sql::ordering::Ordering;
 
 use crate::conditions::Condition;
 use crate::crud::builder::ConditionMarker;
@@ -43,7 +43,6 @@ pub struct QueryBuilder<E, S, C, LO> {
     selector: S,
     condition: C,
     lim_off: LO,
-    ordering: Vec<OrderByEntry<'static>>,
     modify_ctx: Vec<fn(&mut QueryContext)>,
 }
 
@@ -59,7 +58,6 @@ where
             selector,
             condition: (),
             lim_off: (),
-            ordering: Vec::new(),
             modify_ctx: Vec::new(),
         }
     }
@@ -69,9 +67,9 @@ impl<E, S, LO> QueryBuilder<E, S, (), LO> {
     /// Add a condition to the query
     pub fn condition<'c, C: Condition<'c>>(self, condition: C) -> QueryBuilder<E, S, C, LO> {
         #[rustfmt::skip]
-        let QueryBuilder { executor, selector, lim_off, ordering, modify_ctx, .. } = self;
+        let QueryBuilder { executor, selector, lim_off, modify_ctx, .. } = self;
         #[rustfmt::skip]
-        return QueryBuilder { executor, selector, condition, lim_off, ordering, modify_ctx, };
+        return QueryBuilder { executor, selector, condition, lim_off, modify_ctx, };
     }
 }
 
@@ -82,9 +80,9 @@ where
     /// Add a limit to the query
     pub fn limit(self, limit: u64) -> QueryBuilder<E, S, C, Limit<O>> {
         #[rustfmt::skip]
-        let QueryBuilder { executor, selector, condition,  lim_off, ordering, modify_ctx, } = self;
+        let QueryBuilder { executor, selector, condition,  lim_off, modify_ctx, } = self;
         #[rustfmt::skip]
-        return QueryBuilder { executor, selector, condition, lim_off: Limit { limit, offset: lim_off }, ordering, modify_ctx, };
+        return QueryBuilder { executor, selector, condition, lim_off: Limit { limit, offset: lim_off }, modify_ctx, };
     }
 }
 
@@ -95,10 +93,10 @@ where
     /// Add a offset to the query
     pub fn offset(self, offset: u64) -> QueryBuilder<E, S, C, LO::Result> {
         #[rustfmt::skip]
-        let QueryBuilder { executor, selector, condition, lim_off, ordering, modify_ctx, .. } = self;
+        let QueryBuilder { executor, selector, condition, lim_off, modify_ctx, .. } = self;
         let lim_off = lim_off.add_offset(offset);
         #[rustfmt::skip]
-        return QueryBuilder { executor, selector, condition, lim_off, ordering, modify_ctx, };
+        return QueryBuilder { executor, selector, condition, lim_off, modify_ctx, };
     }
 }
 
@@ -106,13 +104,13 @@ impl<E, S, C> QueryBuilder<E, S, C, ()> {
     /// Add a offset to the query
     pub fn range(self, range: impl FiniteRange<u64>) -> QueryBuilder<E, S, C, Limit<u64>> {
         #[rustfmt::skip]
-        let QueryBuilder { executor, selector, condition, ordering, modify_ctx,  .. } = self;
+        let QueryBuilder { executor, selector, condition, modify_ctx,  .. } = self;
         let limit = Limit {
             limit: range.len(),
             offset: range.start(),
         };
         #[rustfmt::skip]
-        return QueryBuilder { executor, selector, condition, lim_off: limit, ordering, modify_ctx, };
+        return QueryBuilder { executor, selector, condition, lim_off: limit, modify_ctx, };
     }
 }
 
@@ -128,11 +126,9 @@ where
         F: Field,
         P: Path<Origin = S::Model>,
     {
-        self.modify_ctx.push(P::add_to_context);
-        self.ordering.push(OrderByEntry {
-            ordering: order,
-            table_name: Some(P::ALIAS),
-            column_name: F::NAME,
+        self.modify_ctx.push(match order {
+            Ordering::Asc => |ctx: &mut QueryContext| ctx.order_by_field::<F, P>(Ordering::Asc),
+            Ordering::Desc => |ctx: &mut QueryContext| ctx.order_by_field::<F, P>(Ordering::Desc),
         });
         self
     }
@@ -176,17 +172,15 @@ where
         let decoder = self.selector.select(&mut ctx);
         let condition_index = self.condition.build(&mut ctx);
 
-        let columns = ctx.get_selects();
-        let joins = ctx.get_joins();
         let condition = ctx.get_condition_opt(condition_index);
 
         database::query::<All>(
             self.executor,
             S::Model::TABLE,
-            &columns,
-            &joins,
+            ctx.get_selects().as_slice(),
+            ctx.get_joins().as_slice(),
             condition.as_ref(),
-            self.ordering.as_slice(),
+            ctx.get_order_bys().as_slice(),
             self.lim_off.into_option(),
         )
         .await?
@@ -213,14 +207,13 @@ where
         let condition_index = self.condition.build(&mut ctx);
 
         QueryStream::new(decoder, ctx, move |ctx| {
-            let condition = ctx.get_condition_opt(condition_index);
             database::query::<Stream>(
                 self.executor,
                 S::Model::TABLE,
                 ctx.get_selects().as_slice(),
                 ctx.get_joins().as_slice(),
-                condition.as_ref(),
-                self.ordering.as_slice(),
+                ctx.get_condition_opt(condition_index).as_ref(),
+                ctx.get_order_bys().as_slice(),
                 self.lim_off.into_option(),
             )
         })
@@ -238,17 +231,13 @@ where
         let decoder = self.selector.select(&mut ctx);
         let condition_index = self.condition.build(&mut ctx);
 
-        let columns = ctx.get_selects();
-        let joins = ctx.get_joins();
-        let condition = ctx.get_condition_opt(condition_index);
-
         let row = database::query::<One>(
             self.executor,
             S::Model::TABLE,
-            &columns,
-            &joins,
-            condition.as_ref(),
-            self.ordering.as_slice(),
+            ctx.get_selects().as_slice(),
+            ctx.get_joins().as_slice(),
+            ctx.get_condition_opt(condition_index).as_ref(),
+            ctx.get_order_bys().as_slice(),
             self.lim_off.into_option(),
         )
         .await?;
@@ -267,17 +256,13 @@ where
         let decoder = self.selector.select(&mut ctx);
         let condition_index = self.condition.build(&mut ctx);
 
-        let columns = ctx.get_selects();
-        let joins = ctx.get_joins();
-        let condition = ctx.get_condition_opt(condition_index);
-
         let row = database::query::<Optional>(
             self.executor,
             S::Model::TABLE,
-            &columns,
-            &joins,
-            condition.as_ref(),
-            self.ordering.as_slice(),
+            ctx.get_selects().as_slice(),
+            ctx.get_joins().as_slice(),
+            ctx.get_condition_opt(condition_index).as_ref(),
+            ctx.get_order_bys().as_slice(),
             self.lim_off.into_option(),
         )
         .await?;

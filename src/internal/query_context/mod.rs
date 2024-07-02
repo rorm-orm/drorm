@@ -4,6 +4,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use rorm_db::sql::join_table::JoinType;
+use rorm_db::sql::ordering::Ordering;
 
 use crate::aggregate::AggregationFunc;
 use crate::conditions::{BinaryOperator, Condition, Value};
@@ -25,6 +26,7 @@ pub struct QueryContext<'v> {
     join_aliases: HashMap<PathId, String>,
     selects: Vec<Select>,
     joins: Vec<Join>,
+    order_bys: Vec<OrderBy>,
     pub(crate) conditions: Vec<FlatCondition>,
     pub(crate) values: Vec<Value<'v>>,
 }
@@ -73,6 +75,16 @@ impl<'v> QueryContext<'v> {
         let index = self.conditions.len();
         condition.build(self);
         index
+    }
+
+    /// Add a field to order by
+    pub fn order_by_field<F: Field, P: Path>(&mut self, ordering: Ordering) {
+        P::add_to_context(self);
+        self.order_bys.push(OrderBy {
+            column_name: F::NAME,
+            table_name: PathId::of::<P>(),
+            ordering,
+        })
     }
 
     /// Create a vector borrowing the joins in rorm_db's format which can be passed to it as slice.
@@ -162,6 +174,18 @@ impl<'v> QueryContext<'v> {
         index.map(|index| self.get_condition(index))
     }
 
+    /// Create a vector borrowing the order bys in rorm_db's format which can be passed to it as slice.
+    pub fn get_order_bys(&self) -> Vec<rorm_db::sql::ordering::OrderByEntry> {
+        self.order_bys
+            .iter()
+            .map(|order_by| rorm_db::sql::ordering::OrderByEntry {
+                ordering: order_by.ordering,
+                table_name: Some(self.join_aliases.get(&order_by.table_name).unwrap()),
+                column_name: order_by.column_name,
+            })
+            .collect()
+    }
+
     /// Create a vector borrowing the selects only by their `column_name` to be used in `INSERT RETURNING`.
     ///
     /// This method also checks, if the context would be valid in the first place.
@@ -239,9 +263,16 @@ struct Select {
     aggregation: Option<rorm_db::sql::aggregation::SelectAggregator>,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug, Clone)]
 struct Join {
     table_name: &'static str,
     join_alias: PathId,
     join_condition: usize,
+}
+
+#[derive(Debug, Clone)]
+struct OrderBy {
+    column_name: &'static str,
+    table_name: PathId,
+    ordering: Ordering,
 }

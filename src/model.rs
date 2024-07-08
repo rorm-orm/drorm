@@ -102,6 +102,7 @@ pub trait Model: Patch<Model = Self> {
     /// Shorthand version of [`FIELDS`]
     ///
     /// [`FIELDS`]: Model::FIELDS
+    #[deprecated(note = "Use `Model.field` instead of `Model::F.field`")]
     const F: Self::Fields<Self>;
 
     /// The model's table name

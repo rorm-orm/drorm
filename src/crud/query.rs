@@ -356,6 +356,9 @@ macro_rules! query {
     (__internal $model:ident::F => $($segments:ident,)*) => {
         $($segments::)* $model
     };
+    (__internal $model:ident => $($segments:ident,)*) => {
+        $($segments::)* $model
+    };
     (__internal $segment:ident::$($remainder:ident)::+ => $($segments:ident,)*) => {
         query!(__internal $($remainder)::+ => $($segments,)* $segment,)
     };

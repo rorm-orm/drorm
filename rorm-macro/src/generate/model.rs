@@ -89,6 +89,9 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
         #field_declarations
         #fields_struct
 
+        #[allow(non_upper_case_globals)]
+        #vis const #ident: #fields_struct_ident<#ident> = ::rorm::model::ConstNew::NEW;
+
         const _: () = {
             impl ::rorm::model::Model for #ident {
                 type Primary = #primary_struct;

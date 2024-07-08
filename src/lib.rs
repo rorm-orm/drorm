@@ -113,6 +113,11 @@ macro_rules! get_field {
 /// Use this macro for generic parameter in [`ForeignModelByField`](fields::types::ForeignModelByField) and [`BackRef`](fields::types::BackRef).
 #[macro_export]
 macro_rules! field {
+    ($model:ident.$field:ident) => {
+        <$model as $crate::model::FieldByIndex<
+            { $crate::internal::field::FieldProxy::index($model.$field) },
+        >>::Field
+    };
     ($model:ident::F.$field:ident) => {
         <$model as $crate::model::FieldByIndex<
             { $crate::internal::field::FieldProxy::index($model::F.$field) },

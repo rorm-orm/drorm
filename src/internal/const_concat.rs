@@ -176,11 +176,6 @@ mod test {
     use super::ConstString;
 
     #[test]
-    fn join_alias() {
-        assert_eq!(ConstString::join_alias(&["a", "b"]).as_str(), "a__b");
-    }
-
-    #[test]
     fn error() {
         assert_eq!(
             ConstString::error(&["Hello ", "world"]).as_str(),

@@ -50,6 +50,7 @@ pub mod prelude {
 pub mod aggregate;
 pub mod conditions;
 pub mod crud;
+mod dump;
 pub mod fields;
 pub mod internal;
 pub mod model;

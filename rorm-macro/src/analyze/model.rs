@@ -1,5 +1,6 @@
 use proc_macro2::Ident;
 use quote::format_ident;
+use syn::visit_mut::VisitMut;
 use syn::{LitInt, LitStr, Type, Visibility};
 
 use crate::analyze::vis_to_display;
@@ -39,7 +40,7 @@ pub fn analyze_model(parsed: ParsedModel) -> darling::Result<AnalyzedModel> {
         let ParsedField {
             vis,
             ident,
-            ty,
+            mut ty,
             annos:
                 ModelFieldAnnotations {
                     auto_create_time,
@@ -85,6 +86,17 @@ pub fn analyze_model(parsed: ParsedModel) -> darling::Result<AnalyzedModel> {
             primary_key = true;
             auto_increment = true;
         }
+
+        // Replace `Self` in the field's type to the model's identifier
+        struct ReplaceSelf<'a>(&'a Ident);
+        impl<'a> VisitMut for ReplaceSelf<'a> {
+            fn visit_ident_mut(&mut self, i: &mut Ident) {
+                if i == "Self" {
+                    *i = self.0.clone();
+                }
+            }
+        }
+        ReplaceSelf(model_ident).visit_type_mut(&mut ty);
 
         analyzed_fields.push(AnalyzedField {
             vis,

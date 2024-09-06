@@ -4,12 +4,6 @@
 #![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
 #![warn(missing_docs)]
 
-#[cfg(all(not(doc_auto_cfg), all(feature = "tokio", feature = "async-std")))]
-compile_error!("Using multiple runtimes at the same time is not allowed");
-
-#[cfg(all(not(doc_auto_cfg), all(feature = "native-tls", feature = "rustls")))]
-compile_error!("Using multiple tls configurations at the same time is not allowed");
-
 #[cfg(all(
     not(doc_auto_cfg),
     all(feature = "all-drivers", feature = "postgres-only")

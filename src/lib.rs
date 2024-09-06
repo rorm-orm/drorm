@@ -4,10 +4,7 @@
 #![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
 #![warn(missing_docs)]
 
-#[cfg(all(
-    not(doc_auto_cfg),
-    all(feature = "all-drivers", feature = "postgres-only")
-))]
+#[cfg(all(feature = "all-drivers", feature = "postgres-only"))]
 compile_error!("You cannot enable postgres-only with other drivers active");
 
 pub use rorm_db::{Database, DatabaseConfiguration, DatabaseDriver, Error, Row};

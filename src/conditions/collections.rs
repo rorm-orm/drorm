@@ -262,6 +262,11 @@ macro_rules! and {
 }
 
 #[doc(hidden)]
-pub fn ensure_condition<'c, C: Condition<'c>>(value: C) -> C {
+pub trait IsCondition {}
+impl<'c, C: Condition<'c>> IsCondition for C {}
+impl<'c, C: Condition<'c>> IsCondition for Option<C> {}
+
+#[doc(hidden)]
+pub fn ensure_condition<C: IsCondition>(value: C) -> C {
     value
 }

@@ -11,6 +11,7 @@ Since 0.6.3
 - improved error spans in or! and and!
 - removed `AsDbType::from_primitive`
 - fixed names of join aliases
+- changed name generation for join and column aliases
 
 Notes for publishing
 --------------------

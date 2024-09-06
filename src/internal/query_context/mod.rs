@@ -2,6 +2,8 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Write;
 
 use rorm_db::sql::join_table::JoinType;
 use rorm_db::sql::ordering::Ordering;
@@ -38,11 +40,7 @@ impl<'v> QueryContext<'v> {
 
     /// Add a field to select returning its index and alias
     pub fn select_field<F: Field, P: Path>(&mut self) -> (usize, String) {
-        let alias = format!(
-            "{path}__{field}",
-            path = P::add_to_context(self),
-            field = F::NAME
-        );
+        let alias = format!("{}", NumberAsAZ(self.selects.len()));
         self.selects.push(Select {
             table_name: PathId::of::<P>(),
             column_name: F::NAME,
@@ -54,12 +52,7 @@ impl<'v> QueryContext<'v> {
 
     /// Add a field to aggregate returning its index and alias
     pub fn select_aggregation<A: AggregationFunc, F: Field, P: Path>(&mut self) -> (usize, String) {
-        let alias = format!(
-            "{path}__{field}___{func}",
-            path = P::add_to_context(self),
-            field = F::NAME,
-            func = A::NAME,
-        );
+        let alias = format!("{}", NumberAsAZ(self.selects.len()));
         self.selects.push(Select {
             table_name: PathId::of::<P>(),
             column_name: F::NAME,
@@ -238,11 +231,7 @@ impl<'v> QueryContext<'v> {
     {
         let path_id = PathId::of::<P::Step<F>>();
         if !self.join_aliases.contains_key(&path_id) {
-            let alias = format!(
-                "{field}__{path}",
-                field = F::NAME,
-                path = P::add_to_context(self)
-            );
+            let alias = format!("{}", NumberAsAZ(self.join_aliases.len()));
             self.join_aliases.insert(path_id, alias);
             self.joins.push({
                 Join {
@@ -281,4 +270,26 @@ struct OrderBy {
     column_name: &'static str,
     table_name: PathId,
     ordering: Ordering,
+}
+
+/// Adapter to display a number using the alphabet as digits
+struct NumberAsAZ(usize);
+impl fmt::Display for NumberAsAZ {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        static ALPHABET: [char; 26] = [
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
+            'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+        ];
+        let mut x = self.0;
+        match x {
+            0..26 => f.write_char(ALPHABET[x]),
+            _ => {
+                while x > 26 {
+                    f.write_char(ALPHABET[x % 26])?;
+                    x /= 26;
+                }
+                f.write_char(ALPHABET[x])
+            }
+        }
+    }
 }

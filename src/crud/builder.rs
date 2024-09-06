@@ -5,7 +5,7 @@ use crate::internal::query_context::QueryContext;
 use crate::sealed;
 
 /// Marker for the generic parameter storing an optional [`Condition`]
-pub trait ConditionMarker<'a>: 'a + Send {
+pub trait ConditionMarker<'a>: Send {
     sealed!(trait);
 
     /// Calls [`Condition::build`] if `Self: Condition`

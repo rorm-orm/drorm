@@ -19,7 +19,7 @@ use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
 
 /// Node in a condition tree
-pub trait Condition<'a>: 'a + Send + Sync {
+pub trait Condition<'a>: Send + Sync {
     /// Adds this condition to a query context's internal representation
     ///
     /// If you're not implementing `Condition`, you'll probably want [`QueryContext::add_condition`].
@@ -30,64 +30,63 @@ pub trait Condition<'a>: 'a + Send + Sync {
     fn build(&self, context: &mut QueryContext<'a>);
 
     /// Convert the condition into a boxed trait object to erase its concrete type
-    fn boxed(self) -> BoxedCondition<'a>
+    fn boxed<'this>(self) -> Box<dyn Condition<'a> + 'this>
     where
-        Self: Sized,
+        Self: Sized + 'this,
     {
         Box::new(self)
     }
 
     /// Convert the condition into an arced trait object to erase its concrete type while remaining cloneable
-    fn arc(self) -> ArcCondition<'a>
+    fn arc<'this>(self) -> Arc<dyn Condition<'a> + 'this>
     where
-        Self: Sized,
+        Self: Sized + 'this,
     {
         Arc::new(self)
     }
 }
 
-/// A [`Condition`] in a box.
-pub type BoxedCondition<'a> = Box<dyn Condition<'a>>;
-
-/// A [`Condition`] in an arc.
-pub type ArcCondition<'a> = Arc<dyn Condition<'a>>;
-
-impl<'a> Condition<'a> for BoxedCondition<'a> {
+impl<'a> Condition<'a> for Box<dyn Condition<'a> + '_> {
     fn build(&self, context: &mut QueryContext<'a>) {
         self.as_ref().build(context);
     }
 
-    fn boxed(self) -> BoxedCondition<'a>
+    fn boxed<'this>(self) -> Box<dyn Condition<'a> + 'this>
     where
-        Self: Sized,
+        Self: Sized + 'this,
     {
         self
     }
 
-    fn arc(self) -> ArcCondition<'a>
+    fn arc<'this>(self) -> Arc<dyn Condition<'a> + 'this>
     where
-        Self: Sized,
+        Self: Sized + 'this,
     {
         Arc::from(self)
     }
 }
-impl<'a> Condition<'a> for ArcCondition<'a> {
+impl<'a> Condition<'a> for Arc<dyn Condition<'a> + '_> {
     fn build(&self, context: &mut QueryContext<'a>) {
         self.as_ref().build(context);
     }
 
-    fn boxed(self) -> BoxedCondition<'a>
+    fn boxed<'this>(self) -> Box<dyn Condition<'a> + 'this>
     where
-        Self: Sized,
+        Self: Sized + 'this,
     {
         Box::from(self)
     }
 
-    fn arc(self) -> ArcCondition<'a>
+    fn arc<'this>(self) -> Arc<dyn Condition<'a> + 'this>
     where
-        Self: Sized,
+        Self: Sized + 'this,
     {
         self
+    }
+}
+impl<'a> Condition<'a> for &'_ dyn Condition<'a> {
+    fn build(&self, context: &mut QueryContext<'a>) {
+        <dyn Condition as Condition>::build(self, context)
     }
 }
 

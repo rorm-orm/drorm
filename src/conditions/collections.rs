@@ -48,7 +48,7 @@
 //! }
 //! ```
 
-use super::{BoxedCondition, Condition};
+use super::Condition;
 use crate::internal::query_context::flat_conditions::FlatCondition;
 use crate::internal::query_context::QueryContext;
 

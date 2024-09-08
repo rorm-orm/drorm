@@ -26,6 +26,7 @@
 //! #     id: i64,
 //! #     #[rorm(max_length = 255)]
 //! #     name: String,
+//! #     #[rorm(max_length = 255)]
 //! #     region: String,
 //! # }
 //! async fn query_users(
@@ -39,8 +40,8 @@
 //!     // yielding the expected result of not filtering the users at all.
 //!     query!(db, User)
 //!         .condition(and![
-//!             filter_name.map(|name| User::F.name.equals(name)),
-//!             filter_region.map(|region| User::F.region.equals(region)),
+//!             filter_name.map(|name| User.name.equals(name)),
+//!             filter_region.map(|region| User.region.equals(region)),
 //!         ])
 //!         .all()
 //!         .await

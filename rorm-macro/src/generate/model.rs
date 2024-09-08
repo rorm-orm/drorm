@@ -89,6 +89,7 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
         #field_declarations
         #fields_struct
 
+        #[doc = concat!("Constant representing the model [`", stringify!(#ident), "`] as a value")]
         #[allow(non_upper_case_globals)]
         #vis const #ident: #fields_struct_ident<#ident> = ::rorm::model::ConstNew::NEW;
 

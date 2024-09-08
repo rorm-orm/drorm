@@ -438,7 +438,7 @@ mod query_stream {
             decoder: D,
             ctx: QueryContext<'cond>,
             stream_builder: impl FnOnce(
-                &'this QueryContext,
+                &'this QueryContext<'cond>,
             ) -> <Stream as QueryStrategyResult>::Result<'this>,
         ) -> Self {
             unsafe fn change_lifetime<'old, 'new: 'old, T: 'new + ?Sized>(
@@ -449,7 +449,7 @@ mod query_stream {
 
             unsafe {
                 let ctx = Box::new(ctx);
-                let ctx_ref: &'this QueryContext = change_lifetime(ctx.as_ref());
+                let ctx_ref: &'this QueryContext<'cond> = change_lifetime(ctx.as_ref());
 
                 let stream = stream_builder(ctx_ref);
 
@@ -462,7 +462,7 @@ mod query_stream {
         }
     }
 
-    impl<'this, 'cond: 'this, D: Decoder> futures::stream::Stream for QueryStream<'this, 'cond, D> {
+    impl<'this, 'cond, D: Decoder> futures::stream::Stream for QueryStream<'this, 'cond, D> {
         type Item = Result<D::Result, Error>;
 
         fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {

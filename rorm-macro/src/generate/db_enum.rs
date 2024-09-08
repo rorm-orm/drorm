@@ -18,9 +18,9 @@ pub fn generate_db_enum(parsed: &ParsedDbEnum) -> TokenStream {
             ];
 
             impl ::rorm::fields::traits::FieldType for #ident {
-                type Columns<T> = [T; 1];
+                type Columns = ::rorm::fields::traits::Array<1>;
 
-                fn into_values(self) -> Self::Columns<::rorm::conditions::Value<'static>> {
+                fn into_values(self) -> ::rorm::fields::traits::FieldColumns<Self, ::rorm::conditions::Value<'static>> {
                     [::rorm::conditions::Value::Choice(::std::borrow::Cow::Borrowed(match self {
                         #(
                             Self::#variants => stringify!(#variants),
@@ -28,7 +28,7 @@ pub fn generate_db_enum(parsed: &ParsedDbEnum) -> TokenStream {
                     }))]
                 }
 
-                fn as_values(&self) -> Self::Columns<::rorm::conditions::Value<'_>> {
+                fn as_values(&self) -> ::rorm::fields::traits::FieldColumns<Self, ::rorm::conditions::Value<'_>> {
                     [::rorm::conditions::Value::Choice(::std::borrow::Cow::Borrowed(match self {
                         #(
                             Self::#variants => stringify!(#variants),
@@ -38,7 +38,7 @@ pub fn generate_db_enum(parsed: &ParsedDbEnum) -> TokenStream {
 
                 type Decoder = #decoder;
 
-                fn get_imr<F: ::rorm::internal::field::Field<Type = Self>>() -> Self::Columns<::rorm::internal::imr::Field> {
+                fn get_imr<F: ::rorm::internal::field::Field<Type = Self>>() -> ::rorm::fields::traits::FieldColumns<Self, ::rorm::internal::imr::Field> {
                     use ::rorm::internal::hmr::AsImr;
                     [::rorm::internal::imr::Field {
                         name: F::NAME.to_string(),

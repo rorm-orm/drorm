@@ -12,8 +12,10 @@ use crate::conditions::collections::CollectionOperator::Or;
 use crate::conditions::{Binary, BinaryOperator, Column, Condition, DynamicCollection, Value};
 use crate::crud::decoder::NoopDecoder;
 use crate::fields::traits::{Array, FieldColumns, FieldType};
+use crate::fields::utils::check::disallow_annotations_check;
+use crate::fields::utils::get_annotations::forward_annotations;
+use crate::fields::utils::get_names::no_columns_names;
 use crate::internal::field::foreign_model::{ForeignModelField, ForeignModelTrait};
-use crate::internal::field::modifier::{EraseAnnotations, NoCheck, NoColumnFromName};
 use crate::internal::field::{foreign_model, Field, FieldProxy, SingleColumnField};
 use crate::model::{GetField, Unrestricted};
 #[allow(unused_imports)] // clion needs this import to access Patch::field on a Model
@@ -57,11 +59,11 @@ impl<FMF: ForeignModelField> FieldType for BackRef<FMF> {
 
     type Decoder = NoopDecoder<Self>;
 
-    type AnnotationsModifier<F: Field<Type = Self>> = EraseAnnotations;
+    type GetAnnotations = forward_annotations<0>;
 
-    type CheckModifier<F: Field<Type = Self>> = NoCheck;
+    type Check = disallow_annotations_check<0>;
 
-    type ColumnsFromName<F: Field<Type = Self>> = NoColumnFromName;
+    type GetNames = no_columns_names;
 }
 
 impl<BRF, FMF> FieldProxy<BRF, BRF::Model>

@@ -38,23 +38,17 @@ pub fn generate_db_enum(parsed: &ParsedDbEnum) -> TokenStream {
 
                 type Decoder = #decoder;
 
-                fn get_imr<F: ::rorm::internal::field::Field<Type = Self>>() -> ::rorm::fields::traits::FieldColumns<Self, ::rorm::internal::imr::Field> {
-                    use ::rorm::internal::hmr::AsImr;
-                    [::rorm::internal::imr::Field {
-                        name: F::NAME.to_string(),
-                        db_type: <::rorm::internal::hmr::db_type::Choices as ::rorm::internal::hmr::db_type::DbType>::IMR,
-                        annotations: F::EFFECTIVE_ANNOTATIONS
-                            .unwrap_or_else(::rorm::internal::hmr::annotations::Annotations::empty)
-                            .as_imr(),
-                        source_defined_at: F::SOURCE.map(|s| s.as_imr()),
-                    }]
-                }
+            fn get_imr<F: ::rorm::internal::field::Field<Type = Self>>() -> ::rorm::fields::traits::FieldColumns<Self, ::rorm::internal::imr::Field> {
+                ::rorm::internal::field::as_db_type::get_single_imr::<F>(
+                    <::rorm::internal::hmr::db_type::Choices as ::rorm::internal::hmr::db_type::DbType>::IMR
+                )
+            }
 
-                type AnnotationsModifier<F: ::rorm::internal::field::Field<Type = Self>> = ::rorm::internal::field::modifier::MergeAnnotations<Self>;
+            type GetAnnotations = ::rorm::fields::utils::get_annotations::forward_annotations<1>;
 
-                type CheckModifier<F: ::rorm::internal::field::Field<Type = Self>> = ::rorm::internal::field::modifier::SingleColumnCheck<::rorm::internal::hmr::db_type::Choices>;
+            type Check = ::rorm::fields::utils::check::shared_linter_check<1>;
 
-                type ColumnsFromName<F: ::rorm::internal::field::Field<Type = Self>> = ::rorm::internal::field::modifier::SingleColumnFromName;
+            type GetNames = ::rorm::fields::utils::get_names::single_column_name;
             }
             ::rorm::new_converting_decoder!(
                 #[doc(hidden)]

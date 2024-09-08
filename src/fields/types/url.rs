@@ -5,8 +5,10 @@ use url::Url;
 
 use crate::conditions::Value;
 use crate::fields::traits::{Array, FieldColumns, FieldType};
+use crate::fields::utils::check::string_check;
+use crate::fields::utils::get_annotations::{forward_annotations, set_null_annotations};
+use crate::fields::utils::get_names::single_column_name;
 use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
-use crate::internal::field::modifier::{MergeAnnotations, SingleColumnCheck, SingleColumnFromName};
 use crate::internal::field::Field;
 use crate::internal::hmr;
 use crate::{impl_FieldEq, new_converting_decoder, Error};
@@ -32,11 +34,11 @@ impl FieldType for Url {
 
     type Decoder = UrlDecoder;
 
-    type AnnotationsModifier<F: Field<Type = Self>> = MergeAnnotations<Self>;
+    type GetAnnotations = forward_annotations<1>;
 
-    type CheckModifier<F: Field<Type = Self>> = SingleColumnCheck<hmr::db_type::VarChar>;
+    type Check = string_check;
 
-    type ColumnsFromName<F: Field<Type = Self>> = SingleColumnFromName;
+    type GetNames = single_column_name;
 }
 impl AsDbType for Url {
     type Primitive = String;
@@ -71,11 +73,11 @@ impl FieldType for Option<Url> {
 
     type Decoder = OptionUrlDecoder;
 
-    type AnnotationsModifier<F: Field<Type = Self>> = MergeAnnotations<Self>;
+    type GetAnnotations = set_null_annotations;
 
-    type CheckModifier<F: Field<Type = Self>> = SingleColumnCheck<<Url as AsDbType>::DbType>;
+    type Check = string_check;
 
-    type ColumnsFromName<F: Field<Type = Self>> = SingleColumnFromName;
+    type GetNames = single_column_name;
 }
 impl AsDbType for Option<Url> {
     type Primitive = Option<<Url as AsDbType>::Primitive>;

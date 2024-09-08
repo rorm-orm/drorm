@@ -157,8 +157,9 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
             // Cross field checks
             let mut count_auto_increment = 0;
             #(
-                let annos = <#field_structs_2 as ::rorm::internal::field::Field>::EFFECTIVE_ANNOTATIONS;
-                if let Some(annos) = annos {
+                let mut annos_slice = <#field_structs_2 as ::rorm::internal::field::Field>::EFFECTIVE_ANNOTATIONS.as_slice();
+                while let [annos, tail @ ..] = annos_slice {
+                    annos_slice = tail;
                     if annos.auto_increment.is_some() {
                         count_auto_increment += 1;
                     }
@@ -247,7 +248,7 @@ fn generate_fields(model: &AnalyzedModel) -> TokenStream {
                 }
             }
             const _: () = {
-                if let Err(err) = <#unit as ::rorm::internal::field::Field>::CHECK {
+                if let Err(err) = ::rorm::internal::field::check::<#unit>() {
                     panic!("{}", err.as_str());
                 }
             };

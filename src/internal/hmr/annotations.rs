@@ -9,6 +9,7 @@ macro_rules! impl_annotations {
         ($($(#[doc = $doc:literal])* $anno:ident $(($data:ty))?,)*) => {
             $(
                 $(#[doc = $doc])*
+                #[derive(Copy, Clone)]
                 pub struct $anno$((
                     /// The annotation's data
                     pub $data
@@ -50,6 +51,7 @@ impl_annotations!(
 );
 
 /// Foreign key constraint
+#[derive(Copy, Clone)]
 pub struct ForeignKey {
     /// Name of the table that should be referenced
     pub table_name: &'static str,
@@ -64,6 +66,7 @@ pub type OnDelete = imr::ReferentialAction;
 pub type OnUpdate = imr::ReferentialAction;
 
 /// Represents a complex index
+#[derive(Copy, Clone)]
 pub struct IndexData {
     /// Name of the index. Can be used multiple times in a model to create an
     /// index with multiple columns.
@@ -75,6 +78,7 @@ pub struct IndexData {
 }
 
 /// A column's default value which is any non object / array json value
+#[derive(Copy, Clone)]
 pub enum DefaultValueData {
     /// Use hexadecimal to represent binary data
     String(&'static str),
@@ -129,6 +133,7 @@ impl AsImr for &'static [&'static str] {
 }
 
 /// Struct storing a [Field](crate::internal::field::Field)'s annotations.
+#[derive(Copy, Clone)]
 pub struct Annotations {
     /// The `#[rorm(auto_create_time)]` annotation
     pub auto_create_time: Option<AutoCreateTime>,

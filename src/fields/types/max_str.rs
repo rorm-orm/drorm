@@ -178,6 +178,8 @@ where
 {
     type Columns = Array<1>;
 
+    const NULL: FieldColumns<Self, NullType> = [NullType::String];
+
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         [Value::String(Cow::Owned(self.string))]
     }
@@ -242,6 +244,8 @@ where
     Impl: LenImpl + Default + 'static,
 {
     type Columns = Array<1>;
+
+    const NULL: FieldColumns<Self, NullType> = [NullType::String];
 
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         [if let Some(string) = self {

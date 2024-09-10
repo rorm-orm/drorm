@@ -3,6 +3,7 @@
 use std::borrow::Cow;
 use std::ops::{Deref, DerefMut};
 
+use rorm_db::sql::value::NullType;
 use rorm_db::Error::DecodeError;
 use rorm_declaration::imr;
 use serde::de::DeserializeOwned;
@@ -56,6 +57,8 @@ new_converting_decoder!(
 impl<T: Serialize + DeserializeOwned + 'static> FieldType for MsgPack<T> {
     type Columns = Array<1>;
 
+    const NULL: FieldColumns<Self, NullType> = [NullType::Binary];
+
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         [Value::Binary(Cow::Owned(
             rmp_serde::to_vec(&self.0).unwrap(), // TODO propagate error?
@@ -97,6 +100,8 @@ new_converting_decoder!(
 );
 impl<T: Serialize + DeserializeOwned + 'static> FieldType for Option<MsgPack<T>> {
     type Columns = Array<1>;
+
+    const NULL: FieldColumns<Self, NullType> = [NullType::Binary];
 
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         self.map(MsgPack::into_values)

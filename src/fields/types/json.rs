@@ -3,6 +3,7 @@
 use std::borrow::Cow;
 use std::ops::{Deref, DerefMut};
 
+use rorm_db::sql::value::NullType;
 use rorm_declaration::imr;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -56,6 +57,8 @@ new_converting_decoder!(
 impl<T: Serialize + DeserializeOwned + 'static> FieldType for Json<T> {
     type Columns = Array<1>;
 
+    const NULL: FieldColumns<Self, NullType> = [NullType::Binary];
+
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         [Value::Binary(Cow::Owned(
             serde_json::to_vec(&self.0).unwrap(),
@@ -99,6 +102,8 @@ new_converting_decoder!(
 );
 impl<T: Serialize + DeserializeOwned + 'static> FieldType for Option<Json<T>> {
     type Columns = Array<1>;
+
+    const NULL: FieldColumns<Self, NullType> = [NullType::Binary];
 
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         self.map(Json::into_values)

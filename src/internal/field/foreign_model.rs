@@ -2,6 +2,7 @@
 
 use std::marker::PhantomData;
 
+use rorm_db::sql::value::NullType;
 use rorm_db::{Error, Row};
 use rorm_declaration::imr;
 
@@ -32,6 +33,8 @@ where
     FF::Model: GetField<FF>, // always true
 {
     type Columns = Array<1>;
+
+    const NULL: FieldColumns<Self, NullType> = FF::Type::NULL;
 
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         [FF::type_into_value(match self {
@@ -70,6 +73,8 @@ where
     Option<FF::Type>: AsDbType,
 {
     type Columns = Array<1>;
+
+    const NULL: FieldColumns<Self, NullType> = FF::Type::NULL;
 
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         self.map(ForeignModelByField::into_values)

@@ -8,6 +8,7 @@ use crate::internal::imr;
 pub mod cmp;
 
 pub use cmp::*;
+use rorm_db::sql::value::NullType;
 
 use crate::fields::utils::const_fn::ConstFn;
 use crate::internal::const_concat::ConstString;
@@ -18,6 +19,8 @@ use crate::sealed;
 pub trait FieldType: 'static {
     /// Array with length specific to the field type
     type Columns: Columns;
+
+    const NULL: FieldColumns<Self, NullType>;
 
     /// Construct an array of [`Value`] representing `self` in the database via ownership
     fn into_values(self) -> FieldColumns<Self, Value<'static>>;

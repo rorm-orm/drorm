@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use rorm_db::sql::value::NullType;
 use rorm_declaration::imr;
 use url::Url;
 
@@ -18,6 +19,8 @@ impl_FieldEq!(impl<'rhs> FieldEq<'rhs, Url> for Url {|url: Url| Value::String(Co
 
 impl FieldType for Url {
     type Columns = Array<1>;
+
+    const NULL: FieldColumns<Self, NullType> = [NullType::String];
 
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         [Value::String(Cow::Owned(self.into()))]
@@ -54,6 +57,8 @@ new_converting_decoder!(
 
 impl FieldType for Option<Url> {
     type Columns = Array<1>;
+
+    const NULL: FieldColumns<Self, NullType> = [NullType::String];
 
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         self.map(<Url>::into_values).unwrap_or([Value::Null(

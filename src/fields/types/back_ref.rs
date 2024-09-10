@@ -5,6 +5,7 @@ use std::fmt;
 
 use futures::stream::TryStreamExt;
 use rorm_db::executor::Executor;
+use rorm_db::sql::value::NullType;
 use rorm_db::Error;
 use rorm_declaration::imr;
 
@@ -44,6 +45,8 @@ impl<FMF: ForeignModelField> BackRef<FMF> {
 
 impl<FMF: ForeignModelField> FieldType for BackRef<FMF> {
     type Columns = Array<0>;
+
+    const NULL: FieldColumns<Self, NullType> = [];
 
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         []

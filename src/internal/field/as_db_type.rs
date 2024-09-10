@@ -36,6 +36,8 @@ macro_rules! impl_AsDbType {
         impl $crate::fields::traits::FieldType for Option<$type> {
             type Columns = $crate::fields::traits::Array<1>;
 
+            const NULL: $crate::fields::traits::FieldColumns<Self, $crate::db::sql::value::NullType> = <$type as $crate::fields::traits::FieldType>::NULL;
+
             fn into_values(self) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'static>> {
                 self.map(<$type>::into_values)
                     .unwrap_or([Value::Null(<<$type as $crate::internal::field::as_db_type::AsDbType>::DbType as $crate::internal::hmr::db_type::DbType>::NULL_TYPE)])
@@ -76,6 +78,8 @@ macro_rules! impl_AsDbType {
     ($type:ty, $db_type:ty, $into_value:expr, $as_value:expr, $Check:ty) => {
         impl $crate::fields::traits::FieldType for $type {
             type Columns = $crate::fields::traits::Array<1>;
+
+            const NULL: $crate::fields::traits::FieldColumns<Self, $crate::db::sql::value::NullType> = [<$db_type as $crate::internal::hmr::db_type::DbType>::NULL_TYPE];
 
             #[inline(always)]
             fn as_values(&self) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'_>> {

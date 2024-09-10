@@ -8,6 +8,7 @@ use rorm_db::executor::Executor;
 
 use crate::conditions::{Condition, DynamicCollection, Value};
 use crate::internal::field::{FieldProxy, SingleColumnField};
+use crate::internal::patch::{IntoPatchCow, PatchCow};
 use crate::internal::query_context::QueryContext;
 use crate::model::Identifiable;
 use crate::{Model, Patch};
@@ -175,17 +176,37 @@ where
     /// Update a bulk of rows identified by patch instances
     ///
     /// Note: The patches only provide the primary key, their other values will be ignored.
-    pub async fn bulk<P>(self, patches: impl IntoIterator<Item = &P>) -> Result<u64, Error>
+    ///
+    /// # Argument
+    /// This method accepts anything which can be used to iterate
+    /// over instances or references of your [`Patch`].
+    ///
+    /// **Examples**: (where `P` is your patch)
+    /// - `Vec<P>`
+    /// - `&[P]`
+    /// - A [`map`](Iterator::map) iterator yielding `P` or `&P`
+    pub async fn bulk<'p, I, P>(self, patches: I) -> Result<u64, Error>
     where
+        I: IntoIterator,
+        I::Item: IntoPatchCow<'p, Patch = P>,
         P: Patch<Model = M> + Identifiable,
     {
-        self.condition(DynamicCollection::or(
-            patches
-                .into_iter()
-                .map(|patch| patch.as_condition())
-                .collect(),
-        ))
-        .await
+        let mut owned = Vec::new();
+        let mut conditions = Vec::new();
+        for patch in patches {
+            match patch.into_patch_cow() {
+                PatchCow::Borrowed(patch) => conditions.push(patch.as_condition()),
+                PatchCow::Owned(patch) => owned.push(patch),
+            }
+        }
+        for patch in &owned {
+            conditions.push(patch.as_condition());
+        }
+        if conditions.is_empty() {
+            Ok(0)
+        } else {
+            self.condition(DynamicCollection::or(conditions)).await
+        }
     }
 
     /// Update all rows matching a condition

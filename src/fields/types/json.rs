@@ -79,7 +79,6 @@ impl<T: Serialize + DeserializeOwned + 'static> FieldType for Json<T> {
 }
 impl<T: Serialize + DeserializeOwned + 'static> AsDbType for Json<T> {
     type Primitive = Vec<u8>;
-    type DbType = Binary;
 }
 
 new_converting_decoder!(
@@ -120,7 +119,6 @@ impl<T: Serialize + DeserializeOwned + 'static> FieldType for Option<Json<T>> {
 }
 impl<T: Serialize + DeserializeOwned + 'static> AsDbType for Option<Json<T>> {
     type Primitive = Option<Vec<u8>>;
-    type DbType = Binary;
 }
 
 // From

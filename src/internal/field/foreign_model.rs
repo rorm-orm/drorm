@@ -16,7 +16,6 @@ use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::{Field, FieldProxy, FieldType, SingleColumnField};
 use crate::internal::hmr;
 use crate::internal::hmr::annotations::Annotations;
-use crate::internal::hmr::db_type::DbType;
 use crate::internal::hmr::Source;
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
@@ -73,17 +72,13 @@ where
 
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         self.map(ForeignModelByField::into_values)
-            .unwrap_or([Value::Null(
-                <<Option<FF::Type> as AsDbType>::DbType>::NULL_TYPE,
-            )])
+            .unwrap_or(Self::NULL.map(Value::Null))
     }
 
     fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
         self.as_ref()
             .map(ForeignModelByField::as_values)
-            .unwrap_or([Value::Null(
-                <<Option<FF::Type> as AsDbType>::DbType>::NULL_TYPE,
-            )])
+            .unwrap_or(Self::NULL.map(Value::Null))
     }
 
     type Decoder = OptionForeignModelByFieldDecoder<FF>;
@@ -99,7 +94,6 @@ where
 pub trait ForeignModelTrait {
     sealed!(trait);
 
-    type DbType: DbType;
     type RelatedField: SingleColumnField;
     const IS_OPTION: bool;
     fn as_key(&self) -> Option<&<Self::RelatedField as Field>::Type>;
@@ -113,7 +107,6 @@ where
 {
     sealed!(impl);
 
-    type DbType = <FF::Type as AsDbType>::DbType;
     type RelatedField = FF;
     const IS_OPTION: bool = false;
     fn as_key(&self) -> Option<&<Self::RelatedField as Field>::Type> {
@@ -133,7 +126,6 @@ where
 {
     sealed!(impl);
 
-    type DbType = <FF::Type as AsDbType>::DbType;
     type RelatedField = FF;
     const IS_OPTION: bool = true;
 

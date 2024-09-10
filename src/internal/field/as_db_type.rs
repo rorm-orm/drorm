@@ -3,7 +3,6 @@
 use rorm_db::row::DecodeOwned;
 
 use crate::internal::field::FieldType;
-use crate::internal::hmr::db_type::DbType;
 
 /// This trait maps rust types to database types
 ///
@@ -11,9 +10,6 @@ use crate::internal::hmr::db_type::DbType;
 pub trait AsDbType: FieldType + Sized {
     /// A type which can be retrieved from the db and then converted into Self.
     type Primitive: DecodeOwned;
-
-    /// The database type as defined in the Intermediate Model Representation
-    type DbType: DbType;
 }
 
 /// Provides the "default" implementation of [`AsDbType`] and [`FieldType`] of kind `AsDbType`.
@@ -29,21 +25,29 @@ pub trait AsDbType: FieldType + Sized {
 #[allow(non_snake_case)] // makes it clearer that a trait and which trait is meant
 #[macro_export]
 macro_rules! impl_AsDbType {
-    (Option<$type:ty>, $decoder:ty) => {
+    (Option<$type:ty>, $db_type:ty, $decoder:ty) => {
         impl $crate::fields::traits::FieldType for Option<$type> {
             type Columns = $crate::fields::traits::Array<1>;
 
-            const NULL: $crate::fields::traits::FieldColumns<Self, $crate::db::sql::value::NullType> = <$type as $crate::fields::traits::FieldType>::NULL;
+            const NULL: $crate::fields::traits::FieldColumns<
+                Self,
+                $crate::db::sql::value::NullType,
+            > = <$type as $crate::fields::traits::FieldType>::NULL;
 
-            fn into_values(self) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'static>> {
+            fn into_values(
+                self,
+            ) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'static>>
+            {
                 self.map(<$type>::into_values)
-                    .unwrap_or([Value::Null(<<$type as $crate::internal::field::as_db_type::AsDbType>::DbType as $crate::internal::hmr::db_type::DbType>::NULL_TYPE)])
+                    .unwrap_or(Self::NULL.map(Value::Null))
             }
 
-            fn as_values(&self) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'_>> {
+            fn as_values(
+                &self,
+            ) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'_>> {
                 self.as_ref()
                     .map(<$type>::as_values)
-                    .unwrap_or([Value::Null(<<$type as $crate::internal::field::as_db_type::AsDbType>::DbType as $crate::internal::hmr::db_type::DbType>::NULL_TYPE)])
+                    .unwrap_or(Self::NULL.map(Value::Null))
             }
 
             type Decoder = $decoder;
@@ -56,29 +60,43 @@ macro_rules! impl_AsDbType {
         }
 
         impl $crate::internal::field::as_db_type::AsDbType for Option<$type> {
-            type Primitive = Option<<$type as $crate::internal::field::as_db_type::AsDbType>::Primitive>;
-            type DbType = <$type as $crate::internal::field::as_db_type::AsDbType>::DbType;
+            type Primitive =
+                Option<<$type as $crate::internal::field::as_db_type::AsDbType>::Primitive>;
         }
     };
     ($type:ty, $db_type:ty, $into_value:expr) => {
         impl_AsDbType!($type, $db_type, $into_value, |&value| $into_value(value));
     };
     ($type:ty, $db_type:ty, $into_value:expr, $as_value:expr) => {
-        impl_AsDbType!($type, $db_type, $into_value, $as_value, $crate::fields::utils::check::shared_linter_check<1>);
+        impl_AsDbType!(
+            $type,
+            $db_type,
+            $into_value,
+            $as_value,
+            $crate::fields::utils::check::shared_linter_check<1>
+        );
     };
     ($type:ty, $db_type:ty, $into_value:expr, $as_value:expr, $Check:ty) => {
         impl $crate::fields::traits::FieldType for $type {
             type Columns = $crate::fields::traits::Array<1>;
 
-            const NULL: $crate::fields::traits::FieldColumns<Self, $crate::db::sql::value::NullType> = [<$db_type as $crate::internal::hmr::db_type::DbType>::NULL_TYPE];
+            const NULL: $crate::fields::traits::FieldColumns<
+                Self,
+                $crate::db::sql::value::NullType,
+            > = [<$db_type as $crate::internal::hmr::db_type::DbType>::NULL_TYPE];
 
             #[inline(always)]
-            fn as_values(&self) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'_>> {
+            fn as_values(
+                &self,
+            ) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'_>> {
                 #[allow(clippy::redundant_closure_call)] // clean way to pass code to a macro
                 [$as_value(self)]
             }
 
-            fn into_values(self) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'static>> {
+            fn into_values(
+                self,
+            ) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'static>>
+            {
                 #[allow(clippy::redundant_closure_call)] // clean way to pass code to a macro
                 [$into_value(self)]
             }
@@ -94,10 +112,12 @@ macro_rules! impl_AsDbType {
 
         impl $crate::internal::field::as_db_type::AsDbType for $type {
             type Primitive = Self;
-
-            type DbType = $db_type;
         }
 
-        impl_AsDbType!(Option<$type>, $crate::crud::decoder::DirectDecoder<Self>);
+        impl_AsDbType!(
+            Option<$type>,
+            $db_type,
+            $crate::crud::decoder::DirectDecoder<Self>
+        );
     };
 }

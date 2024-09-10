@@ -19,7 +19,6 @@ use crate::impl_FieldEq;
 use crate::internal::field::as_db_type::AsDbType;
 use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::{Field, FieldProxy};
-use crate::internal::hmr;
 use crate::internal::hmr::annotations::{Annotations, MaxLength};
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
@@ -160,7 +159,6 @@ where
     Impl: LenImpl + Default + 'static,
 {
     type Primitive = String;
-    type DbType = hmr::db_type::VarChar;
 }
 
 impl<const MAX_LEN: usize, Impl> AsDbType for Option<MaxStr<MAX_LEN, Impl, String>>
@@ -168,7 +166,6 @@ where
     Impl: LenImpl + Default + 'static,
 {
     type Primitive = String;
-    type DbType = hmr::db_type::VarChar;
 }
 
 impl<const MAX_LEN: usize, Impl> FieldType for MaxStr<MAX_LEN, Impl, String>

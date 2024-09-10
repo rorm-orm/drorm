@@ -9,7 +9,6 @@ use crate::fields::utils::check::string_check;
 use crate::fields::utils::get_annotations::{forward_annotations, set_null_annotations};
 use crate::fields::utils::get_names::single_column_name;
 use crate::internal::field::as_db_type::AsDbType;
-use crate::internal::hmr;
 use crate::{impl_FieldEq, new_converting_decoder, Error};
 
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, &'rhs Url> for Url {|url: &'rhs Url| Value::String(Cow::Borrowed(url.as_str()))});
@@ -39,8 +38,6 @@ impl FieldType for Url {
 }
 impl AsDbType for Url {
     type Primitive = String;
-
-    type DbType = hmr::db_type::VarChar;
 }
 new_converting_decoder!(
     pub UrlDecoder,
@@ -55,15 +52,14 @@ impl FieldType for Option<Url> {
     const NULL: FieldColumns<Self, NullType> = [NullType::String];
 
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
-        self.map(<Url>::into_values).unwrap_or([Value::Null(
-            <<Url as AsDbType>::DbType as hmr::db_type::DbType>::NULL_TYPE,
-        )])
+        self.map(<Url>::into_values)
+            .unwrap_or(Self::NULL.map(Value::Null))
     }
 
     fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
-        self.as_ref().map(<Url>::as_values).unwrap_or([Value::Null(
-            <<Url as AsDbType>::DbType as hmr::db_type::DbType>::NULL_TYPE,
-        )])
+        self.as_ref()
+            .map(<Url>::as_values)
+            .unwrap_or(Self::NULL.map(Value::Null))
     }
 
     type Decoder = OptionUrlDecoder;
@@ -76,7 +72,6 @@ impl FieldType for Option<Url> {
 }
 impl AsDbType for Option<Url> {
     type Primitive = Option<<Url as AsDbType>::Primitive>;
-    type DbType = <Url as AsDbType>::DbType;
 }
 new_converting_decoder!(
     pub OptionUrlDecoder,

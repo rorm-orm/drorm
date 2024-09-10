@@ -7,7 +7,6 @@ use futures::stream::TryStreamExt;
 use rorm_db::executor::Executor;
 use rorm_db::sql::value::NullType;
 use rorm_db::Error;
-use rorm_declaration::imr;
 
 use crate::conditions::collections::CollectionOperator::Or;
 use crate::conditions::{Binary, BinaryOperator, Column, Condition, DynamicCollection, Value};
@@ -53,10 +52,6 @@ impl<FMF: ForeignModelField> FieldType for BackRef<FMF> {
     }
 
     fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
-        []
-    }
-
-    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
         []
     }
 

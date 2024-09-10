@@ -41,9 +41,12 @@
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 
+use rorm_db::sql::value::NullType;
+use rorm_declaration::imr;
+
 use crate::conditions::Value;
 use crate::internal::hmr::annotations::Annotations;
-use crate::internal::hmr::Source;
+use crate::internal::hmr::{AsImr, Source};
 use crate::internal::relation_path::{Path, PathField};
 use crate::model::{ConstNew, Model};
 
@@ -83,6 +86,9 @@ pub trait Field: 'static + Copy {
             contains::ExplicitAnnotations<Self>,
         )> as Contains<_>>::ITEM;
 
+    const EFFECTIVE_NAMES: FieldColumns<Self::Type, &'static str> =
+        <<<Self::Type as FieldType>::GetNames as ConstFn<_, _>>::Body<(contains::Name<Self>,)> as Contains<_>>::ITEM;
+
     /// Optional definition of the location of field in the source code
     const SOURCE: Option<Source>;
 
@@ -91,6 +97,54 @@ pub trait Field: 'static + Copy {
     /// Since `Self` is always a zero sized type, this is a noop.
     /// It exists to enable accessing field method through [`FieldProxy`] without having to forward every one.
     fn new() -> Self;
+}
+
+pub fn push_imr<F: Field>(imr: &mut Vec<imr::Field>) {
+    let names = F::EFFECTIVE_NAMES;
+    let db_types = F::Type::NULL;
+    let annotations = F::EFFECTIVE_ANNOTATIONS;
+    let source_defined_at = F::SOURCE.map(|s| s.as_imr());
+
+    for ((name, annotations), null_type) in names
+        .into_iter()
+        .zip(annotations.into_iter())
+        .zip(db_types.into_iter())
+    {
+        imr.push(imr::Field {
+            name: name.to_string(),
+            db_type: match null_type {
+                NullType::String => imr::DbType::VarChar,
+                NullType::Choice => imr::DbType::Choices,
+                NullType::I64 => imr::DbType::Int64,
+                NullType::I32 => imr::DbType::Int32,
+                NullType::I16 => imr::DbType::Int16,
+                NullType::Bool => imr::DbType::Boolean,
+                NullType::F64 => imr::DbType::Double,
+                NullType::F32 => imr::DbType::Float,
+                NullType::Binary => imr::DbType::Binary,
+                NullType::ChronoNaiveTime => imr::DbType::Time,
+                NullType::ChronoNaiveDate => imr::DbType::Date,
+                NullType::ChronoNaiveDateTime => imr::DbType::DateTime,
+                NullType::ChronoDateTime => imr::DbType::DateTime,
+                NullType::TimeDate => imr::DbType::Date,
+                NullType::TimeTime => imr::DbType::Time,
+                NullType::TimeOffsetDateTime => imr::DbType::DateTime,
+                NullType::TimePrimitiveDateTime => imr::DbType::DateTime,
+                NullType::Uuid => imr::DbType::Uuid,
+                NullType::UuidHyphenated => imr::DbType::Uuid,
+                NullType::UuidSimple => imr::DbType::Uuid,
+                NullType::JsonValue => imr::DbType::Binary,
+                #[cfg(feature = "postgres-only")]
+                NullType::MacAddress => imr::DbType::MacAddress,
+                #[cfg(feature = "postgres-only")]
+                NullType::IpNetwork => imr::DbType::IpNetwork,
+                #[cfg(feature = "postgres-only")]
+                NullType::BitVec => imr::DbType::BitVec,
+            },
+            annotations: annotations.as_imr(),
+            source_defined_at: source_defined_at.clone(),
+        });
+    }
 }
 
 /// Check a [`Field`] for correctness by evaluating its [`FieldType`]'s `Check`

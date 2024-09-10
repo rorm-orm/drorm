@@ -4,7 +4,6 @@ use std::marker::PhantomData;
 
 use rorm_db::sql::value::NullType;
 use rorm_db::{Error, Row};
-use rorm_declaration::imr;
 
 use crate::conditions::Value;
 use crate::const_fn;
@@ -12,7 +11,7 @@ use crate::crud::decoder::Decoder;
 use crate::fields::traits::{Array, FieldColumns};
 use crate::fields::types::ForeignModelByField;
 use crate::fields::utils::get_names::single_column_name;
-use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
+use crate::internal::field::as_db_type::AsDbType;
 use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::{Field, FieldProxy, FieldType, SingleColumnField};
 use crate::internal::hmr;
@@ -50,10 +49,6 @@ where
         })]
     }
 
-    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
-        get_single_imr::<F>(<Self as ForeignModelTrait>::DbType::IMR)
-    }
-
     type Decoder = ForeignModelByFieldDecoder<FF>;
 
     type GetAnnotations = foreign_annotations<Self>;
@@ -89,10 +84,6 @@ where
             .unwrap_or([Value::Null(
                 <<Option<FF::Type> as AsDbType>::DbType>::NULL_TYPE,
             )])
-    }
-
-    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
-        get_single_imr::<F>(<Self as ForeignModelTrait>::DbType::IMR)
     }
 
     type Decoder = OptionForeignModelByFieldDecoder<FF>;

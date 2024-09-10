@@ -4,7 +4,6 @@ use std::ops::Deref;
 
 use rorm_db::sql::value::NullType;
 use rorm_db::{Error, Row};
-use rorm_declaration::imr;
 use serde::de::Unexpected;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -17,7 +16,7 @@ use crate::fields::utils::const_fn::Contains;
 use crate::fields::utils::get_annotations::merge_annotations;
 use crate::fields::utils::get_names::single_column_name;
 use crate::impl_FieldEq;
-use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
+use crate::internal::field::as_db_type::AsDbType;
 use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::{Field, FieldProxy};
 use crate::internal::hmr;
@@ -188,10 +187,6 @@ where
         [Value::String(Cow::Borrowed(&self.string))]
     }
 
-    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
-        get_single_imr::<F>(imr::DbType::VarChar)
-    }
-
     type Decoder = MaxStrDecoder<MAX_LEN, Impl>;
     type GetAnnotations = merge_annotations<ImplicitMaxLength<MAX_LEN>>;
     type Check = shared_linter_check<1>;
@@ -261,10 +256,6 @@ where
         } else {
             Value::Null(NullType::String)
         }]
-    }
-
-    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
-        get_single_imr::<F>(imr::DbType::VarChar)
     }
 
     type Decoder = OptionMaxStrDecoder<MAX_LEN, Impl>;

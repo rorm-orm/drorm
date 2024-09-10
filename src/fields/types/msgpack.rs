@@ -5,7 +5,6 @@ use std::ops::{Deref, DerefMut};
 
 use rorm_db::sql::value::NullType;
 use rorm_db::Error::DecodeError;
-use rorm_declaration::imr;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -14,8 +13,7 @@ use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::fields::utils::check::shared_linter_check;
 use crate::fields::utils::get_annotations::{forward_annotations, set_null_annotations};
 use crate::fields::utils::get_names::single_column_name;
-use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
-use crate::internal::field::Field;
+use crate::internal::field::as_db_type::AsDbType;
 use crate::internal::hmr::db_type::{Binary, DbType};
 use crate::new_converting_decoder;
 
@@ -71,10 +69,6 @@ impl<T: Serialize + DeserializeOwned + 'static> FieldType for MsgPack<T> {
         ))]
     }
 
-    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
-        get_single_imr::<F>(imr::DbType::Binary)
-    }
-
     type Decoder = MsgPackDecoder<T>;
 
     type GetAnnotations = forward_annotations<1>;
@@ -112,10 +106,6 @@ impl<T: Serialize + DeserializeOwned + 'static> FieldType for Option<MsgPack<T>>
         self.as_ref()
             .map(MsgPack::as_values)
             .unwrap_or([Value::Null(Binary::NULL_TYPE)])
-    }
-
-    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
-        get_single_imr::<F>(imr::DbType::Binary)
     }
 
     type Decoder = OptionMsgPackDecoder<T>;

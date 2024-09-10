@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
 use rorm_db::sql::value::NullType;
-use rorm_declaration::imr;
 use url::Url;
 
 use crate::conditions::Value;
@@ -9,8 +8,7 @@ use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::fields::utils::check::string_check;
 use crate::fields::utils::get_annotations::{forward_annotations, set_null_annotations};
 use crate::fields::utils::get_names::single_column_name;
-use crate::internal::field::as_db_type::{get_single_imr, AsDbType};
-use crate::internal::field::Field;
+use crate::internal::field::as_db_type::AsDbType;
 use crate::internal::hmr;
 use crate::{impl_FieldEq, new_converting_decoder, Error};
 
@@ -29,10 +27,6 @@ impl FieldType for Url {
     #[inline(always)]
     fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
         [Value::String(Cow::Borrowed(self.as_str()))]
-    }
-
-    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
-        get_single_imr::<F>(imr::DbType::VarChar)
     }
 
     type Decoder = UrlDecoder;
@@ -70,10 +64,6 @@ impl FieldType for Option<Url> {
         self.as_ref().map(<Url>::as_values).unwrap_or([Value::Null(
             <<Url as AsDbType>::DbType as hmr::db_type::DbType>::NULL_TYPE,
         )])
-    }
-
-    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field> {
-        get_single_imr::<F>(imr::DbType::VarChar)
     }
 
     type Decoder = OptionUrlDecoder;

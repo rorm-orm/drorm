@@ -1,12 +1,9 @@
 //! defines and implements the [`AsDbType`] trait.
 
 use rorm_db::row::DecodeOwned;
-use rorm_declaration::imr;
 
-use crate::fields::traits::Array;
-use crate::internal::field::{Field, FieldType};
+use crate::internal::field::FieldType;
 use crate::internal::hmr::db_type::DbType;
-use crate::internal::hmr::AsImr;
 
 /// This trait maps rust types to database types
 ///
@@ -49,12 +46,6 @@ macro_rules! impl_AsDbType {
                     .unwrap_or([Value::Null(<<$type as $crate::internal::field::as_db_type::AsDbType>::DbType as $crate::internal::hmr::db_type::DbType>::NULL_TYPE)])
             }
 
-            fn get_imr<F: $crate::internal::field::Field<Type = Self>>() -> $crate::fields::traits::FieldColumns<Self, $crate::internal::imr::Field> {
-                $crate::internal::field::as_db_type::get_single_imr::<F>(
-                    <<$type as $crate::internal::field::as_db_type::AsDbType>::DbType as $crate::internal::hmr::db_type::DbType>::IMR
-                )
-            }
-
             type Decoder = $decoder;
 
             type GetAnnotations = $crate::fields::utils::get_annotations::set_null_annotations;
@@ -92,12 +83,6 @@ macro_rules! impl_AsDbType {
                 [$into_value(self)]
             }
 
-            fn get_imr<F: $crate::internal::field::Field<Type = Self>>() -> $crate::fields::traits::FieldColumns<Self, $crate::internal::imr::Field> {
-                $crate::internal::field::as_db_type::get_single_imr::<F>(
-                    <$db_type as $crate::internal::hmr::db_type::DbType>::IMR
-                )
-            }
-
             type Decoder = $crate::crud::decoder::DirectDecoder<Self>;
 
             type GetAnnotations = $crate::fields::utils::get_annotations::forward_annotations<1>;
@@ -115,18 +100,4 @@ macro_rules! impl_AsDbType {
 
         impl_AsDbType!(Option<$type>, $crate::crud::decoder::DirectDecoder<Self>);
     };
-}
-
-/// Default implementation of [`FieldType::get_imr`] for field with a single column
-pub fn get_single_imr<F>(db_type: imr::DbType) -> [imr::Field; 1]
-where
-    F: Field,
-    F::Type: FieldType<Columns = Array<1>>,
-{
-    [imr::Field {
-        name: F::NAME.to_string(),
-        db_type,
-        annotations: F::EFFECTIVE_ANNOTATIONS[0].as_imr(),
-        source_defined_at: F::SOURCE.map(|s| s.as_imr()),
-    }]
 }

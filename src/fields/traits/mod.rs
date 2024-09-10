@@ -1,19 +1,16 @@
 //! Traits defining types which can be used as fields.
 
-use crate::conditions::Value;
-use crate::internal::field::decoder::FieldDecoder;
-use crate::internal::field::Field;
-use crate::internal::imr;
-
-pub mod cmp;
-
-pub use cmp::*;
 use rorm_db::sql::value::NullType;
 
+pub use self::cmp::*;
+use crate::conditions::Value;
 use crate::fields::utils::const_fn::ConstFn;
 use crate::internal::const_concat::ConstString;
+use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::hmr::annotations::Annotations;
 use crate::sealed;
+
+pub mod cmp;
 
 /// Base trait for types which are allowed as fields in models
 pub trait FieldType: 'static {
@@ -27,9 +24,6 @@ pub trait FieldType: 'static {
 
     /// Construct an array of [`Value`] representing `self` in the database via borrowing
     fn as_values(&self) -> FieldColumns<Self, Value<'_>>;
-
-    /// Construct an array of [`imr::Field`] representing this type
-    fn get_imr<F: Field<Type = Self>>() -> FieldColumns<Self, imr::Field>;
 
     /// [`FieldDecoder`] to use for fields of this type
     type Decoder: FieldDecoder<Result = Self>;

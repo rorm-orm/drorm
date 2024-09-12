@@ -3,18 +3,17 @@ use ipnetwork::IpNetwork;
 use mac_address::MacAddress;
 
 use crate::conditions::Value;
-use crate::internal::hmr::db_type;
 use crate::{impl_AsDbType, impl_FieldEq};
 
-impl_AsDbType!(MacAddress, db_type::MacAddress, Value::MacAddress);
+impl_AsDbType!(MacAddress, MacAddress, Value::MacAddress);
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, MacAddress> for MacAddress { Value::MacAddress });
 
-impl_AsDbType!(IpNetwork, db_type::IpNetwork, Value::IpNetwork);
+impl_AsDbType!(IpNetwork, IpNetwork, Value::IpNetwork);
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, IpNetwork> for IpNetwork { Value::IpNetwork });
 
 impl_AsDbType!(
     BitVec,
-    db_type::BitVec,
+    BitVec,
     |vec| Value::BitVec(BitCow::Owned(vec)),
     |vec| Value::BitVec(BitCow::Borrowed(vec))
 );

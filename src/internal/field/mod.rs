@@ -86,6 +86,7 @@ pub trait Field: 'static + Copy {
             contains::ExplicitAnnotations<Self>,
         )> as Contains<_>>::ITEM;
 
+    /// List of names which are passed to db
     const EFFECTIVE_NAMES: FieldColumns<Self::Type, &'static str> =
         <<<Self::Type as FieldType>::GetNames as ConstFn<_, _>>::Body<(contains::Name<Self>,)> as Contains<_>>::ITEM;
 
@@ -99,6 +100,9 @@ pub trait Field: 'static + Copy {
     fn new() -> Self;
 }
 
+/// Pushes a [`Field`]'s columns as [`imr`] onto a vector.
+///
+/// This function is called by the `#[derive(Model)]` macro to gather a list of all vectors.
 pub fn push_imr<F: Field>(imr: &mut Vec<imr::Field>) {
     let names = F::EFFECTIVE_NAMES;
     let db_types = F::Type::NULL;

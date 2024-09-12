@@ -7,7 +7,6 @@
 //! These features are split into different submodules to avoid name conflicts.
 
 pub mod annotations;
-pub mod db_type;
 
 /// Trait for converting a hmr type into a imr one
 pub trait AsImr {

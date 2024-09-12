@@ -15,9 +15,9 @@ pub trait AsDbType: FieldType + Sized {
 /// Provides the "default" implementation of [`AsDbType`] and [`FieldType`] of kind `AsDbType`.
 ///
 /// ## Usages
-/// - `impl_as_db_type!(RustType, DbType, into_value, as_value);`
+/// - `impl_as_db_type!(RustType, NullType, into_value, as_value);`
 ///     - `RustType` is the type to implement the traits on.
-///     - `DbType` is the database type to associate with (must implement [`DbType`]).
+///     - `NullType` is the database type to associate with (variant of [`NullType`](crate::db::sql::value::NullType)).
 ///     - `into_value` is used to convert `RustType` into a [`Value<'static>`] (must implement `Fn(RustType) -> Value<'static>`).
 ///     - `as_value` is used to convert `&'a RustType` into a [`Value<'a>`] (must implement `Fn(&'_ RustType) -> Value<'_>`).
 ///       If `RustType` implements `Copy`, `as_value` can be omitted and will use `into_value` instead.
@@ -25,7 +25,7 @@ pub trait AsDbType: FieldType + Sized {
 #[allow(non_snake_case)] // makes it clearer that a trait and which trait is meant
 #[macro_export]
 macro_rules! impl_AsDbType {
-    (Option<$type:ty>, $db_type:ty, $decoder:ty) => {
+    (Option<$type:ty>, $decoder:ty) => {
         impl $crate::fields::traits::FieldType for Option<$type> {
             type Columns = $crate::fields::traits::Array<1>;
 
@@ -64,26 +64,26 @@ macro_rules! impl_AsDbType {
                 Option<<$type as $crate::internal::field::as_db_type::AsDbType>::Primitive>;
         }
     };
-    ($type:ty, $db_type:ty, $into_value:expr) => {
-        impl_AsDbType!($type, $db_type, $into_value, |&value| $into_value(value));
+    ($type:ty, $null_type:ident, $into_value:expr) => {
+        impl_AsDbType!($type, $null_type, $into_value, |&value| $into_value(value));
     };
-    ($type:ty, $db_type:ty, $into_value:expr, $as_value:expr) => {
+    ($type:ty, $null_type:ident, $into_value:expr, $as_value:expr) => {
         impl_AsDbType!(
             $type,
-            $db_type,
+            $null_type,
             $into_value,
             $as_value,
             $crate::fields::utils::check::shared_linter_check<1>
         );
     };
-    ($type:ty, $db_type:ty, $into_value:expr, $as_value:expr, $Check:ty) => {
+    ($type:ty, $null_type:ident, $into_value:expr, $as_value:expr, $Check:ty) => {
         impl $crate::fields::traits::FieldType for $type {
             type Columns = $crate::fields::traits::Array<1>;
 
             const NULL: $crate::fields::traits::FieldColumns<
                 Self,
                 $crate::db::sql::value::NullType,
-            > = [<$db_type as $crate::internal::hmr::db_type::DbType>::NULL_TYPE];
+            > = [$crate::db::sql::value::NullType::$null_type];
 
             #[inline(always)]
             fn as_values(
@@ -114,10 +114,6 @@ macro_rules! impl_AsDbType {
             type Primitive = Self;
         }
 
-        impl_AsDbType!(
-            Option<$type>,
-            $db_type,
-            $crate::crud::decoder::DirectDecoder<Self>
-        );
+        impl_AsDbType!(Option<$type>, $crate::crud::decoder::DirectDecoder<Self>);
     };
 }

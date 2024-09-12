@@ -14,7 +14,6 @@ use crate::fields::utils::check::shared_linter_check;
 use crate::fields::utils::get_annotations::{forward_annotations, set_null_annotations};
 use crate::fields::utils::get_names::single_column_name;
 use crate::internal::field::as_db_type::AsDbType;
-use crate::internal::hmr::db_type::{Binary, DbType};
 use crate::new_converting_decoder;
 
 /// Stores data by serializing it to message pack.
@@ -98,13 +97,13 @@ impl<T: Serialize + DeserializeOwned + 'static> FieldType for Option<MsgPack<T>>
 
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
         self.map(MsgPack::into_values)
-            .unwrap_or([Value::Null(Binary::NULL_TYPE)])
+            .unwrap_or(Self::NULL.map(Value::Null))
     }
 
     fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
         self.as_ref()
             .map(MsgPack::as_values)
-            .unwrap_or([Value::Null(Binary::NULL_TYPE)])
+            .unwrap_or(Self::NULL.map(Value::Null))
     }
 
     type Decoder = OptionMsgPackDecoder<T>;

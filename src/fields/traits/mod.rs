@@ -17,6 +17,10 @@ pub trait FieldType: 'static {
     /// Array with length specific to the field type
     type Columns: Columns;
 
+    /// The null types representing `Option<Self>` in the database
+    ///
+    /// This is used to implement `into_values` and `as_values` for `Option<Self>`,
+    /// as well as provide the columns' database types to the migrator.
     const NULL: FieldColumns<Self, NullType>;
 
     /// Construct an array of [`Value`] representing `self` in the database via ownership

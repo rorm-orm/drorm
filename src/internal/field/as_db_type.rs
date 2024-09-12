@@ -1,21 +1,7 @@
-//! defines and implements the [`AsDbType`] trait.
-
-use rorm_db::row::DecodeOwned;
-
-use crate::internal::field::FieldType;
-
-/// This trait maps rust types to database types
-///
-/// I.e. it specifies which datatypes are allowed on model's fields.
-pub trait AsDbType: FieldType + Sized {
-    /// A type which can be retrieved from the db and then converted into Self.
-    type Primitive: DecodeOwned;
-}
-
-/// Provides the "default" implementation of [`AsDbType`] and [`FieldType`] of kind `AsDbType`.
+/// Provides the "default" implementation of [`FieldType`].
 ///
 /// ## Usages
-/// - `impl_as_db_type!(RustType, NullType, into_value, as_value);`
+/// - `impl_FieldType!(RustType, NullType, into_value, as_value);`
 ///     - `RustType` is the type to implement the traits on.
 ///     - `NullType` is the database type to associate with (variant of [`NullType`](crate::db::sql::value::NullType)).
 ///     - `into_value` is used to convert `RustType` into a [`Value<'static>`] (must implement `Fn(RustType) -> Value<'static>`).
@@ -24,7 +10,7 @@ pub trait AsDbType: FieldType + Sized {
 #[doc(hidden)]
 #[allow(non_snake_case)] // makes it clearer that a trait and which trait is meant
 #[macro_export]
-macro_rules! impl_AsDbType {
+macro_rules! impl_FieldType {
     (Option<$type:ty>, $decoder:ty) => {
         impl $crate::fields::traits::FieldType for Option<$type> {
             type Columns = $crate::fields::traits::Array<1>;
@@ -58,17 +44,12 @@ macro_rules! impl_AsDbType {
 
             type GetNames = $crate::fields::utils::get_names::single_column_name;
         }
-
-        impl $crate::internal::field::as_db_type::AsDbType for Option<$type> {
-            type Primitive =
-                Option<<$type as $crate::internal::field::as_db_type::AsDbType>::Primitive>;
-        }
     };
     ($type:ty, $null_type:ident, $into_value:expr) => {
-        impl_AsDbType!($type, $null_type, $into_value, |&value| $into_value(value));
+        impl_FieldType!($type, $null_type, $into_value, |&value| $into_value(value));
     };
     ($type:ty, $null_type:ident, $into_value:expr, $as_value:expr) => {
-        impl_AsDbType!(
+        impl_FieldType!(
             $type,
             $null_type,
             $into_value,
@@ -110,10 +91,6 @@ macro_rules! impl_AsDbType {
             type GetNames = $crate::fields::utils::get_names::single_column_name;
         }
 
-        impl $crate::internal::field::as_db_type::AsDbType for $type {
-            type Primitive = Self;
-        }
-
-        impl_AsDbType!(Option<$type>, $crate::crud::decoder::DirectDecoder<Self>);
+        impl_FieldType!(Option<$type>, $crate::crud::decoder::DirectDecoder<Self>);
     };
 }

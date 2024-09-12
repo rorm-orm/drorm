@@ -13,7 +13,6 @@ use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::fields::utils::check::shared_linter_check;
 use crate::fields::utils::get_annotations::{forward_annotations, set_null_annotations};
 use crate::fields::utils::get_names::single_column_name;
-use crate::internal::field::as_db_type::AsDbType;
 use crate::new_converting_decoder;
 
 /// Stores data by serializing it to message pack.
@@ -74,9 +73,6 @@ impl<T: Serialize + DeserializeOwned + 'static> FieldType for MsgPack<T> {
     type Check = shared_linter_check<1>;
     type GetNames = single_column_name;
 }
-impl<T: Serialize + DeserializeOwned + 'static> AsDbType for MsgPack<T> {
-    type Primitive = Vec<u8>;
-}
 
 new_converting_decoder!(
     pub OptionMsgPackDecoder<T: Serialize + DeserializeOwned>,
@@ -111,9 +107,6 @@ impl<T: Serialize + DeserializeOwned + 'static> FieldType for Option<MsgPack<T>>
     type GetAnnotations = set_null_annotations;
     type Check = shared_linter_check<1>;
     type GetNames = single_column_name;
-}
-impl<T: Serialize + DeserializeOwned + 'static> AsDbType for Option<MsgPack<T>> {
-    type Primitive = Option<Vec<u8>>;
 }
 
 // From

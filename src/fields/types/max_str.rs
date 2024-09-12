@@ -16,7 +16,6 @@ use crate::fields::utils::const_fn::Contains;
 use crate::fields::utils::get_annotations::merge_annotations;
 use crate::fields::utils::get_names::single_column_name;
 use crate::impl_FieldEq;
-use crate::internal::field::as_db_type::AsDbType;
 use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::{Field, FieldProxy};
 use crate::internal::hmr::annotations::{Annotations, MaxLength};
@@ -152,20 +151,6 @@ where
             )
         })
     }
-}
-
-impl<const MAX_LEN: usize, Impl> AsDbType for MaxStr<MAX_LEN, Impl, String>
-where
-    Impl: LenImpl + Default + 'static,
-{
-    type Primitive = String;
-}
-
-impl<const MAX_LEN: usize, Impl> AsDbType for Option<MaxStr<MAX_LEN, Impl, String>>
-where
-    Impl: LenImpl + Default + 'static,
-{
-    type Primitive = String;
 }
 
 impl<const MAX_LEN: usize, Impl> FieldType for MaxStr<MAX_LEN, Impl, String>

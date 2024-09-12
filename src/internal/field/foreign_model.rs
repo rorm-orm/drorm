@@ -11,7 +11,6 @@ use crate::crud::decoder::Decoder;
 use crate::fields::traits::{Array, FieldColumns};
 use crate::fields::types::ForeignModelByField;
 use crate::fields::utils::get_names::single_column_name;
-use crate::internal::field::as_db_type::AsDbType;
 use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::{Field, FieldProxy, FieldType, SingleColumnField};
 use crate::internal::hmr;
@@ -26,7 +25,6 @@ impl<FF> FieldType for ForeignModelByField<FF>
 where
     Self: ForeignModelTrait,
     FF: SingleColumnField,
-    FF::Type: AsDbType,
     FF::Type: FieldType<Columns = Array<1>>,
     FF::Model: GetField<FF>, // always true
 {
@@ -61,10 +59,9 @@ impl<FF> FieldType for Option<ForeignModelByField<FF>>
 where
     Self: ForeignModelTrait,
     FF: SingleColumnField,
-    FF::Type: AsDbType,
     FF::Type: FieldType<Columns = Array<1>>,
     FF::Model: GetField<FF>, // always true
-    Option<FF::Type>: AsDbType,
+    Option<FF::Type>: FieldType<Columns = Array<1>>,
 {
     type Columns = Array<1>;
 
@@ -102,7 +99,6 @@ pub trait ForeignModelTrait {
 impl<FF> ForeignModelTrait for ForeignModelByField<FF>
 where
     FF: SingleColumnField,
-    FF::Type: AsDbType,
     FF::Model: GetField<FF>, // always true
 {
     sealed!(impl);
@@ -120,9 +116,7 @@ where
 impl<FF: SingleColumnField> ForeignModelTrait for Option<ForeignModelByField<FF>>
 where
     FF: SingleColumnField,
-    FF::Type: AsDbType,
     FF::Model: GetField<FF>, // always true
-    Option<FF::Type>: AsDbType,
 {
     sealed!(impl);
 
@@ -267,7 +261,6 @@ impl_FieldEq!(
     impl<'rhs, FF> FieldEq<'rhs, FF::Type, FieldEq_ForeignModelByField_Owned> for ForeignModelByField<FF>
     where
         FF: SingleColumnField,
-        FF::Type: AsDbType,
         FF::Type: FieldType<Columns = Array<1>>,
         FF::Model: GetField<FF>, // always true
     { <FF as SingleColumnField>::type_into_value }
@@ -276,9 +269,7 @@ impl_FieldEq!(
     impl<'rhs, FF> FieldEq<'rhs, FF::Type, FieldEq_ForeignModelByField_Owned> for Option<ForeignModelByField<FF>>
     where
         FF: SingleColumnField,
-        FF::Type: AsDbType,
         FF::Type: FieldType<Columns = Array<1>>,
-        Option<FF::Type>: AsDbType,
         FF::Model: GetField<FF>, // always true
     { <FF as SingleColumnField>::type_into_value }
 );
@@ -287,7 +278,6 @@ impl_FieldEq!(
     impl<'rhs, FF> FieldEq<'rhs, &'rhs FF::Type, FieldEq_ForeignModelByField_Borrowed> for ForeignModelByField<FF>
     where
         FF: SingleColumnField,
-        FF::Type: AsDbType,
         FF::Type: FieldType<Columns = Array<1>>,
         FF::Model: GetField<FF>, // always true
     { <FF as SingleColumnField>::type_as_value }
@@ -296,9 +286,7 @@ impl_FieldEq!(
     impl<'rhs, FF> FieldEq<'rhs, &'rhs FF::Type, FieldEq_ForeignModelByField_Borrowed> for Option<ForeignModelByField<FF>>
     where
         FF: SingleColumnField,
-        FF::Type: AsDbType,
         FF::Type: FieldType<Columns = Array<1>>,
-        Option<FF::Type>: AsDbType,
         FF::Model: GetField<FF>, // always true
     { <FF as SingleColumnField>::type_as_value }
 );

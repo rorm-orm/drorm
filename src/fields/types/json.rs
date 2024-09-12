@@ -12,7 +12,6 @@ use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::fields::utils::check::shared_linter_check;
 use crate::fields::utils::get_annotations::{forward_annotations, set_null_annotations};
 use crate::fields::utils::get_names::single_column_name;
-use crate::internal::field::as_db_type::AsDbType;
 use crate::new_converting_decoder;
 use crate::Error::DecodeError;
 
@@ -76,9 +75,6 @@ impl<T: Serialize + DeserializeOwned + 'static> FieldType for Json<T> {
 
     type GetNames = single_column_name;
 }
-impl<T: Serialize + DeserializeOwned + 'static> AsDbType for Json<T> {
-    type Primitive = Vec<u8>;
-}
 
 new_converting_decoder!(
     pub OptionJsonDecoder<T: Serialize + DeserializeOwned>,
@@ -115,9 +111,6 @@ impl<T: Serialize + DeserializeOwned + 'static> FieldType for Option<Json<T>> {
     type Check = shared_linter_check<1>;
 
     type GetNames = single_column_name;
-}
-impl<T: Serialize + DeserializeOwned + 'static> AsDbType for Option<Json<T>> {
-    type Primitive = Option<Vec<u8>>;
 }
 
 // From

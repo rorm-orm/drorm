@@ -8,7 +8,6 @@ use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::fields::utils::check::string_check;
 use crate::fields::utils::get_annotations::{forward_annotations, set_null_annotations};
 use crate::fields::utils::get_names::single_column_name;
-use crate::internal::field::as_db_type::AsDbType;
 use crate::{impl_FieldEq, new_converting_decoder, Error};
 
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, &'rhs Url> for Url {|url: &'rhs Url| Value::String(Cow::Borrowed(url.as_str()))});
@@ -35,9 +34,6 @@ impl FieldType for Url {
     type Check = string_check;
 
     type GetNames = single_column_name;
-}
-impl AsDbType for Url {
-    type Primitive = String;
 }
 new_converting_decoder!(
     pub UrlDecoder,
@@ -69,9 +65,6 @@ impl FieldType for Option<Url> {
     type Check = string_check;
 
     type GetNames = single_column_name;
-}
-impl AsDbType for Option<Url> {
-    type Primitive = Option<<Url as AsDbType>::Primitive>;
 }
 new_converting_decoder!(
     pub OptionUrlDecoder,

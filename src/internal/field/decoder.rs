@@ -68,14 +68,22 @@ macro_rules! new_converting_decoder {
         {
             type Result = $result;
 
-            fn by_name(&self, row: &$crate::Row) -> Result<Self::Result, $crate::Error> {
+            fn by_name<'index>(&'index self, row: &'_ $crate::Row) -> Result<Self::Result, $crate::db::row::RowError<'index>> {
                 let $convert_arg: $primitive = row.get(self.column.as_str())?;
-                $convert_block
+                let convert_result = $convert_block;
+                convert_result.map_err(|error| $crate::db::row::RowError::Decode {
+                    index: self.column.as_str().into(),
+                    source: error.into(),
+                })
             }
 
-            fn by_index(&self, row: &$crate::Row) -> Result<Self::Result, $crate::Error> {
+            fn by_index<'index>(&'index self, row: &'_ $crate::Row) -> Result<Self::Result, $crate::db::row::RowError<'index>> {
                 let $convert_arg: $primitive = row.get(self.index)?;
-                $convert_block
+                let convert_result = $convert_block;
+                convert_result.map_err(|error| $crate::db::row::RowError::Decode {
+                    index: self.index.into(),
+                    source: error.into(),
+                })
             }
         }
         impl$(<$($generic),*>)? $crate::internal::field::decoder::FieldDecoder for $decoder$(<$($generic),+>)?

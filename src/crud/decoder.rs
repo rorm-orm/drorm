@@ -2,8 +2,8 @@
 
 use std::marker::PhantomData;
 
-use rorm_db::row::DecodeOwned;
-use rorm_db::{Error, Row};
+use rorm_db::row::{DecodeOwned, RowError};
+use rorm_db::Row;
 
 /// Something which decodes a [value](Self::Result) from a [`&Row`](rorm_db::Row)
 ///
@@ -23,10 +23,10 @@ pub trait Decoder {
     type Result;
 
     /// Decode a value from a row using select aliases to access the columns
-    fn by_name(&self, row: &Row) -> Result<Self::Result, Error>;
+    fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>>;
 
     /// Decode a value from a row using indexes to access the columns
-    fn by_index(&self, row: &Row) -> Result<Self::Result, Error>;
+    fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>>;
 }
 
 /// A [`Decoder`] which directly decodes a [`T: DecodedOwned`](DecodeOwned)
@@ -41,11 +41,11 @@ where
 {
     type Result = T;
 
-    fn by_name(&self, row: &Row) -> Result<Self::Result, Error> {
+    fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
         row.get(self.column.as_str())
     }
 
-    fn by_index(&self, row: &Row) -> Result<Self::Result, Error> {
+    fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
         row.get(self.index)
     }
 }
@@ -60,11 +60,11 @@ where
 {
     type Result = T;
 
-    fn by_name(&self, _row: &Row) -> Result<T, Error> {
+    fn by_name<'index>(&'index self, _row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
         Ok(Default::default())
     }
 
-    fn by_index(&self, _row: &Row) -> Result<T, Error> {
+    fn by_index<'index>(&'index self, _row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
         Ok(Default::default())
     }
 }
@@ -76,13 +76,13 @@ macro_rules! decoder {
                 $S::Result,
             )+);
 
-            fn by_name(&self, row: &Row) -> Result<Self::Result, Error> {
+            fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
                 Ok(($(
                     self.$index.by_name(row)?,
                 )+))
             }
 
-            fn by_index(&self, row: &Row) -> Result<Self::Result, Error> {
+            fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
                 Ok(($(
                     self.$index.by_index(row)?,
                 )+))

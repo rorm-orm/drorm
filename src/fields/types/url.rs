@@ -8,7 +8,7 @@ use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::fields::utils::check::string_check;
 use crate::fields::utils::get_annotations::{forward_annotations, set_null_annotations};
 use crate::fields::utils::get_names::single_column_name;
-use crate::{impl_FieldEq, new_converting_decoder, Error};
+use crate::{impl_FieldEq, new_converting_decoder};
 
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, &'rhs Url> for Url {|url: &'rhs Url| Value::String(Cow::Borrowed(url.as_str()))});
 impl_FieldEq!(impl<'rhs> FieldEq<'rhs, Url> for Url {|url: Url| Value::String(Cow::Owned(url.into()))});
@@ -38,7 +38,7 @@ impl FieldType for Url {
 new_converting_decoder!(
     pub UrlDecoder,
     |value: String| -> Url {
-        Url::parse(&value).map_err(|err| Error::DecodeError(format!("Couldn't parse url: {err}")))
+        Url::parse(&value).map_err(|err| format!("Couldn't parse url: {err}"))
     }
 );
 
@@ -69,6 +69,6 @@ impl FieldType for Option<Url> {
 new_converting_decoder!(
     pub OptionUrlDecoder,
     |value: Option<String>| -> Option<Url> {
-        value.map(|string| Url::parse(&string)).transpose().map_err(|err| Error::DecodeError(format!("Couldn't parse url: {err}")))
+        value.map(|string| Url::parse(&string)).transpose().map_err(|err| format!("Couldn't parse url: {err}"))
     }
 );

@@ -185,11 +185,7 @@ where
         )
         .await?
         .into_iter()
-        .map(|x| {
-            decoder
-                .by_name(&x)
-                .map_err(|_| Error::DecodeError("Could not decode row".to_string()))
-        })
+        .map(|x| decoder.by_name(&x).map_err(Into::into))
         .collect::<Result<Vec<_>, _>>()
     }
 
@@ -241,9 +237,7 @@ where
             self.lim_off.into_option(),
         )
         .await?;
-        decoder
-            .by_name(&row)
-            .map_err(|_| Error::DecodeError("Could not decode row".to_string()))
+        decoder.by_name(&row).map_err(Into::into)
     }
 
     /// Try to retrieve and decode a matching row
@@ -268,11 +262,7 @@ where
         .await?;
         match row {
             None => Ok(None),
-            Some(row) => {
-                Ok(Some(decoder.by_name(&row).map_err(|_| {
-                    Error::DecodeError("Could not decode row".to_string())
-                })?))
-            }
+            Some(row) => Ok(Some(decoder.by_name(&row)?)),
         }
     }
 }
@@ -468,7 +458,7 @@ mod query_stream {
         fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
             let mut projection = self.project();
             projection.stream.as_mut().poll_next(cx).map(|option| {
-                option.map(|result| result.and_then(|row| projection.decoder.by_name(&row)))
+                option.map(|result| result.and_then(|row| Ok(projection.decoder.by_name(&row)?)))
             })
         }
     }

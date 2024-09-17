@@ -4,7 +4,6 @@ use std::borrow::Cow;
 use std::ops::{Deref, DerefMut};
 
 use rorm_db::sql::value::NullType;
-use rorm_db::Error::DecodeError;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -47,7 +46,7 @@ new_converting_decoder!(
     |value: Vec<u8>| -> MsgPack<T> {
         rmp_serde::from_slice(&value)
             .map(MsgPack)
-            .map_err(|err| DecodeError(format!("Couldn't decode msg pack: {err}")))
+            .map_err(|err| format!("Couldn't decode msg pack: {err}"))
     }
 );
 impl<T: Serialize + DeserializeOwned + 'static> FieldType for MsgPack<T> {
@@ -81,7 +80,7 @@ new_converting_decoder!(
             .map(|value| {
                 rmp_serde::from_slice(&value)
                     .map(MsgPack)
-                    .map_err(|err| DecodeError(format!("Couldn't decode msg pack: {err}")))
+                    .map_err(|err| format!("Couldn't decode msg pack: {err}"))
             })
             .transpose()
     }

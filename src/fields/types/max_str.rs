@@ -1,9 +1,11 @@
 use std::borrow::Cow;
+use std::fmt;
 use std::marker::PhantomData;
 use std::ops::Deref;
 
+use rorm_db::row::RowError;
 use rorm_db::sql::value::NullType;
-use rorm_db::{Error, Row};
+use rorm_db::Row;
 use serde::de::Unexpected;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -113,6 +115,14 @@ pub struct MaxLenError<Str = String> {
     pub got: usize,
 }
 
+impl<Str: Deref<Target = str>> fmt::Display for MaxLenError<Str> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "string is longer than {max}", max = self.max)
+    }
+}
+
+impl<Str: fmt::Debug + Deref<Target = str>> std::error::Error for MaxLenError<Str> {}
+
 impl<const MAX_LEN: usize, Impl, Str> Deref for MaxStr<MAX_LEN, Impl, Str>
 where
     Str: Deref<Target = str>,
@@ -187,14 +197,22 @@ where
 {
     type Result = MaxStr<MAX_LEN, Impl, String>;
 
-    fn by_name(&self, row: &Row) -> Result<Self::Result, Error> {
-        MaxStr::<MAX_LEN, Impl, String>::new(row.get(self.column.as_str())?)
-            .map_err(|_| Error::DecodeError(format!("string is longer than {MAX_LEN}")))
+    fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
+        MaxStr::<MAX_LEN, Impl, String>::new(row.get(self.column.as_str())?).map_err(|error| {
+            RowError::Decode {
+                index: self.column.as_str().into(),
+                source: error.into(),
+            }
+        })
     }
 
-    fn by_index(&self, row: &Row) -> Result<Self::Result, Error> {
-        MaxStr::<MAX_LEN, Impl, String>::new(row.get(self.index)?)
-            .map_err(|_| Error::DecodeError(format!("string is longer than {MAX_LEN}")))
+    fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
+        MaxStr::<MAX_LEN, Impl, String>::new(row.get(self.index)?).map_err(|error| {
+            RowError::Decode {
+                index: self.index.into(),
+                source: error.into(),
+            }
+        })
     }
 }
 
@@ -258,20 +276,24 @@ where
 {
     type Result = Option<MaxStr<MAX_LEN, Impl, String>>;
 
-    fn by_name(&self, row: &Row) -> Result<Self::Result, Error> {
-        row.get::<Option<String>, _>(self.column.as_str())?
+    fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
+        row.get::<Option<String>>(self.column.as_str())?
             .map(|string| {
-                MaxStr::<MAX_LEN, Impl, String>::new(string)
-                    .map_err(|_| Error::DecodeError(format!("string is longer than {MAX_LEN}")))
+                MaxStr::<MAX_LEN, Impl, String>::new(string).map_err(|error| RowError::Decode {
+                    index: self.column.as_str().into(),
+                    source: error.into(),
+                })
             })
             .transpose()
     }
 
-    fn by_index(&self, row: &Row) -> Result<Self::Result, Error> {
-        row.get::<Option<String>, _>(self.index)?
+    fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
+        row.get::<Option<String>>(self.index)?
             .map(|string| {
-                MaxStr::<MAX_LEN, Impl, String>::new(string)
-                    .map_err(|_| Error::DecodeError(format!("string is longer than {MAX_LEN}")))
+                MaxStr::<MAX_LEN, Impl, String>::new(string).map_err(|error| RowError::Decode {
+                    index: self.column.as_str().into(),
+                    source: error.into(),
+                })
             })
             .transpose()
     }

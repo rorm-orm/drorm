@@ -7,6 +7,7 @@ Since 0.6.3
 - implemented `Condition` on `Arc<dyn Condition>`
 - added shorter syntax for `Model::F.field`: `Model.field`
 - implemented condition collections for `Option<impl Condition>`
+- changed error type returned by Decoder methods
 
 - relaxed / fixed lifetimes
 - improved error spans in or! and and!

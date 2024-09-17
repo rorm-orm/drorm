@@ -13,7 +13,6 @@ use crate::fields::utils::check::shared_linter_check;
 use crate::fields::utils::get_annotations::{forward_annotations, set_null_annotations};
 use crate::fields::utils::get_names::single_column_name;
 use crate::new_converting_decoder;
-use crate::Error::DecodeError;
 
 /// Stores data by serializing it to json.
 ///
@@ -47,7 +46,7 @@ new_converting_decoder!(
     |value: Vec<u8>| -> Json<T> {
         serde_json::from_slice(&value)
             .map(Json)
-            .map_err(|err| DecodeError(format!("Couldn't decoder json: {err}")))
+            .map_err(|err| format!("Couldn't decoder json: {err}"))
     }
 );
 impl<T: Serialize + DeserializeOwned + 'static> FieldType for Json<T> {
@@ -83,7 +82,7 @@ new_converting_decoder!(
             .map(|value| {
                 serde_json::from_slice(&value)
                     .map(Json)
-                    .map_err(|err| DecodeError(format!("Couldn't decoder json: {err}")))
+                    .map_err(|err| format!("Couldn't decoder json: {err}"))
             })
             .transpose()
     }

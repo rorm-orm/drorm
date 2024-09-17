@@ -2,8 +2,9 @@
 
 use std::marker::PhantomData;
 
+use rorm_db::row::RowError;
 use rorm_db::sql::value::NullType;
-use rorm_db::{Error, Row};
+use rorm_db::Row;
 
 use crate::conditions::Value;
 use crate::const_fn;
@@ -171,11 +172,11 @@ pub struct ForeignModelByFieldDecoder<FF: SingleColumnField>(<FF::Type as FieldT
 impl<FF: SingleColumnField> Decoder for ForeignModelByFieldDecoder<FF> {
     type Result = ForeignModelByField<FF>;
 
-    fn by_name(&self, row: &Row) -> Result<Self::Result, Error> {
+    fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
         self.0.by_name(row).map(ForeignModelByField::Key)
     }
 
-    fn by_index(&self, row: &Row) -> Result<Self::Result, Error> {
+    fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
         self.0.by_index(row).map(ForeignModelByField::Key)
     }
 }
@@ -204,13 +205,13 @@ where
 {
     type Result = Option<ForeignModelByField<FF>>;
 
-    fn by_name(&self, row: &Row) -> Result<Self::Result, Error> {
+    fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
         self.0
             .by_name(row)
             .map(|option| option.map(ForeignModelByField::Key))
     }
 
-    fn by_index(&self, row: &Row) -> Result<Self::Result, Error> {
+    fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
         self.0
             .by_index(row)
             .map(|option| option.map(ForeignModelByField::Key))

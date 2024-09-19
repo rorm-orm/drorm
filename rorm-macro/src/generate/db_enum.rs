@@ -20,6 +20,10 @@ pub fn generate_db_enum(parsed: &ParsedDbEnum) -> TokenStream {
             impl ::rorm::fields::traits::FieldType for #ident {
                 type Columns = ::rorm::fields::traits::Array<1>;
 
+                const NULL: ::rorm::fields::traits::FieldColumns<Self, ::rorm::db::sql::value::NullType> = [
+                    ::rorm::db::sql::value::NullType::String
+                ];
+
                 fn into_values(self) -> ::rorm::fields::traits::FieldColumns<Self, ::rorm::conditions::Value<'static>> {
                     [::rorm::conditions::Value::Choice(::std::borrow::Cow::Borrowed(match self {
                         #(
@@ -38,17 +42,11 @@ pub fn generate_db_enum(parsed: &ParsedDbEnum) -> TokenStream {
 
                 type Decoder = #decoder;
 
-            fn get_imr<F: ::rorm::internal::field::Field<Type = Self>>() -> ::rorm::fields::traits::FieldColumns<Self, ::rorm::internal::imr::Field> {
-                ::rorm::internal::field::as_db_type::get_single_imr::<F>(
-                    <::rorm::internal::hmr::db_type::Choices as ::rorm::internal::hmr::db_type::DbType>::IMR
-                )
-            }
+                type GetAnnotations = get_db_enum_annotations;
 
-            type GetAnnotations = get_db_enum_annotations;
+                type Check = ::rorm::fields::utils::check::shared_linter_check<1>;
 
-            type Check = ::rorm::fields::utils::check::shared_linter_check<1>;
-
-            type GetNames = ::rorm::fields::utils::get_names::single_column_name;
+                type GetNames = ::rorm::fields::utils::get_names::single_column_name;
             }
             ::rorm::new_converting_decoder!(
                 #[doc(hidden)]
@@ -59,14 +57,10 @@ pub fn generate_db_enum(parsed: &ParsedDbEnum) -> TokenStream {
                         #(
                             stringify!(#variants) => Ok(#ident::#variants),
                         )*
-                        _ => Err(::rorm::Error::DecodeError(format!("Invalid value '{}' for enum '{}'", value, stringify!(#ident)))),
+                        _ => Err(format!("Invalid value '{}' for enum '{}'", value, stringify!(#ident))),
                     }
                 }
             );
-            impl ::rorm::internal::field::as_db_type::AsDbType for #ident {
-                type Primitive = ::rorm::db::choice::Choice;
-                type DbType = ::rorm::internal::hmr::db_type::Choices;
-            }
             ::rorm::impl_FieldEq!(impl<'rhs> FieldEq<'rhs, #ident> for #ident {
                 |value: #ident| { let [value] = <#ident as ::rorm::fields::traits::FieldType>::into_values(value); value }
             });

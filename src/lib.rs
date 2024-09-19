@@ -71,6 +71,7 @@ pub fn print_models() -> Result<(), String> {
 #[doc(hidden)]
 pub(crate) mod private {
     pub trait Private {}
+    impl Private for () {}
 }
 /// Put this macro inside a trait to seal it i.e. prevent extern implementations.
 #[macro_export]

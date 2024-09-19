@@ -53,6 +53,7 @@ use crate::model::{ConstNew, Model};
 pub mod access;
 pub mod as_db_type;
 pub mod decoder;
+pub mod fake_field;
 pub mod foreign_model;
 
 use crate::fields::traits::{Array, FieldColumns, FieldType};
@@ -108,12 +109,14 @@ pub fn push_imr<F: Field>(imr: &mut Vec<imr::Field>) {
     let db_types = F::Type::NULL;
     let annotations = F::EFFECTIVE_ANNOTATIONS;
     let source_defined_at = F::SOURCE.map(|s| s.as_imr());
+    let is_option = F::Type::is_option::<()>();
 
-    for ((name, annotations), null_type) in names
+    for ((name, mut annotations), null_type) in names
         .into_iter()
         .zip(annotations.into_iter())
         .zip(db_types.into_iter())
     {
+        annotations.nullable |= is_option;
         imr.push(imr::Field {
             name: name.to_string(),
             db_type: match null_type {

@@ -234,36 +234,6 @@ where
     }
 }
 
-impl<const MAX_LEN: usize, Impl> FieldType for Option<MaxStr<MAX_LEN, Impl, String>>
-where
-    Impl: LenImpl + Default + 'static,
-{
-    type Columns = Array<1>;
-
-    const NULL: FieldColumns<Self, NullType> = [NullType::String];
-
-    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
-        [if let Some(string) = self {
-            Value::String(Cow::Owned(string.string))
-        } else {
-            Value::Null(NullType::String)
-        }]
-    }
-
-    fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
-        [if let Some(string) = self {
-            Value::String(Cow::Borrowed(&string.string))
-        } else {
-            Value::Null(NullType::String)
-        }]
-    }
-
-    type Decoder = OptionMaxStrDecoder<MAX_LEN, Impl>;
-    type GetAnnotations = merge_annotations<ImplicitMaxLengthAndNullable<MAX_LEN>>;
-    type Check = shared_linter_check<1>;
-    type GetNames = single_column_name;
-}
-
 pub struct OptionMaxStrDecoder<const MAX_LEN: usize, Impl: LenImpl> {
     column: String,
     index: usize,

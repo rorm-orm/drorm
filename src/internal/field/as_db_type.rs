@@ -11,40 +11,6 @@
 #[allow(non_snake_case)] // makes it clearer that a trait and which trait is meant
 #[macro_export]
 macro_rules! impl_FieldType {
-    (Option<$type:ty>, $decoder:ty) => {
-        impl $crate::fields::traits::FieldType for Option<$type> {
-            type Columns = $crate::fields::traits::Array<1>;
-
-            const NULL: $crate::fields::traits::FieldColumns<
-                Self,
-                $crate::db::sql::value::NullType,
-            > = <$type as $crate::fields::traits::FieldType>::NULL;
-
-            fn into_values(
-                self,
-            ) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'static>>
-            {
-                self.map(<$type>::into_values)
-                    .unwrap_or(Self::NULL.map(Value::Null))
-            }
-
-            fn as_values(
-                &self,
-            ) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'_>> {
-                self.as_ref()
-                    .map(<$type>::as_values)
-                    .unwrap_or(Self::NULL.map(Value::Null))
-            }
-
-            type Decoder = $decoder;
-
-            type GetAnnotations = $crate::fields::utils::get_annotations::set_null_annotations;
-
-            type Check = <$type as $crate::fields::traits::FieldType>::Check;
-
-            type GetNames = $crate::fields::utils::get_names::single_column_name;
-        }
-    };
     ($type:ty, $null_type:ident, $into_value:expr) => {
         impl_FieldType!($type, $null_type, $into_value, |&value| $into_value(value));
     };
@@ -90,7 +56,5 @@ macro_rules! impl_FieldType {
 
             type GetNames = $crate::fields::utils::get_names::single_column_name;
         }
-
-        impl_FieldType!(Option<$type>, $crate::crud::decoder::DirectDecoder<Self>);
     };
 }

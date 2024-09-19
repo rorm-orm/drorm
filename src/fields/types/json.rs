@@ -10,7 +10,7 @@ use serde::Serialize;
 use crate::conditions::Value;
 use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::fields::utils::check::shared_linter_check;
-use crate::fields::utils::get_annotations::{forward_annotations, set_null_annotations};
+use crate::fields::utils::get_annotations::forward_annotations;
 use crate::fields::utils::get_names::single_column_name;
 use crate::new_converting_decoder;
 
@@ -87,30 +87,6 @@ new_converting_decoder!(
             .transpose()
     }
 );
-impl<T: Serialize + DeserializeOwned + 'static> FieldType for Option<Json<T>> {
-    type Columns = Array<1>;
-
-    const NULL: FieldColumns<Self, NullType> = [NullType::Binary];
-
-    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
-        self.map(Json::into_values)
-            .unwrap_or(Self::NULL.map(Value::Null))
-    }
-
-    fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
-        self.as_ref()
-            .map(Json::as_values)
-            .unwrap_or(Self::NULL.map(Value::Null))
-    }
-
-    type Decoder = OptionJsonDecoder<T>;
-
-    type GetAnnotations = set_null_annotations;
-
-    type Check = shared_linter_check<1>;
-
-    type GetNames = single_column_name;
-}
 
 // From
 impl<T: Serialize + DeserializeOwned> From<T> for Json<T> {

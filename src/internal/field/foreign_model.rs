@@ -1,7 +1,5 @@
 //! Implementation detail of [`ForeignModelByField`]
 
-use std::marker::PhantomData;
-
 use rorm_db::row::RowError;
 use rorm_db::sql::value::NullType;
 use rorm_db::Row;
@@ -13,10 +11,10 @@ use crate::fields::traits::{Array, FieldColumns};
 use crate::fields::types::ForeignModelByField;
 use crate::fields::utils::get_names::single_column_name;
 use crate::internal::field::decoder::FieldDecoder;
+use crate::internal::field::fake_field::FakeField;
 use crate::internal::field::{Field, FieldProxy, FieldType, SingleColumnField};
 use crate::internal::hmr;
 use crate::internal::hmr::annotations::Annotations;
-use crate::internal::hmr::Source;
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
 use crate::model::{GetField, Model};
@@ -24,7 +22,6 @@ use crate::{impl_FieldEq, sealed};
 
 impl<FF> FieldType for ForeignModelByField<FF>
 where
-    Self: ForeignModelTrait,
     FF: SingleColumnField,
     FF::Type: FieldType<Columns = Array<1>>,
     FF::Model: GetField<FF>, // always true
@@ -49,39 +46,7 @@ where
 
     type Decoder = ForeignModelByFieldDecoder<FF>;
 
-    type GetAnnotations = foreign_annotations<Self>;
-
-    type Check = <FF::Type as FieldType>::Check;
-
-    type GetNames = single_column_name;
-}
-
-impl<FF> FieldType for Option<ForeignModelByField<FF>>
-where
-    Self: ForeignModelTrait,
-    FF: SingleColumnField,
-    FF::Type: FieldType<Columns = Array<1>>,
-    FF::Model: GetField<FF>, // always true
-    Option<FF::Type>: FieldType<Columns = Array<1>>,
-{
-    type Columns = Array<1>;
-
-    const NULL: FieldColumns<Self, NullType> = FF::Type::NULL;
-
-    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
-        self.map(ForeignModelByField::into_values)
-            .unwrap_or(Self::NULL.map(Value::Null))
-    }
-
-    fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
-        self.as_ref()
-            .map(ForeignModelByField::as_values)
-            .unwrap_or(Self::NULL.map(Value::Null))
-    }
-
-    type Decoder = OptionForeignModelByFieldDecoder<FF>;
-
-    type GetAnnotations = foreign_annotations<Self>;
+    type GetAnnotations = foreign_annotations<FF>;
 
     type Check = <FF::Type as FieldType>::Check;
 
@@ -93,7 +58,6 @@ pub trait ForeignModelTrait {
     sealed!(trait);
 
     type RelatedField: SingleColumnField;
-    const IS_OPTION: bool;
     fn as_key(&self) -> Option<&<Self::RelatedField as Field>::Type>;
 }
 
@@ -105,7 +69,6 @@ where
     sealed!(impl);
 
     type RelatedField = FF;
-    const IS_OPTION: bool = false;
     fn as_key(&self) -> Option<&<Self::RelatedField as Field>::Type> {
         Some(match self {
             ForeignModelByField::Key(key) => key,
@@ -122,7 +85,6 @@ where
     sealed!(impl);
 
     type RelatedField = FF;
-    const IS_OPTION: bool = true;
 
     fn as_key(&self) -> Option<&<Self::RelatedField as Field>::Type> {
         self.as_ref().map(|value| match value {
@@ -136,16 +98,15 @@ const_fn! {
     /// - sets `nullable`
     /// - copies `max_length` from the foreign key
     /// - sets `foreign`
-    pub fn foreign_annotations<T: ForeignModelTrait>(field: Annotations) -> [Annotations; 1] {
+    pub fn foreign_annotations<FF: SingleColumnField>(field: Annotations) -> [Annotations; 1] {
         let mut annos = field;
-        annos.nullable = T::IS_OPTION;
         if annos.max_length.is_none() {
-            let target_annos = <T::RelatedField as SingleColumnField>::EFFECTIVE_ANNOTATION;
+            let target_annos = FF::EFFECTIVE_ANNOTATION;
             annos.max_length = target_annos.max_length;
         }
         annos.foreign = Some(hmr::annotations::ForeignKey {
-            table_name: <T::RelatedField as Field>::Model::TABLE,
-            column_name: <T::RelatedField as Field>::NAME,
+            table_name: FF::Model::TABLE,
+            column_name: FF::NAME,
         });
         [annos]
     }
@@ -180,46 +141,11 @@ impl<FF: SingleColumnField> Decoder for ForeignModelByFieldDecoder<FF> {
         self.0.by_index(row).map(ForeignModelByField::Key)
     }
 }
-impl<FF: SingleColumnField> FieldDecoder for ForeignModelByFieldDecoder<FF> {
-    fn new<F, P>(ctx: &mut QueryContext, _: FieldProxy<F, P>) -> Self
-    where
-        F: Field<Type = Self::Result>,
-        P: Path,
-    {
-        Self(FieldDecoder::new(
-            ctx,
-            FieldProxy::<FakeFieldType<FF::Type, F>, P>::new(),
-        ))
-    }
-}
-
-/// [`FieldDecoder`] for [`Option<ForeignModelByField<FF>>`](ForeignModelByField)
-pub struct OptionForeignModelByFieldDecoder<FF: SingleColumnField>(
-    <Option<FF::Type> as FieldType>::Decoder,
-)
+impl<FF> FieldDecoder for ForeignModelByFieldDecoder<FF>
 where
-    Option<FF::Type>: FieldType;
-impl<FF: SingleColumnField> Decoder for OptionForeignModelByFieldDecoder<FF>
-where
-    Option<FF::Type>: FieldType,
-{
-    type Result = Option<ForeignModelByField<FF>>;
-
-    fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
-        self.0
-            .by_name(row)
-            .map(|option| option.map(ForeignModelByField::Key))
-    }
-
-    fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
-        self.0
-            .by_index(row)
-            .map(|option| option.map(ForeignModelByField::Key))
-    }
-}
-impl<FF: SingleColumnField> FieldDecoder for OptionForeignModelByFieldDecoder<FF>
-where
-    Option<FF::Type>: FieldType,
+    FF: SingleColumnField,
+    FF::Type: FieldType<Columns = Array<1>>,
+    FF::Model: GetField<FF>, // always true
 {
     fn new<F, P>(ctx: &mut QueryContext, _: FieldProxy<F, P>) -> Self
     where
@@ -228,33 +154,8 @@ where
     {
         Self(FieldDecoder::new(
             ctx,
-            FieldProxy::<FakeFieldType<Option<FF::Type>, F>, P>::new(),
+            FieldProxy::<FakeField<FF::Type, F>, P>::new(),
         ))
-    }
-}
-
-/// Take a field `F` and create a new "fake" field with the different [`Field::Type`](Field::Type) `T`
-#[allow(non_camel_case_types)]
-struct FakeFieldType<T, F>(PhantomData<(T, F)>);
-impl<T, F> Clone for FakeFieldType<T, F> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl<T, F> Copy for FakeFieldType<T, F> {}
-impl<T, F> Field for FakeFieldType<T, F>
-where
-    T: FieldType + 'static,
-    F: Field,
-{
-    type Type = T;
-    type Model = F::Model;
-    const INDEX: usize = F::INDEX;
-    const NAME: &'static str = F::NAME;
-    const EXPLICIT_ANNOTATIONS: Annotations = F::EXPLICIT_ANNOTATIONS;
-    const SOURCE: Option<Source> = F::SOURCE;
-    fn new() -> Self {
-        Self(PhantomData)
     }
 }
 

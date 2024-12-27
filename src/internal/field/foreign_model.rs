@@ -17,31 +17,24 @@ use crate::internal::hmr;
 use crate::internal::hmr::annotations::Annotations;
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
-use crate::model::{GetField, Model};
+use crate::model::Model;
 use crate::{impl_FieldEq, sealed};
 
 impl<FF> FieldType for ForeignModelByField<FF>
 where
     FF: SingleColumnField,
     FF::Type: FieldType<Columns = Array<1>>,
-    FF::Model: GetField<FF>, // always true
 {
     type Columns = Array<1>;
 
     const NULL: FieldColumns<Self, NullType> = FF::Type::NULL;
 
     fn into_values(self) -> FieldColumns<Self, Value<'static>> {
-        [FF::type_into_value(match self {
-            ForeignModelByField::Key(value) => value,
-            ForeignModelByField::Instance(model) => model.get_field(),
-        })]
+        [FF::type_into_value(self.0)]
     }
 
     fn as_values(&self) -> FieldColumns<Self, Value<'_>> {
-        [FF::type_as_value(match self {
-            ForeignModelByField::Key(value) => value,
-            ForeignModelByField::Instance(model) => model.borrow_field(),
-        })]
+        [FF::type_as_value(&self.0)]
     }
 
     type Decoder = ForeignModelByFieldDecoder<FF>;
@@ -64,33 +57,25 @@ pub trait ForeignModelTrait {
 impl<FF> ForeignModelTrait for ForeignModelByField<FF>
 where
     FF: SingleColumnField,
-    FF::Model: GetField<FF>, // always true
 {
     sealed!(impl);
 
     type RelatedField = FF;
     fn as_key(&self) -> Option<&<Self::RelatedField as Field>::Type> {
-        Some(match self {
-            ForeignModelByField::Key(key) => key,
-            ForeignModelByField::Instance(instance) => instance.borrow_field(),
-        })
+        Some(&self.0)
     }
 }
 
 impl<FF: SingleColumnField> ForeignModelTrait for Option<ForeignModelByField<FF>>
 where
     FF: SingleColumnField,
-    FF::Model: GetField<FF>, // always true
 {
     sealed!(impl);
 
     type RelatedField = FF;
 
     fn as_key(&self) -> Option<&<Self::RelatedField as Field>::Type> {
-        self.as_ref().map(|value| match value {
-            ForeignModelByField::Key(key) => key,
-            ForeignModelByField::Instance(instance) => instance.borrow_field(),
-        })
+        self.as_ref().map(|value| &value.0)
     }
 }
 
@@ -122,8 +107,7 @@ impl<F> ForeignModelField for F
 where
     F: SingleColumnField,
     F::Type: ForeignModelTrait,
-    <<F::Type as ForeignModelTrait>::RelatedField as Field>::Model:
-        GetField<<F::Type as ForeignModelTrait>::RelatedField>, // always true
+    <<F::Type as ForeignModelTrait>::RelatedField as Field>::Model:,
 {
     sealed!(impl);
 }
@@ -134,18 +118,17 @@ impl<FF: SingleColumnField> Decoder for ForeignModelByFieldDecoder<FF> {
     type Result = ForeignModelByField<FF>;
 
     fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
-        self.0.by_name(row).map(ForeignModelByField::Key)
+        self.0.by_name(row).map(ForeignModelByField)
     }
 
     fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
-        self.0.by_index(row).map(ForeignModelByField::Key)
+        self.0.by_index(row).map(ForeignModelByField)
     }
 }
 impl<FF> FieldDecoder for ForeignModelByFieldDecoder<FF>
 where
     FF: SingleColumnField,
     FF::Type: FieldType<Columns = Array<1>>,
-    FF::Model: GetField<FF>, // always true
 {
     fn new<F, P>(ctx: &mut QueryContext, _: FieldProxy<F, P>) -> Self
     where
@@ -164,7 +147,6 @@ impl_FieldEq!(
     where
         FF: SingleColumnField,
         FF::Type: FieldType<Columns = Array<1>>,
-        FF::Model: GetField<FF>, // always true
     { <FF as SingleColumnField>::type_into_value }
 );
 impl_FieldEq!(
@@ -172,7 +154,6 @@ impl_FieldEq!(
     where
         FF: SingleColumnField,
         FF::Type: FieldType<Columns = Array<1>>,
-        FF::Model: GetField<FF>, // always true
     { <FF as SingleColumnField>::type_into_value }
 );
 
@@ -181,7 +162,6 @@ impl_FieldEq!(
     where
         FF: SingleColumnField,
         FF::Type: FieldType<Columns = Array<1>>,
-        FF::Model: GetField<FF>, // always true
     { <FF as SingleColumnField>::type_as_value }
 );
 impl_FieldEq!(
@@ -189,7 +169,6 @@ impl_FieldEq!(
     where
         FF: SingleColumnField,
         FF::Type: FieldType<Columns = Array<1>>,
-        FF::Model: GetField<FF>, // always true
     { <FF as SingleColumnField>::type_as_value }
 );
 

@@ -21,6 +21,7 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
         query,
         update,
         delete,
+        experimental_unregistered,
     } = model;
     let primary_struct = &fields[*primary_key].unit;
     let primary_ident = &fields[*primary_key].ident;
@@ -82,6 +83,16 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
         quote! { __DeletePermission }
     } else {
         quote! { ::rorm::model::Unrestricted }
+    };
+
+    let register_get_imr = if *experimental_unregistered {
+        quote! {}
+    } else {
+        quote! {
+            #[::rorm::linkme::distributed_slice(::rorm::MODELS)]
+            #[linkme(crate = ::rorm::linkme)]
+            static __get_imr: fn() -> ::rorm::imr::Model = <#ident as ::rorm::model::Model>::get_imr;
+        }
     };
 
     let mut tokens = quote! {
@@ -146,10 +157,7 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
                 }
             }
 
-
-            #[::rorm::linkme::distributed_slice(::rorm::MODELS)]
-            #[linkme(crate = ::rorm::linkme)]
-            static __get_imr: fn() -> ::rorm::imr::Model = <#ident as ::rorm::model::Model>::get_imr;
+            #register_get_imr
 
             #impl_patch
 

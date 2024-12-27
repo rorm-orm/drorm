@@ -73,6 +73,8 @@ pub struct ModelAnnotations {
     pub query: Option<Visibility>,
     pub update: Option<Visibility>,
     pub delete: Option<Visibility>,
+
+    pub experimental_unregistered: bool,
 }
 
 pub struct ParsedField {

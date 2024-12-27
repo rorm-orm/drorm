@@ -19,6 +19,7 @@ pub fn analyze_model(parsed: ParsedModel) -> darling::Result<AnalyzedModel> {
                 query,
                 update,
                 delete,
+                experimental_unregistered,
             },
         fields,
     } = parsed;
@@ -156,6 +157,7 @@ pub fn analyze_model(parsed: ParsedModel) -> darling::Result<AnalyzedModel> {
         query,
         update,
         delete,
+        experimental_unregistered,
     })
 }
 
@@ -171,6 +173,8 @@ pub struct AnalyzedModel {
     pub query: Option<Visibility>,
     pub update: Option<Visibility>,
     pub delete: Option<Visibility>,
+
+    pub experimental_unregistered: bool,
 }
 
 pub struct AnalyzedField {

@@ -16,10 +16,6 @@ pub fn analyze_model(parsed: ParsedModel) -> darling::Result<AnalyzedModel> {
         annos:
             ModelAnnotations {
                 rename,
-                insert,
-                query,
-                update,
-                delete,
                 experimental_unregistered,
                 experimental_generics,
             },
@@ -164,10 +160,6 @@ pub fn analyze_model(parsed: ParsedModel) -> darling::Result<AnalyzedModel> {
         table,
         fields: analyzed_fields,
         primary_key,
-        insert,
-        query,
-        update,
-        delete,
         experimental_unregistered,
         experimental_generics: generics,
     })
@@ -180,11 +172,6 @@ pub struct AnalyzedModel {
     pub fields: Vec<AnalyzedField>,
     /// the primary key's index
     pub primary_key: usize,
-
-    pub insert: Option<Visibility>,
-    pub query: Option<Visibility>,
-    pub update: Option<Visibility>,
-    pub delete: Option<Visibility>,
 
     pub experimental_unregistered: bool,
     pub experimental_generics: Generics,

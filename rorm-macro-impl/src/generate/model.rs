@@ -18,10 +18,6 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
         table,
         fields,
         primary_key,
-        insert,
-        query,
-        update,
-        delete,
         experimental_unregistered,
         experimental_generics,
     } = model;
@@ -40,53 +36,6 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
     let field_structs_2 = field_structs_1.clone();
 
     let source = get_source(ident.span());
-
-    let insert_vis = insert.as_ref().unwrap_or(vis);
-    let query_vis = query.as_ref().unwrap_or(vis);
-    let update_vis = update.as_ref().unwrap_or(vis);
-    let delete_vis = delete.as_ref().unwrap_or(vis);
-
-    let insert_permission = if insert.is_some() {
-        quote! { #vis struct __InsertPermission(::std::marker::PhantomData<()>); }
-    } else {
-        quote! { #vis type __InsertPermission = ::rorm::model::Unrestricted; }
-    };
-    let query_permission = if query.is_some() {
-        quote! { #vis struct __QueryPermission(::std::marker::PhantomData<()>); }
-    } else {
-        quote! { #vis type __QueryPermission = ::rorm::model::Unrestricted; }
-    };
-    let update_permission = if update.is_some() {
-        quote! { #vis struct __UpdatePermission(::std::marker::PhantomData<()>); }
-    } else {
-        quote! { #vis type __UpdatePermission = ::rorm::model::Unrestricted; }
-    };
-    let delete_permission = if delete.is_some() {
-        quote! { #vis struct __DeletePermission(::std::marker::PhantomData<()>); }
-    } else {
-        quote! { #vis type __DeletePermission = ::rorm::model::Unrestricted; }
-    };
-
-    let insert_constructor = if insert.is_some() {
-        quote! { __InsertPermission }
-    } else {
-        quote! { ::rorm::model::Unrestricted }
-    };
-    let query_constructor = if query.is_some() {
-        quote! { __QueryPermission }
-    } else {
-        quote! { ::rorm::model::Unrestricted }
-    };
-    let update_constructor = if update.is_some() {
-        quote! { __UpdatePermission }
-    } else {
-        quote! { ::rorm::model::Unrestricted }
-    };
-    let delete_constructor = if delete.is_some() {
-        quote! { __DeletePermission }
-    } else {
-        quote! { ::rorm::model::Unrestricted }
-    };
 
     let (impl_generics, type_generics, where_clause) = experimental_generics.split_for_impl();
     let mut generics_with_path = model.experimental_generics.clone();
@@ -131,36 +80,6 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
                         fields,
                         source_defined_at: #source,
                     }
-                }
-
-                type Permissions = __Permissions;
-                type InsertPermission = __InsertPermission;
-                type QueryPermission = __QueryPermission;
-                type UpdatePermission = __UpdatePermission;
-                type DeletePermission = __DeletePermission;
-            }
-
-            #[derive(Default)]
-            #vis struct __Permissions;
-            #insert_permission
-            #query_permission
-            #update_permission
-            #delete_permission
-            impl __Permissions {
-                #insert_vis fn insert_permission(&self) -> __InsertPermission {
-                    #insert_constructor(::std::marker::PhantomData)
-                }
-
-                #query_vis fn query_permission(&self) -> __QueryPermission {
-                    #query_constructor(::std::marker::PhantomData)
-                }
-
-                #update_vis fn update_permission(&self) -> __UpdatePermission {
-                    #update_constructor(::std::marker::PhantomData)
-                }
-
-                #delete_vis fn delete_permission(&self) -> __DeletePermission {
-                    #delete_constructor(::std::marker::PhantomData)
                 }
             }
 

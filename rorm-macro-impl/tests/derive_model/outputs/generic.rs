@@ -103,31 +103,6 @@ const _: () = {
                 source_defined_at: None,
             }
         }
-        type Permissions = __Permissions;
-        type InsertPermission = __InsertPermission;
-        type QueryPermission = __QueryPermission;
-        type UpdatePermission = __UpdatePermission;
-        type DeletePermission = __DeletePermission;
-    }
-    #[derive(Default)]
-    pub struct __Permissions;
-    pub type __InsertPermission = ::rorm::model::Unrestricted;
-    pub type __QueryPermission = ::rorm::model::Unrestricted;
-    pub type __UpdatePermission = ::rorm::model::Unrestricted;
-    pub type __DeletePermission = ::rorm::model::Unrestricted;
-    impl __Permissions {
-        pub fn insert_permission(&self) -> __InsertPermission {
-            ::rorm::model::Unrestricted(::std::marker::PhantomData)
-        }
-        pub fn query_permission(&self) -> __QueryPermission {
-            ::rorm::model::Unrestricted(::std::marker::PhantomData)
-        }
-        pub fn update_permission(&self) -> __UpdatePermission {
-            ::rorm::model::Unrestricted(::std::marker::PhantomData)
-        }
-        pub fn delete_permission(&self) -> __DeletePermission {
-            ::rorm::model::Unrestricted(::std::marker::PhantomData)
-        }
     }
     use ::rorm::internal::field::decoder::FieldDecoder;
     use ::rorm::fields::traits::FieldType;

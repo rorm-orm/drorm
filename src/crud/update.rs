@@ -55,7 +55,7 @@ where
     M: Model,
 {
     /// Start building a delete query
-    pub fn new(executor: E, _: M::UpdatePermission) -> Self {
+    pub fn new(executor: E) -> Self {
         Self {
             executor,
             columns: Vec::new(),
@@ -292,14 +292,6 @@ where
 #[macro_export]
 macro_rules! update {
     ($db:expr, $model:path) => {
-        $crate::update!(
-            $db,
-            $model,
-            perm = <<$model as $crate::model::Patch>::Model as $crate::model::Model>::permissions()
-                .update_permission()
-        )
-    };
-    ($db:expr, $model:path, perm = $perm:expr) => {
-        $crate::crud::update::UpdateBuilder::<_, $model, _>::new($db, $perm)
+        $crate::crud::update::UpdateBuilder::<_, $model, _>::new($db)
     };
 }

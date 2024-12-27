@@ -52,7 +52,7 @@ where
     S: Selector,
 {
     /// Start building a query using a generic [`Selector`](Selector)
-    pub fn new(executor: E, selector: S, _: <S::Model as Model>::QueryPermission) -> Self {
+    pub fn new(executor: E, selector: S) -> Self {
         QueryBuilder {
             executor,
             selector,
@@ -343,53 +343,20 @@ where
 /// ```
 #[macro_export]
 macro_rules! query {
-    (__internal $model:ident::F => $($segments:ident,)*) => {
-        $($segments::)* $model
-    };
-    (__internal $model:ident => $($segments:ident,)*) => {
-        $($segments::)* $model
-    };
-    (__internal $segment:ident::$($remainder:ident)::+ => $($segments:ident,)*) => {
-        query!(__internal $($remainder)::+ => $($segments,)* $segment,)
-    };
     ($db:expr, ($(
         $($model:ident)::+.$($field:ident).+ $(($($args:tt)?))? $(as $patch:ty)?
     ),+ $(,)?)) => {
-        $crate::query!(
+        $crate::crud::query::QueryBuilder::new(
             $db,
             ($(
                 $($model)::+.$($field).+ $(($($args)?))? $(as $patch)?
-            ),+),
-            perm = ($(
-                <query!(__internal $($model)::+ =>) as $crate::model::Model>::permissions()
-                    .query_permission(),
-            )+).0
-        )
-    };
-    ($db:expr, ($(
-        $($model:ident)::+.$($field:ident).+ $(($($args:tt)?))? $(as $patch:ty)?
-    ),+$(,)?), perm = $perm:expr) => {
-        $crate::crud::query::QueryBuilder::new(
-            $db,
-            ($(
-                $($model)::+.$($field).+ $(($($args)?))? $(.select_as::<$patch>())?,
-            )+),
-            $perm,
+            ),+)
         )
     };
     ($db:expr, $patch:ty) => {
-        $crate::query!(
-            $db,
-            $patch,
-            perm = <<$patch as $crate::model::Patch>::Model as $crate::model::Model>::permissions()
-                .query_permission()
-        )
-    };
-    ($db:expr, $patch:ty, perm = $perm:expr) => {
         $crate::crud::query::QueryBuilder::new(
             $db,
             $crate::model::PatchSelector::<$patch>::new(),
-            $perm,
         )
     };
 }

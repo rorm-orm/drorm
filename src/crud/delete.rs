@@ -38,7 +38,7 @@ where
     M: Model,
 {
     /// Start building a delete query
-    pub fn new(executor: E, _: M::DeletePermission) -> Self {
+    pub fn new(executor: E) -> Self {
         DeleteBuilder {
             executor,
 
@@ -157,16 +157,6 @@ where
 #[macro_export]
 macro_rules! delete {
     ($db:expr, $model:path) => {
-        $crate::delete!(
-            $db,
-            $model,
-            perm = <<$model as $crate::model::Patch>::Model as $crate::model::Model>::permissions()
-                .delete_permission()
-        )
-    };
-    ($db:expr, $model:path, perm = $perm:expr) => {
-        $crate::crud::delete::DeleteBuilder::<_, <$model as $crate::model::Patch>::Model>::new(
-            $db, $perm,
-        )
+        $crate::crud::delete::DeleteBuilder::<_, <$model as $crate::model::Patch>::Model>::new($db)
     };
 }

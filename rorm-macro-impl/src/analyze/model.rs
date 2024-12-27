@@ -1,7 +1,7 @@
 use proc_macro2::Ident;
 use quote::format_ident;
 use syn::visit_mut::VisitMut;
-use syn::{LitInt, LitStr, Type, Visibility};
+use syn::{Generics, LitInt, LitStr, Type, Visibility};
 
 use crate::analyze::vis_to_display;
 use crate::parse::annotations::{Default, Index, OnAction};
@@ -12,6 +12,7 @@ pub fn analyze_model(parsed: ParsedModel) -> darling::Result<AnalyzedModel> {
     let ParsedModel {
         vis,
         ident,
+        generics,
         annos:
             ModelAnnotations {
                 rename,
@@ -20,10 +21,20 @@ pub fn analyze_model(parsed: ParsedModel) -> darling::Result<AnalyzedModel> {
                 update,
                 delete,
                 experimental_unregistered,
+                experimental_generics,
             },
         fields,
     } = parsed;
     let mut errors = darling::Error::accumulator();
+
+    if experimental_generics && !experimental_unregistered {
+        errors.push(darling::Error::custom(
+            "`experimental_generics` requires `experimental_unregistered`",
+        ));
+    }
+    if generics.lt_token.is_some() && !experimental_generics {
+        errors.push(darling::Error::custom("Generic models are not supported yet. You can try the `experimental_generics` attribute"));
+    }
 
     // Get table name
     let table = rename.unwrap_or_else(|| LitStr::new(&to_db_name(ident.to_string()), ident.span()));
@@ -158,6 +169,7 @@ pub fn analyze_model(parsed: ParsedModel) -> darling::Result<AnalyzedModel> {
         update,
         delete,
         experimental_unregistered,
+        experimental_generics: generics,
     })
 }
 
@@ -175,6 +187,7 @@ pub struct AnalyzedModel {
     pub delete: Option<Visibility>,
 
     pub experimental_unregistered: bool,
+    pub experimental_generics: Generics,
 }
 
 pub struct AnalyzedField {

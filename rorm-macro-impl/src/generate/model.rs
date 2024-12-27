@@ -1,10 +1,11 @@
 use proc_macro2::{Ident, Span, TokenStream};
-use quote::{format_ident, quote, quote_spanned};
-use syn::LitStr;
+use quote::{format_ident, quote, quote_spanned, ToTokens};
+use syn::{GenericParam, LitStr};
 
 use crate::analyze::model::{AnalyzedField, AnalyzedModel, AnalyzedModelFieldAnnotations};
 use crate::generate::patch::partially_generate_patch;
-use crate::parse::annotations::{Default, Index, NamedIndex, OnAction};
+use crate::generate::utils::phantom_data;
+use crate::parse::annotations::{Index, NamedIndex, OnAction};
 use crate::utils::get_source;
 
 pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
@@ -22,6 +23,7 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
         update,
         delete,
         experimental_unregistered,
+        experimental_generics,
     } = model;
     let primary_struct = &fields[*primary_key].unit;
     let primary_ident = &fields[*primary_key].ident;
@@ -30,6 +32,7 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
         ident,
         ident,
         vis,
+        experimental_generics,
         fields.iter().map(|field| &field.ident),
         fields.iter().map(|field| &field.ty),
     );
@@ -85,13 +88,21 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
         quote! { ::rorm::model::Unrestricted }
     };
 
-    let register_get_imr = if *experimental_unregistered {
-        quote! {}
-    } else {
-        quote! {
-            #[::rorm::linkme::distributed_slice(::rorm::MODELS)]
-            #[linkme(crate = ::rorm::linkme)]
-            static __get_imr: fn() -> ::rorm::imr::Model = <#ident as ::rorm::model::Model>::get_imr;
+    let (impl_generics, type_generics, where_clause) = experimental_generics.split_for_impl();
+    let mut generics_with_path = model.experimental_generics.clone();
+    generics_with_path
+        .params
+        .push(GenericParam::Type(syn::parse_quote!(P)));
+    let (_, type_generics_with_path, _) = generics_with_path.split_for_impl();
+    let type_generics_with_self = {
+        let tokens = type_generics.to_token_stream();
+        if tokens.is_empty() {
+            quote! { <Self> }
+        } else {
+            let mut tokens: Vec<_> = tokens.into_iter().collect();
+            tokens.pop();
+            tokens.extend(quote! { , Self >});
+            TokenStream::from_iter(tokens)
         }
     };
 
@@ -99,17 +110,13 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
         #field_declarations
         #fields_struct
 
-        #[doc = concat!("Constant representing the model [`", stringify!(#ident), "`] as a value")]
-        #[allow(non_upper_case_globals)]
-        #vis const #ident: #fields_struct_ident<#ident> = ::rorm::model::ConstNew::NEW;
-
         const _: () = {
-            impl ::rorm::model::Model for #ident {
-                type Primary = #primary_struct;
+            impl #impl_generics ::rorm::model::Model for #ident #type_generics #where_clause {
+                type Primary = #primary_struct #type_generics;
 
-                type Fields<P: ::rorm::internal::relation_path::Path> = #fields_struct_ident<P>;
-                const F: #fields_struct_ident<#ident> = ::rorm::model::ConstNew::NEW;
-                const FIELDS: #fields_struct_ident<#ident> = ::rorm::model::ConstNew::NEW;
+                type Fields<P: ::rorm::internal::relation_path::Path> = #fields_struct_ident #type_generics_with_path;
+                const F: #fields_struct_ident #type_generics_with_self = ::rorm::model::ConstNew::NEW;
+                const FIELDS: #fields_struct_ident #type_generics_with_self = ::rorm::model::ConstNew::NEW;
 
                 const TABLE: &'static str = #table;
 
@@ -117,7 +124,7 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
                     use ::rorm::internal::field::Field;
                     let mut fields = Vec::new();
                     #(
-                        ::rorm::internal::field::push_imr::<#field_structs_1>(&mut fields);
+                        ::rorm::internal::field::push_imr::<#field_structs_1 #type_generics>(&mut fields);
                     )*
                     ::rorm::imr::Model {
                         name: Self::TABLE.to_string(),
@@ -157,34 +164,45 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
                 }
             }
 
-            #register_get_imr
-
             #impl_patch
-
-            // Cross field checks
-            let mut count_auto_increment = 0;
-            #(
-                let mut annos_slice = <#field_structs_2 as ::rorm::internal::field::Field>::EFFECTIVE_ANNOTATIONS.as_slice();
-                while let [annos, tail @ ..] = annos_slice {
-                    annos_slice = tail;
-                    if annos.auto_increment.is_some() {
-                        count_auto_increment += 1;
-                    }
-                }
-            )*
-            assert!(count_auto_increment <= 1, "\"auto_increment\" can only be set once per model");
         };
     };
+    if !*experimental_unregistered {
+        tokens.extend(quote! {
+            #[::rorm::linkme::distributed_slice(::rorm::MODELS)]
+            #[linkme(crate = ::rorm::linkme)]
+            static __get_imr: fn() -> ::rorm::imr::Model = <#ident as ::rorm::model::Model>::get_imr;
+
+            #[doc = concat!("Constant representing the model [`", stringify!(#ident), "`] as a value")]
+            #[allow(non_upper_case_globals)]
+            #vis const #ident: #fields_struct_ident<#ident> = ::rorm::model::ConstNew::NEW;
+
+            // Cross field checks
+            const _: () = {
+                let mut count_auto_increment = 0;
+                #(
+                    let mut annos_slice = <#field_structs_2 as ::rorm::internal::field::Field>::EFFECTIVE_ANNOTATIONS.as_slice();
+                    while let [annos, tail @ ..] = annos_slice {
+                        annos_slice = tail;
+                        if annos.auto_increment.is_some() {
+                            count_auto_increment += 1;
+                        }
+                    }
+                )*
+                assert!(count_auto_increment <= 1, "\"auto_increment\" can only be set once per model");
+            };
+        });
+    }
     for (index, field) in fields.iter().enumerate() {
         let field_struct = &field.unit;
         let field_ident = &field.ident;
         let field_type = &field.ty;
         tokens.extend(quote! {
-            impl ::rorm::model::FieldByIndex<{ #index }> for #ident {
-                type Field = #field_struct;
+            impl #impl_generics ::rorm::model::FieldByIndex<{ #index }> for #ident #type_generics #where_clause {
+                type Field = #field_struct #type_generics;
             }
 
-            impl ::rorm::model::GetField<#field_struct> for #ident {
+            impl #impl_generics ::rorm::model::GetField<#field_struct #type_generics> for #ident #type_generics #where_clause {
                 fn get_field(self) -> #field_type {
                     self.#field_ident
                 }
@@ -198,7 +216,7 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
         });
         if !field.annos.primary_key {
             tokens.extend(quote! {
-                impl ::rorm::model::UpdateField<#field_struct> for #ident {
+                impl #impl_generics ::rorm::model::UpdateField<#field_struct #type_generics> for #ident #type_generics #where_clause {
                     fn update_field<'m, T>(
                         &'m mut self,
                         update: impl FnOnce(&'m #primary_type, &'m mut #field_type) -> T,
@@ -232,34 +250,41 @@ fn generate_fields(model: &AnalyzedModel) -> TokenStream {
             ident.span(),
         );
         let annos = generate_field_annotations(annos);
+        let (impl_generics, type_generics, where_clause) =
+            model.experimental_generics.split_for_impl();
+        let phantom_data = phantom_data(&model.experimental_generics);
 
         tokens.extend(quote_spanned! {ident.span()=>
             #[doc = #doc]
             #[allow(non_camel_case_types)]
-            #vis struct #unit;
-            impl ::std::clone::Clone for #unit {
+            #vis struct #unit #impl_generics ( #phantom_data ) #where_clause;
+            impl #impl_generics ::std::clone::Clone for #unit #type_generics #where_clause {
                 fn clone(&self) -> Self {
                     *self
                 }
             }
-            impl ::std::marker::Copy for #unit {}
-            impl ::rorm::internal::field::Field for #unit {
+            impl #impl_generics ::std::marker::Copy for #unit #type_generics #where_clause {}
+            impl #impl_generics ::rorm::internal::field::Field for #unit #type_generics #where_clause {
                 type Type = #ty;
-                type Model = #model_ident;
+                type Model = #model_ident #type_generics;
                 const INDEX: usize = #index;
                 const NAME: &'static str = #column;
                 const EXPLICIT_ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = #annos;
                 const SOURCE: Option<::rorm::internal::hmr::Source> = #source;
                 fn new() -> Self {
-                    Self
+                    Self(::std::marker::PhantomData)
                 }
             }
-            const _: () = {
-                if let Err(err) = ::rorm::internal::field::check::<#unit>() {
-                    panic!("{}", err.as_str());
-                }
-            };
         });
+        if !model.experimental_unregistered {
+            tokens.extend(quote! {
+                const _: () = {
+                    if let Err(err) = ::rorm::internal::field::check::<#unit>() {
+                        panic!("{}", err.as_str());
+                    }
+                };
+            });
+        }
     }
     tokens
 }
@@ -285,8 +310,9 @@ fn generate_field_annotations(annos: &AnalyzedModelFieldAnnotations) -> TokenStr
     let primary_key = primary_key.then(|| quote! {PrimaryKey});
     let unique = unique.then(|| quote! {Unique});
     let max_length = max_length.as_ref().map(|len| quote! {MaxLength(#len)});
-    let default = default.as_ref().map(|Default { variant, literal }| {
-        let variant = Ident::new(variant, literal.span());
+    let default = default.as_ref().map(|default| {
+        let variant = Ident::new(&default.variant, default.literal.span());
+        let literal = &default.literal;
         quote! {DefaultValue(::rorm::internal::hmr::annotations::DefaultValueData::#variant(#literal))}
     });
     let index = index.as_ref().map(|Index(index)| {
@@ -378,16 +404,23 @@ fn generate_fields_struct(model: &AnalyzedModel) -> TokenStream {
     let fields_ident_2 = fields_ident_1.clone();
     let fields_type = model.fields.iter().map(|field| &field.unit);
 
+    let mut generics = model.experimental_generics.clone();
+    generics
+        .params
+        .push(GenericParam::Type(syn::parse_quote!(Path: 'static)));
+    let (impl_generics_with_path, type_generics_with_path, _) = generics.split_for_impl();
+    let (_, type_generics, where_clause) = model.experimental_generics.split_for_impl();
+
     quote! {
         #[doc = #doc]
         #[allow(non_camel_case_types)]
-        #vis struct #ident<Path> {
+        #vis struct #ident #impl_generics_with_path #where_clause {
             #(
                 #[doc = #fields_doc]
-                #fields_vis #fields_ident_1: ::rorm::internal::field::FieldProxy<#fields_type, Path>,
+                #fields_vis #fields_ident_1: ::rorm::internal::field::FieldProxy<#fields_type #type_generics, Path>,
             )*
         }
-        impl<Path: 'static> ::rorm::model::ConstNew for #ident<Path> {
+        impl #impl_generics_with_path ::rorm::model::ConstNew for #ident #type_generics_with_path #where_clause {
             const NEW: Self = Self {
                 #(
                     #fields_ident_2: ::rorm::internal::field::FieldProxy::new(),

@@ -1,9 +1,9 @@
 use darling::FromAttributes;
 use proc_macro2::{Ident, TokenStream};
-use syn::{parse2, Field, ItemStruct, LitInt, LitStr, Type, Visibility};
+use syn::{parse2, Field, Generics, ItemStruct, LitInt, LitStr, Type, Visibility};
 
 use crate::parse::annotations::{Default, Index, OnAction};
-use crate::parse::{check_non_generic, get_fields_named};
+use crate::parse::get_fields_named;
 
 pub fn parse_model(tokens: TokenStream) -> darling::Result<ParsedModel> {
     let ItemStruct {
@@ -16,9 +16,6 @@ pub fn parse_model(tokens: TokenStream) -> darling::Result<ParsedModel> {
         semi_token: _,
     } = parse2(tokens)?;
     let mut errors = darling::Error::accumulator();
-
-    // check absence of generics
-    errors.handle(check_non_generic(generics));
 
     // parse struct annotations
     let annos = errors
@@ -53,6 +50,7 @@ pub fn parse_model(tokens: TokenStream) -> darling::Result<ParsedModel> {
     errors.finish_with(ParsedModel {
         vis,
         ident,
+        generics,
         annos,
         fields: parsed_fields,
     })
@@ -61,6 +59,7 @@ pub fn parse_model(tokens: TokenStream) -> darling::Result<ParsedModel> {
 pub struct ParsedModel {
     pub vis: Visibility,
     pub ident: Ident,
+    pub generics: Generics,
     pub annos: ModelAnnotations,
     pub fields: Vec<ParsedField>,
 }
@@ -75,6 +74,7 @@ pub struct ModelAnnotations {
     pub delete: Option<Visibility>,
 
     pub experimental_unregistered: bool,
+    pub experimental_generics: bool,
 }
 
 pub struct ParsedField {

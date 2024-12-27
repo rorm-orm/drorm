@@ -1,6 +1,6 @@
 ///rorm's representation of [`Test`]'s `id` field
 #[allow(non_camel_case_types)]
-pub struct __Test_id;
+pub struct __Test_id(::std::marker::PhantomData<()>);
 impl ::std::clone::Clone for __Test_id {
     fn clone(&self) -> Self {
         *self
@@ -29,7 +29,7 @@ impl ::rorm::internal::field::Field for __Test_id {
     };
     const SOURCE: Option<::rorm::internal::hmr::Source> = None;
     fn new() -> Self {
-        Self
+        Self(::std::marker::PhantomData)
     }
 }
 const _: () = {
@@ -39,7 +39,7 @@ const _: () = {
 };
 ///[`Test`]'s [`Fields`](::rorm::model::Model::Fields) struct.
 #[allow(non_camel_case_types)]
-pub struct __Test_Fields_Struct<Path> {
+pub struct __Test_Fields_Struct<Path: 'static> {
     ///[`Test`]'s `id` field
     pub id: ::rorm::internal::field::FieldProxy<__Test_id, Path>,
 }
@@ -49,15 +49,12 @@ impl<Path: 'static> ::rorm::model::ConstNew for __Test_Fields_Struct<Path> {
     };
     const REF: &'static Self = &Self::NEW;
 }
-#[doc = concat!("Constant representing the model [`", stringify!(Test), "`] as a value")]
-#[allow(non_upper_case_globals)]
-pub const Test: __Test_Fields_Struct<Test> = ::rorm::model::ConstNew::NEW;
 const _: () = {
     impl ::rorm::model::Model for Test {
         type Primary = __Test_id;
         type Fields<P: ::rorm::internal::relation_path::Path> = __Test_Fields_Struct<P>;
-        const F: __Test_Fields_Struct<Test> = ::rorm::model::ConstNew::NEW;
-        const FIELDS: __Test_Fields_Struct<Test> = ::rorm::model::ConstNew::NEW;
+        const F: __Test_Fields_Struct<Self> = ::rorm::model::ConstNew::NEW;
+        const FIELDS: __Test_Fields_Struct<Self> = ::rorm::model::ConstNew::NEW;
         const TABLE: &'static str = "test";
         fn get_imr() -> ::rorm::imr::Model {
             use ::rorm::internal::field::Field;
@@ -95,9 +92,6 @@ const _: () = {
             ::rorm::model::Unrestricted(::std::marker::PhantomData)
         }
     }
-    #[::rorm::linkme::distributed_slice(::rorm::MODELS)]
-    #[linkme(crate = ::rorm::linkme)]
-    static __get_imr: fn() -> ::rorm::imr::Model = <Test as ::rorm::model::Model>::get_imr;
     use ::rorm::internal::field::decoder::FieldDecoder;
     use ::rorm::fields::traits::FieldType;
     pub struct __Test_Decoder {
@@ -133,20 +127,15 @@ const _: () = {
                 ),
             }
         }
-        const COLUMNS: &'static [&'static str] = {
-            let result: &'static _ = &::rorm::internal::const_concat::ConstVec::columns(
-                &[
-                    &::rorm::internal::field::FieldProxy::columns(
+        fn push_columns(columns: &mut Vec<&'static str>) {
+            columns
+                .extend(
+                    ::rorm::internal::field::FieldProxy::columns(
                         <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
                             .id,
                     ),
-                ],
-            );
-            match result {
-                Ok(vec) => vec.as_slice(),
-                Err(err) => panic!("{}", err.as_str()),
-            }
-        };
+                );
+        }
         fn push_references<'a>(
             &'a self,
             values: &mut Vec<::rorm::conditions::Value<'a>>,
@@ -169,6 +158,14 @@ const _: () = {
             ::rorm::internal::patch::PatchCow::Borrowed(self)
         }
     }
+};
+#[::rorm::linkme::distributed_slice(::rorm::MODELS)]
+#[linkme(crate = ::rorm::linkme)]
+static __get_imr: fn() -> ::rorm::imr::Model = <Test as ::rorm::model::Model>::get_imr;
+#[doc = concat!("Constant representing the model [`", stringify!(Test), "`] as a value")]
+#[allow(non_upper_case_globals)]
+pub const Test: __Test_Fields_Struct<Test> = ::rorm::model::ConstNew::NEW;
+const _: () = {
     let mut count_auto_increment = 0;
     let mut annos_slice = <__Test_id as ::rorm::internal::field::Field>::EFFECTIVE_ANNOTATIONS
         .as_slice();

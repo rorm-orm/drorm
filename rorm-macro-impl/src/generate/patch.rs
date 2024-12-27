@@ -2,7 +2,7 @@ use std::array;
 
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
-use syn::{Type, Visibility};
+use syn::{Generics, Type, Visibility};
 
 use crate::parse::patch::ParsedPatch;
 
@@ -22,6 +22,7 @@ pub fn generate_patch(patch: &ParsedPatch) -> TokenStream {
         ident,
         model,
         vis,
+        &Default::default(),
         field_idents_1.clone(),
         fields.iter().map(|field| &field.ty),
     );
@@ -51,23 +52,38 @@ pub fn partially_generate_patch<'a>(
     patch: &Ident,
     model: &impl ToTokens, // Ident or Path
     vis: &Visibility,
+    generics: &Generics,
     fields: impl Iterator<Item = &'a Ident> + Clone,
     types: impl Iterator<Item = &'a Type> + Clone,
 ) -> TokenStream {
     let decoder = format_ident!("__{patch}_Decoder");
     let [fields_1, fields_2, fields_3, fields_4, fields_5, fields_6, fields_7] =
         array::from_fn(|_| fields.clone());
+    let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
+    let lifetime_generics = {
+        let mut tokens = impl_generics
+            .to_token_stream()
+            .into_iter()
+            .collect::<Vec<_>>();
+        if tokens.is_empty() {
+            quote! {<'a>}
+        } else {
+            tokens.remove(0);
+            tokens.pop();
+            quote! {<'a, #(#tokens)*>}
+        }
+    };
     quote! {
         use ::rorm::internal::field::decoder::FieldDecoder;
         use ::rorm::fields::traits::FieldType;
 
-        #vis struct #decoder {
+        #vis struct #decoder #impl_generics #where_clause {
             #(
                 #fields_1: <#types as ::rorm::fields::traits::FieldType>::Decoder,
             )*
         }
-        impl ::rorm::crud::decoder::Decoder for #decoder {
-            type Result = #patch;
+        impl #impl_generics ::rorm::crud::decoder::Decoder for #decoder #type_generics #where_clause {
+            type Result = #patch #type_generics;
 
             fn by_name<'index>(&'index self, row: &'_ ::rorm::db::Row) -> Result<Self::Result, ::rorm::db::row::RowError<'index>> {
                 Ok(#patch {#(
@@ -82,10 +98,10 @@ pub fn partially_generate_patch<'a>(
             }
         }
 
-        impl ::rorm::model::Patch for #patch {
-            type Model = #model;
+        impl #impl_generics ::rorm::model::Patch for #patch #type_generics #where_clause {
+            type Model = #model #type_generics;
 
-            type Decoder = #decoder;
+            type Decoder = #decoder #type_generics;
 
             fn select<P: ::rorm::internal::relation_path::Path>(ctx: &mut ::rorm::internal::query_context::QueryContext) -> Self::Decoder {
                 #decoder {#(
@@ -115,17 +131,17 @@ pub fn partially_generate_patch<'a>(
             }
         }
 
-        impl<'a> ::rorm::internal::patch::IntoPatchCow<'a> for #patch {
-            type Patch = #patch;
+        impl #lifetime_generics ::rorm::internal::patch::IntoPatchCow<'a> for #patch #type_generics #where_clause {
+            type Patch = #patch #type_generics;
 
-            fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, #patch> {
+            fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, #patch #type_generics> {
                 ::rorm::internal::patch::PatchCow::Owned(self)
             }
         }
-        impl<'a> ::rorm::internal::patch::IntoPatchCow<'a> for &'a #patch {
-            type Patch = #patch;
+        impl #lifetime_generics ::rorm::internal::patch::IntoPatchCow<'a> for &'a #patch #type_generics #where_clause {
+            type Patch = #patch #type_generics;
 
-            fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, #patch> {
+            fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, #patch #type_generics> {
                 ::rorm::internal::patch::PatchCow::Borrowed(self)
             }
         }

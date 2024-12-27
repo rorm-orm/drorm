@@ -26,12 +26,19 @@ pub trait Patch: Sized + 'static {
     /// (Cmp [`Selector`])
     fn select<P: Path>(ctx: &mut QueryContext) -> Self::Decoder;
 
-    /// List of columns i.e. fields this patch contains
-    const COLUMNS: &'static [&'static str];
+    /// Create a `Vec` containing the patch's columns
+    fn columns() -> Vec<&'static str> {
+        let mut columns = Vec::new();
+        Self::push_columns(&mut columns);
+        columns
+    }
+
+    /// Push the patch's columns onto a `Vec`
+    fn push_columns(columns: &mut Vec<&'static str>);
 
     /// Create a [`Vec`] moving the patch's condition values
     fn values(self) -> Vec<Value<'static>> {
-        let mut values = Vec::with_capacity(Self::COLUMNS.len());
+        let mut values = Vec::new();
         self.push_values(&mut values);
         values
     }
@@ -41,7 +48,7 @@ pub trait Patch: Sized + 'static {
 
     /// Create a [`Vec`] borrowing the patch's condition values
     fn references(&self) -> Vec<Value> {
-        let mut values = Vec::with_capacity(Self::COLUMNS.len());
+        let mut values = Vec::new();
         self.push_references(&mut values);
         values
     }

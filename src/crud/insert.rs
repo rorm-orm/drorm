@@ -112,6 +112,7 @@ where
         #[allow(clippy::let_unit_value)]
         let _check = Self::CHECK;
 
+        let columns = P::columns();
         let values = patch.references();
         let values: Vec<_> = values.iter().map(Value::as_sql).collect();
 
@@ -124,7 +125,7 @@ where
         let row = database::insert_returning(
             self.executor,
             P::Model::TABLE,
-            P::COLUMNS,
+            &columns,
             &values,
             &returning,
         )
@@ -160,8 +161,9 @@ where
             }
         }
 
+        let columns = P::columns();
         let values: Vec<_> = values.iter().map(Value::as_sql).collect();
-        let values_slices: Vec<_> = values.chunks(P::COLUMNS.len()).collect();
+        let values_slices: Vec<_> = values.chunks(columns.len()).collect();
 
         let mut ctx = QueryContext::new();
         let decoder = self.selector.select(&mut ctx);
@@ -172,7 +174,7 @@ where
         let rows = database::insert_bulk_returning(
             self.executor,
             M::TABLE,
-            P::COLUMNS,
+            &columns,
             &values_slices,
             &returning,
         )
@@ -196,11 +198,11 @@ where
 {
     /// See [`InsertBuilder::single`]
     pub async fn single<P: Patch<Model = M>>(self, patch: &P) -> Result<(), Error> {
+        let columns = P::columns();
         let values = patch.references();
         let values: Vec<_> = values.iter().map(Value::as_sql).collect();
-        let inserting = P::COLUMNS;
 
-        database::insert(self.executor, M::TABLE, inserting, &values).await
+        database::insert(self.executor, M::TABLE, &columns, &values).await
     }
 
     /// See [`InsertBuilder::bulk`]
@@ -218,11 +220,11 @@ where
             }
         }
 
+        let columns = P::columns();
         let values: Vec<_> = values.iter().map(Value::as_sql).collect();
-        let values_slices: Vec<_> = values.chunks(P::COLUMNS.len()).collect();
-        let inserting = P::COLUMNS;
+        let values_slices: Vec<_> = values.chunks(columns.len()).collect();
 
-        database::insert_bulk(self.executor, M::TABLE, inserting, &values_slices).await
+        database::insert_bulk(self.executor, M::TABLE, &columns, &values_slices).await
     }
 }
 

@@ -96,15 +96,11 @@ pub fn partially_generate_patch<'a>(
                 )*}
             }
 
-            const COLUMNS: &'static [&'static str] = {
-                let result: &'static _ = &::rorm::internal::const_concat::ConstVec::columns(&[#(
-                    &::rorm::internal::field::FieldProxy::columns(<<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS.#fields_5),
-                )*]);
-                match result {
-                    Ok(vec) => vec.as_slice(),
-                    Err(err) => panic!("{}", err.as_str()),
-                }
-            };
+            fn push_columns(columns: &mut Vec<&'static str>) {#(
+                columns.extend(
+                    ::rorm::internal::field::FieldProxy::columns(<<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS.#fields_5)
+                );
+            )*}
 
             fn push_references<'a>(&'a self, values: &mut Vec<::rorm::conditions::Value<'a>>) {
                 #(

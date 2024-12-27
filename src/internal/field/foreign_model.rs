@@ -29,7 +29,7 @@ where
 
     const NULL: FieldColumns<Self, NullType> = FF::Type::NULL;
 
-    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
+    fn into_values<'a>(self) -> FieldColumns<Self, Value<'a>> {
         [FF::type_into_value(self.0)]
     }
 

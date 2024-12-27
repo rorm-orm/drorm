@@ -18,7 +18,7 @@ impl FieldType for Url {
 
     const NULL: FieldColumns<Self, NullType> = [NullType::String];
 
-    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
+    fn into_values<'a>(self) -> FieldColumns<Self, Value<'a>> {
         [Value::String(Cow::Owned(self.into()))]
     }
 

@@ -54,7 +54,7 @@ impl<T: Serialize + DeserializeOwned + 'static> FieldType for Json<T> {
 
     const NULL: FieldColumns<Self, NullType> = [NullType::Binary];
 
-    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
+    fn into_values<'a>(self) -> FieldColumns<Self, Value<'a>> {
         [Value::Binary(Cow::Owned(
             serde_json::to_vec(&self.0).unwrap(),
         ))] // TODO propagate error?

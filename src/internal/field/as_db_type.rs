@@ -40,10 +40,9 @@ macro_rules! impl_FieldType {
                 [$as_value(self)]
             }
 
-            fn into_values(
+            fn into_values<'a>(
                 self,
-            ) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'static>>
-            {
+            ) -> $crate::fields::traits::FieldColumns<Self, $crate::conditions::Value<'a>> {
                 #[allow(clippy::redundant_closure_call)] // clean way to pass code to a macro
                 [$into_value(self)]
             }

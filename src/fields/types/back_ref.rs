@@ -47,7 +47,7 @@ impl<FMF: ForeignModelField> FieldType for BackRef<FMF> {
 
     const NULL: FieldColumns<Self, NullType> = [];
 
-    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
+    fn into_values<'a>(self) -> FieldColumns<Self, Value<'a>> {
         []
     }
 

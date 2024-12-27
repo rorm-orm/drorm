@@ -33,7 +33,7 @@ pub trait FieldType: 'static {
     const NULL: FieldColumns<Self, NullType>;
 
     /// Construct an array of [`Value`] representing `self` in the database via ownership
-    fn into_values(self) -> FieldColumns<Self, Value<'static>>;
+    fn into_values<'a>(self) -> FieldColumns<Self, Value<'a>>;
 
     /// Construct an array of [`Value`] representing `self` in the database via borrowing
     fn as_values(&self) -> FieldColumns<Self, Value<'_>>;
@@ -100,7 +100,7 @@ impl<T: FieldType> FieldType for Option<T> {
 
     const NULL: FieldColumns<Self, NullType> = T::NULL;
 
-    fn into_values(self) -> FieldColumns<Self, Value<'static>> {
+    fn into_values<'a>(self) -> FieldColumns<Self, Value<'a>> {
         self.map(T::into_values)
             .unwrap_or(T::Columns::map(T::NULL, Value::Null))
     }

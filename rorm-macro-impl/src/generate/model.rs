@@ -35,7 +35,7 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
     let field_structs_1 = fields.iter().map(|field| &field.unit);
     let field_structs_2 = field_structs_1.clone();
 
-    let source = get_source(ident);
+    let source = get_source(ident.span());
 
     let insert_vis = insert.as_ref().unwrap_or(vis);
     let query_vis = query.as_ref().unwrap_or(vis);
@@ -217,7 +217,7 @@ fn generate_fields(model: &AnalyzedModel) -> TokenStream {
             annos,
         } = field;
 
-        let source = get_source(&ident);
+        let source = get_source(ident.span());
         let vis = &model.vis;
         let doc = LitStr::new(
             &format!("rorm's representation of [`{model_ident}`]'s `{ident}` field",),

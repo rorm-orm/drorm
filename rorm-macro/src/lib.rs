@@ -1,49 +1,22 @@
 //! This crate tries to follow the base layout proposed by a [ferrous-systems.com](https://ferrous-systems.com/blog/testing-proc-macros/#the-pipeline) blog post.
-#![cfg_attr(feature = "unstable", feature(proc_macro_span))]
-#![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 
-use crate::analyze::model::analyze_model;
-use crate::generate::db_enum::generate_db_enum;
-use crate::generate::model::generate_model;
-use crate::generate::patch::generate_patch;
-use crate::parse::db_enum::parse_db_enum;
-use crate::parse::model::parse_model;
-use crate::parse::patch::parse_patch;
-
-mod analyze;
-mod generate;
-mod parse;
-mod utils;
-
 #[proc_macro_derive(DbEnum)]
 pub fn derive_db_enum(input: TokenStream) -> TokenStream {
-    match parse_db_enum(input.into()) {
-        Ok(model) => generate_db_enum(&model),
-        Err(error) => error.write_errors(),
-    }
-    .into()
+    rorm_macro_impl::derive_db_enum(input.into()).into()
 }
 
 #[proc_macro_derive(Model, attributes(rorm))]
 pub fn derive_model(input: TokenStream) -> TokenStream {
-    match parse_model(input.into()).and_then(analyze_model) {
-        Ok(model) => generate_model(&model),
-        Err(error) => error.write_errors(),
-    }
-    .into()
+    rorm_macro_impl::derive_model(input.into()).into()
 }
 
 #[proc_macro_derive(Patch, attributes(rorm))]
 pub fn derive_patch(input: TokenStream) -> TokenStream {
-    match parse_patch(input.into()) {
-        Ok(patch) => generate_patch(&patch),
-        Err(error) => error.write_errors(),
-    }
-    .into()
+    rorm_macro_impl::derive_patch(input.into()).into()
 }
 
 #[proc_macro_attribute]

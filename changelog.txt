@@ -1,5 +1,6 @@
 Since 0.6.3
 -----------
+- removed support for async-std
 - changed `update!`'s api to be consistent with `delete!`'s
 - implemented `FieldType` and `FieldEq` for `url::Url`
 - added a `take_or_query` method to `ForeignModel`

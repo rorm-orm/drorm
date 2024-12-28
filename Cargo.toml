@@ -113,10 +113,6 @@ utoipa = ["dep:utoipa"]
 msgpack = ["dep:rmp-serde"]
 cli = ["dep:rorm-cli"]
 
-# Available Runtimes
-tokio = ["rorm-db/tokio"]
-async-std = ["rorm-db/async-std"]
-
 # TLS libraries
 rustls = ["rorm-db/rustls"]
 native-tls = ["rorm-db/native-tls"]

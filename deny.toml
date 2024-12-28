@@ -1,5 +1,5 @@
 [graph]
-features = ["default", "tokio", "async-std", "msgpack", "rustls", "native-tls"]
+features = ["default", "msgpack", "rustls", "native-tls"]
 
 [advisories]
 # The path where the advisory database is cloned/fetched into
@@ -10,7 +10,6 @@ db-urls = ["https://github.com/rustsec/advisory-db"]
 yanked = "warn"
 ignore = [
     "RUSTSEC-2023-0071", # rsa crate is vulnerable to marvin attack, but there is no fix
-    "RUSTSEC-2024-0384", # when writing this, the instant crate was not actually used or even compiled
 ]
 
 [licenses]

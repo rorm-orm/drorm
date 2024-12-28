@@ -16,28 +16,21 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: "recursive"
 
-      # When rustup is updated, it tries to replace its binary, which on Windows is somehow locked.
-      # This can result in the CI failure, see: https://github.com/rust-lang/rustup/issues/3029
-      - run: |
-          rustup set auto-self-update disable
-          rustup toolchain install stable --profile minimal
-
-      - uses: Swatinem/rust-cache@v2
+      - uses: moonrepo/setup-rust@v1
+        with:
+          components: clippy
+          bins: cargo-deny, clippy-sarif, sarif-fmt
+          cache-target: debug
 
       - name: Build rorm
         run: cargo build -p rorm
 
       - name: Run cargo test
         run: cargo test --all
-
-      - name: Install additional dependencies
-        run: |
-          rustup component add clippy
-          cargo install clippy-sarif sarif-fmt cargo-deny
 
       - name: Run cargo deny check
         run: cargo deny check --hide-inclusion-graph

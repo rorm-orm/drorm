@@ -1,3 +1,4 @@
+[graph]
 features = ["default", "tokio", "async-std", "msgpack", "rustls", "native-tls"]
 
 [advisories]
@@ -7,7 +8,10 @@ db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
 # The lint level for security vulnerabilities
 yanked = "warn"
-ignore = []
+ignore = [
+    "RUSTSEC-2023-0071", # rsa crate is vulnerable to marvin attack, but there is no fix
+    "RUSTSEC-2024-0384", # when writing this, the instant crate was not actually used or even compiled
+]
 
 [licenses]
 allow = [
@@ -17,7 +21,7 @@ allow = [
     "BSD-3-Clause",
     "MPL-2.0",
     "ISC",
-    "Unicode-DFS-2016",
+    "Unicode-3.0",
     "LicenseRef-ring",
 ]
 

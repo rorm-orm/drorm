@@ -2,6 +2,14 @@
 name = "rorm-macro-impl"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/rorm-orm/rorm"
+authors = ["gammelalf", "myOmikron <git@omikron.dev>"]
+categories = ["database"]
+keywords = ["declarative", "orm", "database", "macros"]
+homepage = "https://rorm.rs"
+documentation = "https://docs.rorm.rs"
+license = "MIT"
+description = "Macro implementations for rorm."
 
 [[test]]
 name = "run_derives"

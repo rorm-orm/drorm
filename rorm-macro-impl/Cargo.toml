@@ -12,7 +12,7 @@ license = "MIT"
 description = "Macro implementations for rorm."
 
 [[test]]
-name = "run_derives"
+name = "derives"
 harness = false
 
 [dependencies]
@@ -26,6 +26,5 @@ proc-macro2 = { version = "~1" }
 darling = { version = "~0.20" }
 
 [dev-dependencies]
-rayon = { version = "~1" }
-clap = { version = "~4", features = ["derive"] }
 prettyplease = { version = "~0.2" }
+datatest-stable = { version = "~0.3" }

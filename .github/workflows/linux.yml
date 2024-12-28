@@ -28,11 +28,8 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build rorm with tokio
-        run: cargo build -p rorm -F tokio
-
-      - name: Build rorm with async-std
-        run: cargo build -p rorm -F async-std
+      - name: Build rorm
+        run: cargo build -p rorm
 
       - name: Run cargo test
         run: cargo test --all

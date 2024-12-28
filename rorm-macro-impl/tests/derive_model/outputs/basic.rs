@@ -136,13 +136,13 @@ const _: () = {
         }
     }
 };
-#[::rorm::linkme::distributed_slice(::rorm::MODELS)]
-#[linkme(crate = ::rorm::linkme)]
-static __get_imr: fn() -> ::rorm::imr::Model = <Test as ::rorm::model::Model>::get_imr;
 #[doc = concat!("Constant representing the model [`", stringify!(Test), "`] as a value")]
 #[allow(non_upper_case_globals)]
 pub const Test: __Test_Fields_Struct<Test> = ::rorm::model::ConstNew::NEW;
 const _: () = {
+    #[::rorm::linkme::distributed_slice(::rorm::MODELS)]
+    #[linkme(crate = ::rorm::linkme)]
+    static __get_imr: fn() -> ::rorm::imr::Model = <Test as ::rorm::model::Model>::get_imr;
     let mut count_auto_increment = 0;
     let mut annos_slice = <__Test_id as ::rorm::internal::field::Field>::EFFECTIVE_ANNOTATIONS
         .as_slice();

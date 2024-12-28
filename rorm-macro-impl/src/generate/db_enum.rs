@@ -24,7 +24,7 @@ pub fn generate_db_enum(parsed: &ParsedDbEnum) -> TokenStream {
                     ::rorm::db::sql::value::NullType::String
                 ];
 
-                fn into_values(self) -> ::rorm::fields::traits::FieldColumns<Self, ::rorm::conditions::Value<'static>> {
+                fn into_values<'a>(self) -> ::rorm::fields::traits::FieldColumns<Self, ::rorm::conditions::Value<'a>> {
                     [::rorm::conditions::Value::Choice(::std::borrow::Cow::Borrowed(match self {
                         #(
                             Self::#variants => stringify!(#variants),

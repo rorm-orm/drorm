@@ -80,16 +80,16 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
     };
     if !*experimental_unregistered {
         tokens.extend(quote! {
-            #[::rorm::linkme::distributed_slice(::rorm::MODELS)]
-            #[linkme(crate = ::rorm::linkme)]
-            static __get_imr: fn() -> ::rorm::imr::Model = <#ident as ::rorm::model::Model>::get_imr;
-
             #[doc = concat!("Constant representing the model [`", stringify!(#ident), "`] as a value")]
             #[allow(non_upper_case_globals)]
             #vis const #ident: #fields_struct_ident<#ident> = ::rorm::model::ConstNew::NEW;
 
-            // Cross field checks
             const _: () = {
+                #[::rorm::linkme::distributed_slice(::rorm::MODELS)]
+                #[linkme(crate = ::rorm::linkme)]
+                static __get_imr: fn() -> ::rorm::imr::Model = <#ident as ::rorm::model::Model>::get_imr;
+
+                // Cross field checks
                 let mut count_auto_increment = 0;
                 #(
                     let mut annos_slice = <#field_structs_2 as ::rorm::internal::field::Field>::EFFECTIVE_ANNOTATIONS.as_slice();

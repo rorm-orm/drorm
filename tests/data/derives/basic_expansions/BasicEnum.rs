@@ -4,7 +4,7 @@ const _: () = {
         stringify!(Bar),
         stringify!(Baz),
     ];
-    impl ::rorm::fields::traits::FieldType for Test {
+    impl ::rorm::fields::traits::FieldType for BasicEnum {
         type Columns = ::rorm::fields::traits::Array<1>;
         const NULL: ::rorm::fields::traits::FieldColumns<
             Self,
@@ -40,21 +40,22 @@ const _: () = {
                 ),
             ]
         }
-        type Decoder = __Test_Decoder;
+        type Decoder = __BasicEnum_Decoder;
         type GetAnnotations = get_db_enum_annotations;
         type Check = ::rorm::fields::utils::check::shared_linter_check<1>;
         type GetNames = ::rorm::fields::utils::get_names::single_column_name;
     }
     ::rorm::new_converting_decoder!(
-        #[doc(hidden)] __Test_Decoder, | value : ::rorm::db::choice::Choice | -> Test {
-        let value : String = value.0; match value.as_str() { stringify!(Foo) =>
-        Ok(Test::Foo), stringify!(Bar) => Ok(Test::Bar), stringify!(Baz) =>
-        Ok(Test::Baz), _ => Err(format!("Invalid value '{}' for enum '{}'", value,
-        stringify!(Test))), } }
+        #[doc(hidden)] __BasicEnum_Decoder, | value : ::rorm::db::choice::Choice | ->
+        BasicEnum { let value : String = value.0; match value.as_str() { stringify!(Foo)
+        => Ok(BasicEnum::Foo), stringify!(Bar) => Ok(BasicEnum::Bar), stringify!(Baz) =>
+        Ok(BasicEnum::Baz), _ => Err(format!("Invalid value '{}' for enum '{}'", value,
+        stringify!(BasicEnum))), } }
     );
     ::rorm::impl_FieldEq!(
-        impl < 'rhs > FieldEq < 'rhs, Test > for Test { | value : Test | { let [value] =
-        < Test as ::rorm::fields::traits::FieldType > ::into_values(value); value } }
+        impl < 'rhs > FieldEq < 'rhs, BasicEnum > for BasicEnum { | value : BasicEnum | {
+        let [value] = < BasicEnum as ::rorm::fields::traits::FieldType >
+        ::into_values(value); value } }
     );
     ::rorm::const_fn! {
         pub fn get_db_enum_annotations(field :

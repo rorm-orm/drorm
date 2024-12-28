@@ -11,10 +11,6 @@ documentation = "https://docs.rorm.rs"
 license = "MIT"
 description = "Macro implementations for rorm."
 
-[[test]]
-name = "derives"
-harness = false
-
 [dependencies]
 # syn builds rust syntax trees from strings or tokenstream
 syn = { version = "~2", features = ["full", "visit-mut"] }
@@ -24,7 +20,3 @@ quote = { version = "~1" }
 proc-macro2 = { version = "~1" }
 # for simple parsing of attributes
 darling = { version = "~0.20" }
-
-[dev-dependencies]
-prettyplease = { version = "~0.2" }
-datatest-stable = { version = "~0.3" }

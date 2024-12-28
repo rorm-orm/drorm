@@ -1,15 +1,15 @@
-///rorm's representation of [`Test`]'s `id` field
+///rorm's representation of [`Unregistered`]'s `id` field
 #[allow(non_camel_case_types)]
-pub struct __Test_id(::std::marker::PhantomData<()>);
-impl ::std::clone::Clone for __Test_id {
+pub struct __Unregistered_id(::std::marker::PhantomData<()>);
+impl ::std::clone::Clone for __Unregistered_id {
     fn clone(&self) -> Self {
         *self
     }
 }
-impl ::std::marker::Copy for __Test_id {}
-impl ::rorm::internal::field::Field for __Test_id {
+impl ::std::marker::Copy for __Unregistered_id {}
+impl ::rorm::internal::field::Field for __Unregistered_id {
     type Type = i64;
-    type Model = Test;
+    type Model = Unregistered;
     const INDEX: usize = 0usize;
     const NAME: &'static str = "id";
     const EXPLICIT_ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = ::rorm::internal::hmr::annotations::Annotations {
@@ -36,66 +36,67 @@ impl ::rorm::internal::field::Field for __Test_id {
         Self(::std::marker::PhantomData)
     }
 }
-const _: () = {
-    if let Err(err) = ::rorm::internal::field::check::<__Test_id>() {
-        panic!("{}", err.as_str());
-    }
-};
-///[`Test`]'s [`Fields`](::rorm::model::Model::Fields) struct.
+///[`Unregistered`]'s [`Fields`](::rorm::model::Model::Fields) struct.
 #[allow(non_camel_case_types)]
-pub struct __Test_Fields_Struct<Path: 'static> {
-    ///[`Test`]'s `id` field
-    pub id: ::rorm::internal::field::FieldProxy<__Test_id, Path>,
+pub struct __Unregistered_Fields_Struct<Path: 'static> {
+    ///[`Unregistered`]'s `id` field
+    pub id: ::rorm::internal::field::FieldProxy<__Unregistered_id, Path>,
 }
-impl<Path: 'static> ::rorm::model::ConstNew for __Test_Fields_Struct<Path> {
+impl<Path: 'static> ::rorm::model::ConstNew for __Unregistered_Fields_Struct<Path> {
     const NEW: Self = Self {
         id: ::rorm::internal::field::FieldProxy::new(),
     };
     const REF: &'static Self = &Self::NEW;
 }
 const _: () = {
-    impl ::rorm::model::Model for Test {
-        type Primary = __Test_id;
-        type Fields<P: ::rorm::internal::relation_path::Path> = __Test_Fields_Struct<P>;
-        const F: __Test_Fields_Struct<Self> = ::rorm::model::ConstNew::NEW;
-        const FIELDS: __Test_Fields_Struct<Self> = ::rorm::model::ConstNew::NEW;
-        const TABLE: &'static str = "test";
+    impl ::rorm::model::Model for Unregistered {
+        type Primary = __Unregistered_id;
+        type Fields<P: ::rorm::internal::relation_path::Path> = __Unregistered_Fields_Struct<
+            P,
+        >;
+        const F: __Unregistered_Fields_Struct<Self> = ::rorm::model::ConstNew::NEW;
+        const FIELDS: __Unregistered_Fields_Struct<Self> = ::rorm::model::ConstNew::NEW;
+        const TABLE: &'static str = "unregistered";
         const SOURCE: ::rorm::internal::hmr::Source = ::rorm::internal::hmr::Source {
             file: ::std::file!(),
             line: ::std::line!() as usize,
             column: ::std::column!() as usize,
         };
         fn push_fields_imr(fields: &mut Vec<::rorm::imr::Field>) {
-            ::rorm::internal::field::push_imr::<__Test_id>(&mut *fields);
+            ::rorm::internal::field::push_imr::<__Unregistered_id>(&mut *fields);
         }
     }
     use ::rorm::internal::field::decoder::FieldDecoder;
     use ::rorm::fields::traits::FieldType;
-    pub struct __Test_Decoder {
+    pub struct __Unregistered_Decoder {
         id: <i64 as ::rorm::fields::traits::FieldType>::Decoder,
     }
-    impl ::rorm::crud::decoder::Decoder for __Test_Decoder {
-        type Result = Test;
+    impl ::rorm::crud::decoder::Decoder for __Unregistered_Decoder {
+        type Result = Unregistered;
         fn by_name<'index>(
             &'index self,
             row: &'_ ::rorm::db::Row,
         ) -> Result<Self::Result, ::rorm::db::row::RowError<'index>> {
-            Ok(Test { id: self.id.by_name(row)? })
+            Ok(Unregistered {
+                id: self.id.by_name(row)?,
+            })
         }
         fn by_index<'index>(
             &'index self,
             row: &'_ ::rorm::db::Row,
         ) -> Result<Self::Result, ::rorm::db::row::RowError<'index>> {
-            Ok(Test { id: self.id.by_index(row)? })
+            Ok(Unregistered {
+                id: self.id.by_index(row)?,
+            })
         }
     }
-    impl ::rorm::model::Patch for Test {
-        type Model = Test;
-        type Decoder = __Test_Decoder;
+    impl ::rorm::model::Patch for Unregistered {
+        type Model = Unregistered;
+        type Decoder = __Unregistered_Decoder;
         fn select<P: ::rorm::internal::relation_path::Path>(
             ctx: &mut ::rorm::internal::query_context::QueryContext,
         ) -> Self::Decoder {
-            __Test_Decoder {
+            __Unregistered_Decoder {
                 id: FieldDecoder::new(
                     ctx,
                     <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
@@ -123,43 +124,23 @@ const _: () = {
             values.extend(self.id.into_values());
         }
     }
-    impl<'a> ::rorm::internal::patch::IntoPatchCow<'a> for Test {
-        type Patch = Test;
-        fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, Test> {
+    impl<'a> ::rorm::internal::patch::IntoPatchCow<'a> for Unregistered {
+        type Patch = Unregistered;
+        fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, Unregistered> {
             ::rorm::internal::patch::PatchCow::Owned(self)
         }
     }
-    impl<'a> ::rorm::internal::patch::IntoPatchCow<'a> for &'a Test {
-        type Patch = Test;
-        fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, Test> {
+    impl<'a> ::rorm::internal::patch::IntoPatchCow<'a> for &'a Unregistered {
+        type Patch = Unregistered;
+        fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, Unregistered> {
             ::rorm::internal::patch::PatchCow::Borrowed(self)
         }
     }
 };
-#[doc = concat!("Constant representing the model [`", stringify!(Test), "`] as a value")]
-#[allow(non_upper_case_globals)]
-pub const Test: __Test_Fields_Struct<Test> = ::rorm::model::ConstNew::NEW;
-const _: () = {
-    #[::rorm::linkme::distributed_slice(::rorm::MODELS)]
-    #[linkme(crate = ::rorm::linkme)]
-    static __get_imr: fn() -> ::rorm::imr::Model = <Test as ::rorm::model::Model>::get_imr;
-    let mut count_auto_increment = 0;
-    let mut annos_slice = <__Test_id as ::rorm::internal::field::Field>::EFFECTIVE_ANNOTATIONS
-        .as_slice();
-    while let [annos, tail @ ..] = annos_slice {
-        annos_slice = tail;
-        if annos.auto_increment.is_some() {
-            count_auto_increment += 1;
-        }
-    }
-    assert!(
-        count_auto_increment <= 1, "\"auto_increment\" can only be set once per model"
-    );
-};
-impl ::rorm::model::FieldByIndex<{ 0usize }> for Test {
-    type Field = __Test_id;
+impl ::rorm::model::FieldByIndex<{ 0usize }> for Unregistered {
+    type Field = __Unregistered_id;
 }
-impl ::rorm::model::GetField<__Test_id> for Test {
+impl ::rorm::model::GetField<__Unregistered_id> for Unregistered {
     fn get_field(self) -> i64 {
         self.id
     }

@@ -124,3 +124,17 @@ lto = "fat"
 [profile.release-debug]
 inherits = "release"
 debug = true
+
+[dev-dependencies]
+rorm = { path = "." }
+rorm-macro-impl = { path = "./rorm-macro-impl" }
+
+proc-macro2 = { version = "~1" }
+syn = { version = "~2" } # Parse files, search for derives and format the expansion with prettyplease
+prettyplease = { version = "~0.2" } # Simple code formatter taking syn as input
+trybuild = { version = "~1" } # Compiles a single rust file
+datatest-stable = { version = "~0.3" } # Test harness which generates cases from files
+
+[[test]]
+name = "derives"
+harness = false

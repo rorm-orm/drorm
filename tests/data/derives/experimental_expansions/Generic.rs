@@ -1,15 +1,18 @@
-///rorm's representation of [`Foo`]'s `id` field
+///rorm's representation of [`Generic`]'s `id` field
 #[allow(non_camel_case_types)]
-pub struct __Foo_id<X: 'static + FieldType>(::std::marker::PhantomData<(X,)>);
-impl<X: 'static + FieldType> ::std::clone::Clone for __Foo_id<X> {
+pub struct __Generic_id<X: rorm::fields::traits::FieldType>(
+    ::std::marker::PhantomData<(X,)>,
+);
+impl<X: rorm::fields::traits::FieldType> ::std::clone::Clone for __Generic_id<X> {
     fn clone(&self) -> Self {
         *self
     }
 }
-impl<X: 'static + FieldType> ::std::marker::Copy for __Foo_id<X> {}
-impl<X: 'static + FieldType> ::rorm::internal::field::Field for __Foo_id<X> {
+impl<X: rorm::fields::traits::FieldType> ::std::marker::Copy for __Generic_id<X> {}
+impl<X: rorm::fields::traits::FieldType> ::rorm::internal::field::Field
+for __Generic_id<X> {
     type Type = i64;
-    type Model = Foo<X>;
+    type Model = Generic<X>;
     const INDEX: usize = 0usize;
     const NAME: &'static str = "id";
     const EXPLICIT_ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = ::rorm::internal::hmr::annotations::Annotations {
@@ -36,18 +39,21 @@ impl<X: 'static + FieldType> ::rorm::internal::field::Field for __Foo_id<X> {
         Self(::std::marker::PhantomData)
     }
 }
-///rorm's representation of [`Foo`]'s `x` field
+///rorm's representation of [`Generic`]'s `x` field
 #[allow(non_camel_case_types)]
-pub struct __Foo_x<X: 'static + FieldType>(::std::marker::PhantomData<(X,)>);
-impl<X: 'static + FieldType> ::std::clone::Clone for __Foo_x<X> {
+pub struct __Generic_x<X: rorm::fields::traits::FieldType>(
+    ::std::marker::PhantomData<(X,)>,
+);
+impl<X: rorm::fields::traits::FieldType> ::std::clone::Clone for __Generic_x<X> {
     fn clone(&self) -> Self {
         *self
     }
 }
-impl<X: 'static + FieldType> ::std::marker::Copy for __Foo_x<X> {}
-impl<X: 'static + FieldType> ::rorm::internal::field::Field for __Foo_x<X> {
+impl<X: rorm::fields::traits::FieldType> ::std::marker::Copy for __Generic_x<X> {}
+impl<X: rorm::fields::traits::FieldType> ::rorm::internal::field::Field
+for __Generic_x<X> {
     type Type = X;
-    type Model = Foo<X>;
+    type Model = Generic<X>;
     const INDEX: usize = 1usize;
     const NAME: &'static str = "x";
     const EXPLICIT_ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = ::rorm::internal::hmr::annotations::Annotations {
@@ -74,16 +80,16 @@ impl<X: 'static + FieldType> ::rorm::internal::field::Field for __Foo_x<X> {
         Self(::std::marker::PhantomData)
     }
 }
-///[`Foo`]'s [`Fields`](::rorm::model::Model::Fields) struct.
+///[`Generic`]'s [`Fields`](::rorm::model::Model::Fields) struct.
 #[allow(non_camel_case_types)]
-pub struct __Foo_Fields_Struct<X: 'static + FieldType, Path: 'static> {
-    ///[`Foo`]'s `id` field
-    pub id: ::rorm::internal::field::FieldProxy<__Foo_id<X>, Path>,
-    ///[`Foo`]'s `x` field
-    pub x: ::rorm::internal::field::FieldProxy<__Foo_x<X>, Path>,
+pub struct __Generic_Fields_Struct<X: rorm::fields::traits::FieldType, Path: 'static> {
+    ///[`Generic`]'s `id` field
+    pub id: ::rorm::internal::field::FieldProxy<__Generic_id<X>, Path>,
+    ///[`Generic`]'s `x` field
+    pub x: ::rorm::internal::field::FieldProxy<__Generic_x<X>, Path>,
 }
-impl<X: 'static + FieldType, Path: 'static> ::rorm::model::ConstNew
-for __Foo_Fields_Struct<X, Path> {
+impl<X: rorm::fields::traits::FieldType, Path: 'static> ::rorm::model::ConstNew
+for __Generic_Fields_Struct<X, Path> {
     const NEW: Self = Self {
         id: ::rorm::internal::field::FieldProxy::new(),
         x: ::rorm::internal::field::FieldProxy::new(),
@@ -91,38 +97,39 @@ for __Foo_Fields_Struct<X, Path> {
     const REF: &'static Self = &Self::NEW;
 }
 const _: () = {
-    impl<X: 'static + FieldType> ::rorm::model::Model for Foo<X> {
-        type Primary = __Foo_id<X>;
-        type Fields<P: ::rorm::internal::relation_path::Path> = __Foo_Fields_Struct<
+    impl<X: rorm::fields::traits::FieldType> ::rorm::model::Model for Generic<X> {
+        type Primary = __Generic_id<X>;
+        type Fields<P: ::rorm::internal::relation_path::Path> = __Generic_Fields_Struct<
             X,
             P,
         >;
-        const F: __Foo_Fields_Struct<X, Self> = ::rorm::model::ConstNew::NEW;
-        const FIELDS: __Foo_Fields_Struct<X, Self> = ::rorm::model::ConstNew::NEW;
-        const TABLE: &'static str = "foo";
+        const F: __Generic_Fields_Struct<X, Self> = ::rorm::model::ConstNew::NEW;
+        const FIELDS: __Generic_Fields_Struct<X, Self> = ::rorm::model::ConstNew::NEW;
+        const TABLE: &'static str = "generic";
         const SOURCE: ::rorm::internal::hmr::Source = ::rorm::internal::hmr::Source {
             file: ::std::file!(),
             line: ::std::line!() as usize,
             column: ::std::column!() as usize,
         };
         fn push_fields_imr(fields: &mut Vec<::rorm::imr::Field>) {
-            ::rorm::internal::field::push_imr::<__Foo_id<X>>(&mut *fields);
-            ::rorm::internal::field::push_imr::<__Foo_x<X>>(&mut *fields);
+            ::rorm::internal::field::push_imr::<__Generic_id<X>>(&mut *fields);
+            ::rorm::internal::field::push_imr::<__Generic_x<X>>(&mut *fields);
         }
     }
     use ::rorm::internal::field::decoder::FieldDecoder;
     use ::rorm::fields::traits::FieldType;
-    pub struct __Foo_Decoder<X: 'static + FieldType> {
+    pub struct __Generic_Decoder<X: rorm::fields::traits::FieldType> {
         id: <i64 as ::rorm::fields::traits::FieldType>::Decoder,
         x: <X as ::rorm::fields::traits::FieldType>::Decoder,
     }
-    impl<X: 'static + FieldType> ::rorm::crud::decoder::Decoder for __Foo_Decoder<X> {
-        type Result = Foo<X>;
+    impl<X: rorm::fields::traits::FieldType> ::rorm::crud::decoder::Decoder
+    for __Generic_Decoder<X> {
+        type Result = Generic<X>;
         fn by_name<'index>(
             &'index self,
             row: &'_ ::rorm::db::Row,
         ) -> Result<Self::Result, ::rorm::db::row::RowError<'index>> {
-            Ok(Foo {
+            Ok(Generic {
                 id: self.id.by_name(row)?,
                 x: self.x.by_name(row)?,
             })
@@ -131,19 +138,19 @@ const _: () = {
             &'index self,
             row: &'_ ::rorm::db::Row,
         ) -> Result<Self::Result, ::rorm::db::row::RowError<'index>> {
-            Ok(Foo {
+            Ok(Generic {
                 id: self.id.by_index(row)?,
                 x: self.x.by_index(row)?,
             })
         }
     }
-    impl<X: 'static + FieldType> ::rorm::model::Patch for Foo<X> {
-        type Model = Foo<X>;
-        type Decoder = __Foo_Decoder<X>;
+    impl<X: rorm::fields::traits::FieldType> ::rorm::model::Patch for Generic<X> {
+        type Model = Generic<X>;
+        type Decoder = __Generic_Decoder<X>;
         fn select<P: ::rorm::internal::relation_path::Path>(
             ctx: &mut ::rorm::internal::query_context::QueryContext,
         ) -> Self::Decoder {
-            __Foo_Decoder {
+            __Generic_Decoder {
                 id: FieldDecoder::new(
                     ctx,
                     <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
@@ -186,25 +193,31 @@ const _: () = {
             values.extend(self.x.into_values());
         }
     }
-    impl<'a, X: 'static + FieldType> ::rorm::internal::patch::IntoPatchCow<'a>
-    for Foo<X> {
-        type Patch = Foo<X>;
-        fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, Foo<X>> {
+    impl<
+        'a,
+        X: rorm::fields::traits::FieldType,
+    > ::rorm::internal::patch::IntoPatchCow<'a> for Generic<X> {
+        type Patch = Generic<X>;
+        fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, Generic<X>> {
             ::rorm::internal::patch::PatchCow::Owned(self)
         }
     }
-    impl<'a, X: 'static + FieldType> ::rorm::internal::patch::IntoPatchCow<'a>
-    for &'a Foo<X> {
-        type Patch = Foo<X>;
-        fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, Foo<X>> {
+    impl<
+        'a,
+        X: rorm::fields::traits::FieldType,
+    > ::rorm::internal::patch::IntoPatchCow<'a> for &'a Generic<X> {
+        type Patch = Generic<X>;
+        fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, Generic<X>> {
             ::rorm::internal::patch::PatchCow::Borrowed(self)
         }
     }
 };
-impl<X: 'static + FieldType> ::rorm::model::FieldByIndex<{ 0usize }> for Foo<X> {
-    type Field = __Foo_id<X>;
+impl<X: rorm::fields::traits::FieldType> ::rorm::model::FieldByIndex<{ 0usize }>
+for Generic<X> {
+    type Field = __Generic_id<X>;
 }
-impl<X: 'static + FieldType> ::rorm::model::GetField<__Foo_id<X>> for Foo<X> {
+impl<X: rorm::fields::traits::FieldType> ::rorm::model::GetField<__Generic_id<X>>
+for Generic<X> {
     fn get_field(self) -> i64 {
         self.id
     }
@@ -215,10 +228,12 @@ impl<X: 'static + FieldType> ::rorm::model::GetField<__Foo_id<X>> for Foo<X> {
         &mut self.id
     }
 }
-impl<X: 'static + FieldType> ::rorm::model::FieldByIndex<{ 1usize }> for Foo<X> {
-    type Field = __Foo_x<X>;
+impl<X: rorm::fields::traits::FieldType> ::rorm::model::FieldByIndex<{ 1usize }>
+for Generic<X> {
+    type Field = __Generic_x<X>;
 }
-impl<X: 'static + FieldType> ::rorm::model::GetField<__Foo_x<X>> for Foo<X> {
+impl<X: rorm::fields::traits::FieldType> ::rorm::model::GetField<__Generic_x<X>>
+for Generic<X> {
     fn get_field(self) -> X {
         self.x
     }
@@ -229,7 +244,8 @@ impl<X: 'static + FieldType> ::rorm::model::GetField<__Foo_x<X>> for Foo<X> {
         &mut self.x
     }
 }
-impl<X: 'static + FieldType> ::rorm::model::UpdateField<__Foo_x<X>> for Foo<X> {
+impl<X: rorm::fields::traits::FieldType> ::rorm::model::UpdateField<__Generic_x<X>>
+for Generic<X> {
     fn update_field<'m, T>(
         &'m mut self,
         update: impl FnOnce(&'m i64, &'m mut X) -> T,

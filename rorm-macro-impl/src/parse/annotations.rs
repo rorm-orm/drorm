@@ -1,6 +1,7 @@
+use darling::ast::NestedMeta;
 use darling::{Error, FromAttributes, FromMeta};
 use proc_macro2::Ident;
-use syn::{Lit, LitInt, LitStr, NestedMeta};
+use syn::{Lit, LitInt, LitStr};
 
 #[derive(FromAttributes, Debug)]
 #[darling(attributes(rorm))]

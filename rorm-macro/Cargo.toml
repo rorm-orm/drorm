@@ -18,17 +18,8 @@ proc-macro = true
 rorm-macro-impl = { path = "../rorm-macro-impl" }
 
 # syn builds rust syntax trees from strings or tokenstream
-syn = { version = "~1", features = ["full", "visit-mut"] }
+syn = { version = "~2", features = ["full", "visit-mut"] }
 # quote provides a macro to write rust code with template variables which then produces a tokenstream
 quote = { version = "~1" }
 # a higher level wrapper for rust's proc-macro which is used by syn and quote
 proc-macro2 = { version = "~1" }
-# for simple parsing of attributes
-darling = { version = "~0.14" }
-
-[build-dependencies]
-rustc_version = "0.4.0"
-
-[features]
-# requires nightly rust
-unstable = []

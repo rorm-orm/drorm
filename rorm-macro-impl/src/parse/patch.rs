@@ -39,6 +39,7 @@ pub fn parse_patch(tokens: TokenStream) -> darling::Result<ParsedPatch> {
             let Field {
                 attrs,
                 vis: _,
+                mutability: _,
                 ident,
                 colon_token: _,
                 ty,

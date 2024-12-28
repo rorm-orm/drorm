@@ -30,6 +30,7 @@ pub fn parse_model(tokens: TokenStream) -> darling::Result<ParsedModel> {
             let Field {
                 attrs,
                 vis,
+                mutability: _,
                 ident,
                 colon_token: _,
                 ty,

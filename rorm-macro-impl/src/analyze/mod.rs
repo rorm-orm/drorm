@@ -1,6 +1,5 @@
-use proc_macro2::TokenStream;
 use quote::ToTokens;
-use syn::Visibility;
+use syn::{VisRestricted, Visibility};
 
 pub mod model;
 
@@ -12,11 +11,16 @@ impl<'a> std::fmt::Display for DisplayableVisibility<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.0 {
             Visibility::Public(_) => f.write_str("pub "),
-            Visibility::Crate(_) => f.write_str("pub(crate) "),
-            Visibility::Restricted(data) => {
-                let mut path = TokenStream::new();
-                data.path.to_tokens(&mut path);
-                write!(f, "pub(in {path}) ")
+            Visibility::Restricted(VisRestricted {
+                pub_token: _,
+                paren_token: _,
+                in_token,
+                path,
+            }) => {
+                write!(
+                    f, "pub({in}{path}) ",
+                    in = if in_token.is_some() { "in " } else { "" },
+                    path = path.to_token_stream())
             }
             Visibility::Inherited => Ok(()),
         }

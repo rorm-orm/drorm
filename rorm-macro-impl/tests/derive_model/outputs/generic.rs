@@ -27,7 +27,11 @@ impl<X: 'static + FieldType> ::rorm::internal::field::Field for __Foo_id<X> {
         nullable: false,
         foreign: None,
     };
-    const SOURCE: Option<::rorm::internal::hmr::Source> = None;
+    const SOURCE: ::rorm::internal::hmr::Source = ::rorm::internal::hmr::Source {
+        file: ::std::file!(),
+        line: ::std::line!() as usize,
+        column: ::std::column!() as usize,
+    };
     fn new() -> Self {
         Self(::std::marker::PhantomData)
     }
@@ -61,7 +65,11 @@ impl<X: 'static + FieldType> ::rorm::internal::field::Field for __Foo_x<X> {
         nullable: false,
         foreign: None,
     };
-    const SOURCE: Option<::rorm::internal::hmr::Source> = None;
+    const SOURCE: ::rorm::internal::hmr::Source = ::rorm::internal::hmr::Source {
+        file: ::std::file!(),
+        line: ::std::line!() as usize,
+        column: ::std::column!() as usize,
+    };
     fn new() -> Self {
         Self(::std::marker::PhantomData)
     }
@@ -92,16 +100,14 @@ const _: () = {
         const F: __Foo_Fields_Struct<X, Self> = ::rorm::model::ConstNew::NEW;
         const FIELDS: __Foo_Fields_Struct<X, Self> = ::rorm::model::ConstNew::NEW;
         const TABLE: &'static str = "foo";
-        fn get_imr() -> ::rorm::imr::Model {
-            use ::rorm::internal::field::Field;
-            let mut fields = Vec::new();
-            ::rorm::internal::field::push_imr::<__Foo_id<X>>(&mut fields);
-            ::rorm::internal::field::push_imr::<__Foo_x<X>>(&mut fields);
-            ::rorm::imr::Model {
-                name: Self::TABLE.to_string(),
-                fields,
-                source_defined_at: None,
-            }
+        const SOURCE: ::rorm::internal::hmr::Source = ::rorm::internal::hmr::Source {
+            file: ::std::file!(),
+            line: ::std::line!() as usize,
+            column: ::std::column!() as usize,
+        };
+        fn push_fields_imr(fields: &mut Vec<::rorm::imr::Field>) {
+            ::rorm::internal::field::push_imr::<__Foo_id<X>>(&mut *fields);
+            ::rorm::internal::field::push_imr::<__Foo_x<X>>(&mut *fields);
         }
     }
     use ::rorm::internal::field::decoder::FieldDecoder;

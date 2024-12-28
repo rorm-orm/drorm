@@ -8,6 +8,7 @@ use crate::conditions::{Binary, BinaryOperator, Column, Value};
 use crate::crud::decoder::Decoder;
 use crate::crud::selector::Selector;
 use crate::internal::field::{Field, FieldProxy, SingleColumnField};
+use crate::internal::hmr::{AsImr, Source};
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
 
@@ -115,12 +116,26 @@ pub trait Model: Patch<Model = Self> {
     /// The model's table name
     const TABLE: &'static str;
 
+    /// Location of the model in the source code
+    const SOURCE: Source;
+
+    /// Push the model's fields' imr representation onto a vec
+    fn push_fields_imr(fields: &mut Vec<imr::Field>);
+
     /// Returns the model's intermediate representation
     ///
     /// As library user you probably won't need this. You might want to look at [`write_models`].
     ///
     /// [`write_models`]: crate::write_models
-    fn get_imr() -> imr::Model;
+    fn get_imr() -> imr::Model {
+        let mut fields = Vec::new();
+        Self::push_fields_imr(&mut fields);
+        imr::Model {
+            name: Self::TABLE.to_string(),
+            fields,
+            source_defined_at: Some(Self::SOURCE.as_imr()),
+        }
+    }
 }
 
 /// Expose a models' fields on the type level using indexes

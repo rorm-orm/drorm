@@ -4,9 +4,9 @@ use syn::{GenericParam, LitStr};
 
 use crate::analyze::model::{AnalyzedField, AnalyzedModel, AnalyzedModelFieldAnnotations};
 use crate::generate::patch::partially_generate_patch;
+use crate::generate::utils::get_source;
 use crate::generate::utils::phantom_data;
 use crate::parse::annotations::{Index, NamedIndex, OnAction};
-use crate::utils::get_source;
 
 pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
     let fields_struct = generate_fields_struct(model);
@@ -68,19 +68,11 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
                 const FIELDS: #fields_struct_ident #type_generics_with_self = ::rorm::model::ConstNew::NEW;
 
                 const TABLE: &'static str = #table;
+                const SOURCE: ::rorm::internal::hmr::Source = #source;
 
-                fn get_imr() -> ::rorm::imr::Model {
-                    use ::rorm::internal::field::Field;
-                    let mut fields = Vec::new();
-                    #(
-                        ::rorm::internal::field::push_imr::<#field_structs_1 #type_generics>(&mut fields);
-                    )*
-                    ::rorm::imr::Model {
-                        name: Self::TABLE.to_string(),
-                        fields,
-                        source_defined_at: #source,
-                    }
-                }
+                fn push_fields_imr(fields: &mut Vec<::rorm::imr::Field>) {#(
+                    ::rorm::internal::field::push_imr::<#field_structs_1 #type_generics>(&mut *fields);
+                )*}
             }
 
             #impl_patch
@@ -189,7 +181,7 @@ fn generate_fields(model: &AnalyzedModel) -> TokenStream {
                 const INDEX: usize = #index;
                 const NAME: &'static str = #column;
                 const EXPLICIT_ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = #annos;
-                const SOURCE: Option<::rorm::internal::hmr::Source> = #source;
+                const SOURCE: ::rorm::internal::hmr::Source = #source;
                 fn new() -> Self {
                     Self(::std::marker::PhantomData)
                 }

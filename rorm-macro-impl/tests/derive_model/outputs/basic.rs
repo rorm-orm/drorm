@@ -27,7 +27,11 @@ impl ::rorm::internal::field::Field for __Test_id {
         nullable: false,
         foreign: None,
     };
-    const SOURCE: Option<::rorm::internal::hmr::Source> = None;
+    const SOURCE: ::rorm::internal::hmr::Source = ::rorm::internal::hmr::Source {
+        file: ::std::file!(),
+        line: ::std::line!() as usize,
+        column: ::std::column!() as usize,
+    };
     fn new() -> Self {
         Self(::std::marker::PhantomData)
     }
@@ -56,15 +60,13 @@ const _: () = {
         const F: __Test_Fields_Struct<Self> = ::rorm::model::ConstNew::NEW;
         const FIELDS: __Test_Fields_Struct<Self> = ::rorm::model::ConstNew::NEW;
         const TABLE: &'static str = "test";
-        fn get_imr() -> ::rorm::imr::Model {
-            use ::rorm::internal::field::Field;
-            let mut fields = Vec::new();
-            ::rorm::internal::field::push_imr::<__Test_id>(&mut fields);
-            ::rorm::imr::Model {
-                name: Self::TABLE.to_string(),
-                fields,
-                source_defined_at: None,
-            }
+        const SOURCE: ::rorm::internal::hmr::Source = ::rorm::internal::hmr::Source {
+            file: ::std::file!(),
+            line: ::std::line!() as usize,
+            column: ::std::column!() as usize,
+        };
+        fn push_fields_imr(fields: &mut Vec<::rorm::imr::Field>) {
+            ::rorm::internal::field::push_imr::<__Test_id>(&mut *fields);
         }
     }
     use ::rorm::internal::field::decoder::FieldDecoder;

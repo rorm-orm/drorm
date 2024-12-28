@@ -33,7 +33,7 @@ where
     const EXPLICIT_ANNOTATIONS: Annotations = F::EXPLICIT_ANNOTATIONS;
     const EFFECTIVE_ANNOTATIONS: FieldColumns<F::Type, Annotations> = F::EFFECTIVE_ANNOTATIONS;
     const EFFECTIVE_NAMES: FieldColumns<F::Type, &'static str> = F::EFFECTIVE_NAMES;
-    const SOURCE: Option<Source> = F::SOURCE;
+    const SOURCE: Source = F::SOURCE;
     fn new() -> Self {
         Self(PhantomData)
     }

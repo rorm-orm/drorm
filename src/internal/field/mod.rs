@@ -91,8 +91,8 @@ pub trait Field: 'static + Copy {
     const EFFECTIVE_NAMES: FieldColumns<Self::Type, &'static str> =
         <<<Self::Type as FieldType>::GetNames as ConstFn<_, _>>::Body<(contains::Name<Self>,)> as Contains<_>>::ITEM;
 
-    /// Optional definition of the location of field in the source code
-    const SOURCE: Option<Source>;
+    /// Location of the field in the source code
+    const SOURCE: Source;
 
     /// Create a new instance
     ///
@@ -108,7 +108,7 @@ pub fn push_imr<F: Field>(imr: &mut Vec<imr::Field>) {
     let names = F::EFFECTIVE_NAMES;
     let db_types = F::Type::NULL;
     let annotations = F::EFFECTIVE_ANNOTATIONS;
-    let source_defined_at = F::SOURCE.map(|s| s.as_imr());
+    let source_defined_at = F::SOURCE.as_imr();
     let is_option = F::Type::is_option::<()>();
 
     for ((name, mut annotations), null_type) in names
@@ -149,7 +149,7 @@ pub fn push_imr<F: Field>(imr: &mut Vec<imr::Field>) {
                 NullType::BitVec => imr::DbType::BitVec,
             },
             annotations: annotations.as_imr(),
-            source_defined_at: source_defined_at.clone(),
+            source_defined_at: Some(source_defined_at.clone()),
         });
     }
 }

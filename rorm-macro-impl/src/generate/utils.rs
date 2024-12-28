@@ -1,12 +1,15 @@
-use proc_macro2::TokenStream;
-use quote::quote;
+use proc_macro2::{Span, TokenStream};
+use quote::{quote, quote_spanned};
 use syn::Generics;
 
+/// Creates a ZST which captures all generics
+///
+/// I.e. `PhantomData<(&'a (), T)>`
 pub fn phantom_data(generics: &Generics) -> TokenStream {
     let mut tokens = TokenStream::new();
     tokens.extend(generics.lifetimes().map(|lifetime| {
         let lifetime = &lifetime.lifetime;
-        quote! { #lifetime, }
+        quote! { & #lifetime (), }
     }));
     tokens.extend(generics.type_params().map(|parameter| {
         let parameter = &parameter.ident;
@@ -14,5 +17,16 @@ pub fn phantom_data(generics: &Generics) -> TokenStream {
     }));
     quote! {
         ::std::marker::PhantomData<( #tokens )>
+    }
+}
+
+/// Creates an expression for a `Source` instance from a span
+pub fn get_source(span: Span) -> TokenStream {
+    quote_spanned! {span=>
+        ::rorm::internal::hmr::Source {
+            file: ::std::file!(),
+            line: ::std::line!() as usize,
+            column: ::std::column!() as usize,
+        }
     }
 }

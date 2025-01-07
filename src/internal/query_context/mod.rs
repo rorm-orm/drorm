@@ -10,10 +10,11 @@ use rorm_db::sql::ordering::Ordering;
 
 use crate::conditions::{BinaryOperator, Condition, Value};
 use crate::crud::selector::AggregatedColumn;
-use crate::internal::field::Field;
+use crate::internal::field::ModelField;
 use crate::internal::query_context::flat_conditions::{FlatCondition, GetConditionError};
 use crate::internal::query_context::ids::PathId;
 use crate::internal::relation_path::{Path, PathField};
+use crate::new::Field;
 use crate::{FieldAccess, Model};
 
 pub mod flat_conditions;
@@ -39,7 +40,7 @@ impl<'v> QueryContext<'v> {
     }
 
     /// Add a field to select returning its index and alias
-    pub fn select_field<F: Field, P: Path>(&mut self) -> (usize, String) {
+    pub fn select_field<F: ModelField, P: Path>(&mut self) -> (usize, String) {
         let alias = format!("{}", NumberAsAZ(self.selects.len()));
         self.selects.push(Select {
             table_name: PathId::of::<P>(),
@@ -77,7 +78,7 @@ impl<'v> QueryContext<'v> {
     }
 
     /// Add a field to order by
-    pub fn order_by_field<F: Field, P: Path>(&mut self, ordering: Ordering) {
+    pub fn order_by_field<F: ModelField, P: Path>(&mut self, ordering: Ordering) {
         P::add_to_context(self);
         self.order_bys.push(OrderBy {
             column_name: F::NAME,
@@ -230,8 +231,8 @@ impl<'v> QueryContext<'v> {
     /// The generic parameters are the parameters defining the outer most [PathStep].
     pub(crate) fn add_relation_path<F, P>(&mut self) -> &str
     where
-        F: Field + PathField<<F as Field>::Type>,
-        P: Path<Current = <F::ParentField as Field>::Model>,
+        F: ModelField + PathField<<F as Field>::Type>,
+        P: Path<Current = <F::ParentField as ModelField>::Model>,
     {
         let path_id = PathId::of::<P::Step<F>>();
         if !self.join_aliases.contains_key(&path_id) {
@@ -239,7 +240,7 @@ impl<'v> QueryContext<'v> {
             self.join_aliases.insert(path_id, alias);
             self.joins.push({
                 Join {
-                    table_name: <<F as PathField<_>>::ChildField as Field>::Model::TABLE,
+                    table_name: <<F as PathField<_>>::ChildField as ModelField>::Model::TABLE,
                     join_alias: path_id,
                     join_condition: self.conditions.len(),
                 }

@@ -8,10 +8,11 @@ use rorm_db::sql::aggregation::SelectAggregator;
 use crate::crud::decoder::{Decoder, DirectDecoder};
 use crate::fields::traits::FieldType;
 use crate::internal::field::decoder::FieldDecoder;
-use crate::internal::field::{Field, FieldProxy};
+use crate::internal::field::{FieldProxy, ModelField};
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::{Path, PathField};
 use crate::model::{Model, PatchSelector};
+use crate::new::Field;
 use crate::{FieldAccess, Patch};
 
 /// Something which "selects" a value from a certain table,
@@ -36,7 +37,7 @@ pub trait Selector {
 impl<F, P> Selector for FieldProxy<F, P>
 where
     P: Path,
-    F: Field,
+    F: ModelField,
 {
     type Result = F::Type;
     type Model = P::Origin;
@@ -51,12 +52,12 @@ where
 #[doc(hidden)]
 impl<F, P> FieldProxy<F, P>
 where
-    F: Field + PathField<<F as Field>::Type>,
-    P: Path<Current = <F::ParentField as Field>::Model>,
+    F: ModelField + PathField<<F as Field>::Type>,
+    P: Path<Current = <F::ParentField as ModelField>::Model>,
 {
     pub fn select_as<Ptch>(self) -> PatchSelector<Ptch, P::Step<F>>
     where
-        Ptch: Patch<Model = <F::ChildField as Field>::Model>,
+        Ptch: Patch<Model = <F::ChildField as ModelField>::Model>,
     {
         PatchSelector::new()
     }

@@ -60,6 +60,11 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
         #fields_struct
 
         const _: () = {
+            /*impl #impl_generics ::rorm::new::Model for #ident #type_generics #where_clause {
+                type Primary = #primary_struct #type_generics;
+            }*/
+            impl #impl_generics ::rorm::new::Struct for #ident #type_generics #where_clause {}
+
             impl #impl_generics ::rorm::model::Model for #ident #type_generics #where_clause {
                 type Primary = #primary_struct #type_generics;
 
@@ -92,7 +97,7 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
                 // Cross field checks
                 let mut count_auto_increment = 0;
                 #(
-                    let mut annos_slice = <#field_structs_2 as ::rorm::internal::field::Field>::EFFECTIVE_ANNOTATIONS.as_slice();
+                    let mut annos_slice = <#field_structs_2 as ::rorm::new::Field>::EFFECTIVE_ANNOTATIONS.as_slice();
                     while let [annos, tail @ ..] = annos_slice {
                         annos_slice = tail;
                         if annos.auto_increment.is_some() {
@@ -154,7 +159,6 @@ fn generate_fields(model: &AnalyzedModel) -> TokenStream {
             annos,
         } = field;
 
-        let source = get_source(ident.span());
         let vis = &model.vis;
         let doc = LitStr::new(
             &format!("rorm's representation of [`{model_ident}`]'s `{ident}` field",),
@@ -169,22 +173,16 @@ fn generate_fields(model: &AnalyzedModel) -> TokenStream {
             #[doc = #doc]
             #[allow(non_camel_case_types)]
             #vis struct #unit #impl_generics ( #phantom_data ) #where_clause;
-            impl #impl_generics ::std::clone::Clone for #unit #type_generics #where_clause {
-                fn clone(&self) -> Self {
-                    *self
-                }
-            }
-            impl #impl_generics ::std::marker::Copy for #unit #type_generics #where_clause {}
-            impl #impl_generics ::rorm::internal::field::Field for #unit #type_generics #where_clause {
-                type Type = #ty;
-                type Model = #model_ident #type_generics;
-                const INDEX: usize = #index;
+            impl #impl_generics ::rorm::new::Field for #unit #type_generics #where_clause {
+                type Struct = #model_ident #type_generics;
+                const POSITION: usize = #index;
+                const ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = #annos;
                 const NAME: &'static str = #column;
-                const EXPLICIT_ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = #annos;
-                const SOURCE: ::rorm::internal::hmr::Source = #source;
-                fn new() -> Self {
-                    Self(::std::marker::PhantomData)
-                }
+                type Type = #ty;
+
+                const FILE: &'static str = ::core::file!();
+                const LINE: u32 = ::core::line!();
+                const COLUMN: u32 = ::core::column!();
             }
         });
         if !model.experimental_unregistered {

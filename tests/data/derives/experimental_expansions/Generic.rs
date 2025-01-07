@@ -3,19 +3,10 @@
 pub struct __Generic_id<X: rorm::fields::traits::FieldType>(
     ::std::marker::PhantomData<(X,)>,
 );
-impl<X: rorm::fields::traits::FieldType> ::std::clone::Clone for __Generic_id<X> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl<X: rorm::fields::traits::FieldType> ::std::marker::Copy for __Generic_id<X> {}
-impl<X: rorm::fields::traits::FieldType> ::rorm::internal::field::Field
-for __Generic_id<X> {
-    type Type = i64;
-    type Model = Generic<X>;
-    const INDEX: usize = 0usize;
-    const NAME: &'static str = "id";
-    const EXPLICIT_ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = ::rorm::internal::hmr::annotations::Annotations {
+impl<X: rorm::fields::traits::FieldType> ::rorm::new::Field for __Generic_id<X> {
+    type Struct = Generic<X>;
+    const POSITION: usize = 0usize;
+    const ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = ::rorm::internal::hmr::annotations::Annotations {
         auto_create_time: None,
         auto_update_time: None,
         auto_increment: Some(::rorm::internal::hmr::annotations::AutoIncrement),
@@ -30,33 +21,21 @@ for __Generic_id<X> {
         nullable: false,
         foreign: None,
     };
-    const SOURCE: ::rorm::internal::hmr::Source = ::rorm::internal::hmr::Source {
-        file: ::std::file!(),
-        line: ::std::line!() as usize,
-        column: ::std::column!() as usize,
-    };
-    fn new() -> Self {
-        Self(::std::marker::PhantomData)
-    }
+    const NAME: &'static str = "id";
+    type Type = i64;
+    const FILE: &'static str = ::core::file!();
+    const LINE: u32 = ::core::line!();
+    const COLUMN: u32 = ::core::column!();
 }
 ///rorm's representation of [`Generic`]'s `x` field
 #[allow(non_camel_case_types)]
 pub struct __Generic_x<X: rorm::fields::traits::FieldType>(
     ::std::marker::PhantomData<(X,)>,
 );
-impl<X: rorm::fields::traits::FieldType> ::std::clone::Clone for __Generic_x<X> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl<X: rorm::fields::traits::FieldType> ::std::marker::Copy for __Generic_x<X> {}
-impl<X: rorm::fields::traits::FieldType> ::rorm::internal::field::Field
-for __Generic_x<X> {
-    type Type = X;
-    type Model = Generic<X>;
-    const INDEX: usize = 1usize;
-    const NAME: &'static str = "x";
-    const EXPLICIT_ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = ::rorm::internal::hmr::annotations::Annotations {
+impl<X: rorm::fields::traits::FieldType> ::rorm::new::Field for __Generic_x<X> {
+    type Struct = Generic<X>;
+    const POSITION: usize = 1usize;
+    const ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = ::rorm::internal::hmr::annotations::Annotations {
         auto_create_time: None,
         auto_update_time: None,
         auto_increment: None,
@@ -71,14 +50,11 @@ for __Generic_x<X> {
         nullable: false,
         foreign: None,
     };
-    const SOURCE: ::rorm::internal::hmr::Source = ::rorm::internal::hmr::Source {
-        file: ::std::file!(),
-        line: ::std::line!() as usize,
-        column: ::std::column!() as usize,
-    };
-    fn new() -> Self {
-        Self(::std::marker::PhantomData)
-    }
+    const NAME: &'static str = "x";
+    type Type = X;
+    const FILE: &'static str = ::core::file!();
+    const LINE: u32 = ::core::line!();
+    const COLUMN: u32 = ::core::column!();
 }
 ///[`Generic`]'s [`Fields`](::rorm::model::Model::Fields) struct.
 #[allow(non_camel_case_types)]
@@ -97,6 +73,7 @@ for __Generic_Fields_Struct<X, Path> {
     const REF: &'static Self = &Self::NEW;
 }
 const _: () = {
+    impl<X: rorm::fields::traits::FieldType> ::rorm::new::Struct for Generic<X> {}
     impl<X: rorm::fields::traits::FieldType> ::rorm::model::Model for Generic<X> {
         type Primary = __Generic_id<X>;
         type Fields<P: ::rorm::internal::relation_path::Path> = __Generic_Fields_Struct<

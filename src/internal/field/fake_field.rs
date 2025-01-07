@@ -8,9 +8,8 @@
 use std::marker::PhantomData;
 
 use crate::fields::traits::{FieldColumns, FieldType};
-use crate::internal::field::Field;
 use crate::internal::hmr::annotations::Annotations;
-use crate::internal::hmr::Source;
+use crate::new::Field;
 
 /// Take a field `F` and create a new "fake" field with the different [`Field::Type`] `T`
 #[allow(non_camel_case_types)]
@@ -27,14 +26,13 @@ where
     F: Field,
 {
     type Type = T;
-    type Model = F::Model;
-    const INDEX: usize = F::INDEX;
+    type Struct = F::Struct;
+    const POSITION: usize = F::POSITION;
     const NAME: &'static str = F::NAME;
-    const EXPLICIT_ANNOTATIONS: Annotations = F::EXPLICIT_ANNOTATIONS;
+    const ANNOTATIONS: Annotations = F::ANNOTATIONS;
     const EFFECTIVE_ANNOTATIONS: FieldColumns<F::Type, Annotations> = F::EFFECTIVE_ANNOTATIONS;
     const EFFECTIVE_NAMES: FieldColumns<F::Type, &'static str> = F::EFFECTIVE_NAMES;
-    const SOURCE: Source = F::SOURCE;
-    fn new() -> Self {
-        Self(PhantomData)
-    }
+    const FILE: &'static str = F::FILE;
+    const LINE: u32 = F::LINE;
+    const COLUMN: u32 = F::COLUMN;
 }

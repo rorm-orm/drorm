@@ -12,12 +12,13 @@ use crate::fields::types::ForeignModelByField;
 use crate::fields::utils::get_names::single_column_name;
 use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::fake_field::FakeField;
-use crate::internal::field::{Field, FieldProxy, FieldType, SingleColumnField};
+use crate::internal::field::{FieldProxy, FieldType, ModelField, SingleColumnField};
 use crate::internal::hmr;
 use crate::internal::hmr::annotations::Annotations;
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
 use crate::model::Model;
+use crate::new::Field;
 use crate::{impl_FieldEq, sealed};
 
 impl<FF> FieldType for ForeignModelByField<FF>
@@ -107,7 +108,7 @@ impl<F> ForeignModelField for F
 where
     F: SingleColumnField,
     F::Type: ForeignModelTrait,
-    <<F::Type as ForeignModelTrait>::RelatedField as Field>::Model:,
+    <<F::Type as ForeignModelTrait>::RelatedField as ModelField>::Model:,
 {
     sealed!(impl);
 }
@@ -132,7 +133,7 @@ where
 {
     fn new<F, P>(ctx: &mut QueryContext, _: FieldProxy<F, P>) -> Self
     where
-        F: Field<Type = Self::Result>,
+        F: ModelField<Type = Self::Result>,
         P: Path,
     {
         Self(FieldDecoder::new(

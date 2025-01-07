@@ -14,7 +14,7 @@
 use super::FieldType;
 use crate::conditions::{Binary, BinaryOperator, Column, Condition};
 use crate::internal::field::access::FieldAccess;
-use crate::internal::field::{Field, FieldProxy, SingleColumnField};
+use crate::internal::field::{FieldProxy, ModelField, SingleColumnField};
 use crate::internal::relation_path::Path;
 
 /// Trait for equality comparisons.
@@ -140,7 +140,7 @@ macro_rules! impl_FieldEq {
 impl<'rhs, F, P, T> FieldEq<'rhs, FieldProxy<F, P>> for T
 where
     T: FieldEq<'rhs, T>,
-    F: Field<Type = T> + SingleColumnField,
+    F: ModelField<Type = T> + SingleColumnField,
     P: Path,
 {
     type EqCond<A: FieldAccess> = Binary<Column<A>, Column<FieldProxy<F, P>>>;
@@ -223,7 +223,7 @@ macro_rules! impl_FieldOrd {
 impl<'rhs, F, P, T> FieldOrd<'rhs, FieldProxy<F, P>> for T
 where
     T: FieldOrd<'rhs, T>,
-    F: Field<Type = T> + SingleColumnField,
+    F: ModelField<Type = T> + SingleColumnField,
     P: Path,
 {
     type LtCond<A: FieldAccess> = Binary<Column<A>, Column<FieldProxy<F, P>>>;

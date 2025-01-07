@@ -1,18 +1,10 @@
 ///rorm's representation of [`BasicModel`]'s `id` field
 #[allow(non_camel_case_types)]
 pub struct __BasicModel_id(::std::marker::PhantomData<()>);
-impl ::std::clone::Clone for __BasicModel_id {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl ::std::marker::Copy for __BasicModel_id {}
-impl ::rorm::internal::field::Field for __BasicModel_id {
-    type Type = i64;
-    type Model = BasicModel;
-    const INDEX: usize = 0usize;
-    const NAME: &'static str = "id";
-    const EXPLICIT_ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = ::rorm::internal::hmr::annotations::Annotations {
+impl ::rorm::new::Field for __BasicModel_id {
+    type Struct = BasicModel;
+    const POSITION: usize = 0usize;
+    const ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = ::rorm::internal::hmr::annotations::Annotations {
         auto_create_time: None,
         auto_update_time: None,
         auto_increment: Some(::rorm::internal::hmr::annotations::AutoIncrement),
@@ -27,14 +19,11 @@ impl ::rorm::internal::field::Field for __BasicModel_id {
         nullable: false,
         foreign: None,
     };
-    const SOURCE: ::rorm::internal::hmr::Source = ::rorm::internal::hmr::Source {
-        file: ::std::file!(),
-        line: ::std::line!() as usize,
-        column: ::std::column!() as usize,
-    };
-    fn new() -> Self {
-        Self(::std::marker::PhantomData)
-    }
+    const NAME: &'static str = "id";
+    type Type = i64;
+    const FILE: &'static str = ::core::file!();
+    const LINE: u32 = ::core::line!();
+    const COLUMN: u32 = ::core::column!();
 }
 const _: () = {
     if let Err(err) = ::rorm::internal::field::check::<__BasicModel_id>() {
@@ -54,6 +43,7 @@ impl<Path: 'static> ::rorm::model::ConstNew for __BasicModel_Fields_Struct<Path>
     const REF: &'static Self = &Self::NEW;
 }
 const _: () = {
+    impl ::rorm::new::Struct for BasicModel {}
     impl ::rorm::model::Model for BasicModel {
         type Primary = __BasicModel_id;
         type Fields<P: ::rorm::internal::relation_path::Path> = __BasicModel_Fields_Struct<
@@ -152,7 +142,7 @@ const _: () = {
     #[linkme(crate = ::rorm::linkme)]
     static __get_imr: fn() -> ::rorm::imr::Model = <BasicModel as ::rorm::model::Model>::get_imr;
     let mut count_auto_increment = 0;
-    let mut annos_slice = <__BasicModel_id as ::rorm::internal::field::Field>::EFFECTIVE_ANNOTATIONS
+    let mut annos_slice = <__BasicModel_id as ::rorm::new::Field>::EFFECTIVE_ANNOTATIONS
         .as_slice();
     while let [annos, tail @ ..] = annos_slice {
         annos_slice = tail;

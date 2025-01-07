@@ -12,7 +12,7 @@ use crate::fields::utils::const_fn::ConstFn;
 use crate::internal::const_concat::ConstString;
 use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::fake_field::FakeField;
-use crate::internal::field::{Field, FieldProxy};
+use crate::internal::field::{FieldProxy, ModelField};
 use crate::internal::hmr::annotations::Annotations;
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
@@ -129,7 +129,7 @@ pub struct OptionDecoder<T: FieldType>(T::Decoder);
 impl<T: FieldType> FieldDecoder for OptionDecoder<T> {
     fn new<F, P>(ctx: &mut QueryContext, _: FieldProxy<F, P>) -> Self
     where
-        F: Field<Type = Self::Result>,
+        F: ModelField<Type = Self::Result>,
         P: Path,
     {
         Self(T::Decoder::new::<FakeField<T, F>, P>(

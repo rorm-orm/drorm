@@ -2,8 +2,9 @@
 
 mod impls;
 
-use crate::internal::field::{Field, SingleColumnField};
+use crate::internal::field::{ModelField, SingleColumnField};
 use crate::internal::query_context::QueryContext;
+use crate::new::Field;
 use crate::{sealed, Model};
 
 /// Trait to store a relation path in generics
@@ -72,8 +73,8 @@ pub trait Path: 'static {
     /// "Function" which constructs a new path by taking a step through `F`
     type Step<F>: Path
     where
-        F: Field + PathField<<F as Field>::Type>,
-        F::ParentField: Field<Model = Self::Current>;
+        F: ModelField + PathField<<F as Field>::Type>,
+        F::ParentField: ModelField<Model = Self::Current>;
 
     //type Join<SubPath>: Path
     //where
@@ -100,7 +101,7 @@ pub trait Path: 'static {
 /// to be able to have 3 different `impl<F> PathField for F`
 /// without rust complaining about overlapping implementations.
 /// Its value will always be `<Self as Field>::Type`.
-pub trait PathField<FieldType>: Field {
+pub trait PathField<FieldType>: ModelField {
     sealed!(trait);
 
     /// Field existing on the path's new current model relating to `ParentField`

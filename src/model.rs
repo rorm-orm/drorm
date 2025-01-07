@@ -7,10 +7,11 @@ use rorm_declaration::imr;
 use crate::conditions::{Binary, BinaryOperator, Column, Value};
 use crate::crud::decoder::Decoder;
 use crate::crud::selector::Selector;
-use crate::internal::field::{Field, FieldProxy, SingleColumnField};
+use crate::internal::field::{FieldProxy, ModelField, SingleColumnField};
 use crate::internal::hmr::{AsImr, Source};
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
+use crate::new::Field;
 
 /// Trait implemented on Patches i.e. a subset of a model's fields.
 ///
@@ -97,14 +98,14 @@ pub type PatchAsCondition<'a, P> = Binary<
 /// It should only ever be generated using [`derive(Model)`](rorm_macro::Model).
 pub trait Model: Patch<Model = Self> {
     /// The primary key
-    type Primary: Field<Model = Self> + SingleColumnField;
+    type Primary: ModelField<Model = Self> + SingleColumnField;
 
-    /// A struct which "maps" field identifiers their descriptions (i.e. [`Field<T>`](crate::internal::field::Field)).
+    /// A struct which "maps" field identifiers their descriptions (i.e. [`Field<T>`](crate::internal::field::ModelField)).
     ///
     /// The struct is constructed once in the [`Model::FIELDS`] constant.
     type Fields<P: Path>: ConstNew;
 
-    /// A constant struct which "maps" field identifiers their descriptions (i.e. [`Field<T>`](crate::internal::field::Field)).
+    /// A constant struct which "maps" field identifiers their descriptions (i.e. [`Field<T>`](crate::internal::field::ModelField)).
     const FIELDS: Self::Fields<Self>;
 
     /// Shorthand version of [`FIELDS`]
@@ -141,7 +142,7 @@ pub trait Model: Patch<Model = Self> {
 /// Expose a models' fields on the type level using indexes
 pub trait FieldByIndex<const INDEX: usize>: Model {
     /// The model's field at `INDEX`
-    type Field: Field<Model = Self>;
+    type Field: ModelField<Model = Self>;
 }
 
 /// Generic access to a patch's fields
@@ -149,7 +150,7 @@ pub trait FieldByIndex<const INDEX: usize>: Model {
 /// This enables generic code to check if a patch contains a certain field
 /// (for example the model's primary key, see [Identifiable])
 /// and gain access to it.
-pub trait GetField<F: Field>: Patch {
+pub trait GetField<F: ModelField>: Patch {
     /// Take the field by ownership
     fn get_field(self) -> F::Type;
 
@@ -167,7 +168,7 @@ pub trait GetField<F: Field>: Patch {
 /// because the method hides the fact, that the mutual borrow only applies to a single field.
 /// This trait provides a solution to this problem, for a common scenario:
 /// The need for an additional immutable borrow to the primary key.
-pub trait UpdateField<F: Field<Model = Self>>: Model {
+pub trait UpdateField<F: ModelField<Model = Self>>: Model {
     /// Update a model's field based on the model's primary key
     fn update_field<'m, T>(
         &'m mut self,

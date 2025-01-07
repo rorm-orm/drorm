@@ -19,7 +19,7 @@ use crate::fields::utils::get_annotations::merge_annotations;
 use crate::fields::utils::get_names::single_column_name;
 use crate::impl_FieldEq;
 use crate::internal::field::decoder::FieldDecoder;
-use crate::internal::field::{Field, FieldProxy};
+use crate::internal::field::{FieldProxy, ModelField};
 use crate::internal::hmr::annotations::{Annotations, MaxLength};
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
@@ -222,7 +222,7 @@ where
 {
     fn new<F, P>(ctx: &mut QueryContext, _: FieldProxy<F, P>) -> Self
     where
-        F: Field<Type = Self::Result>,
+        F: ModelField<Type = Self::Result>,
         P: Path,
     {
         let (index, column) = ctx.select_field::<F, P>();
@@ -295,7 +295,7 @@ where
 {
     fn new<F, P>(ctx: &mut QueryContext, _: FieldProxy<F, P>) -> Self
     where
-        F: Field<Type = Self::Result>,
+        F: ModelField<Type = Self::Result>,
         P: Path,
     {
         let (index, column) = ctx.select_field::<F, P>();

@@ -132,7 +132,7 @@ impl AsImr for &'static [&'static str] {
     }
 }
 
-/// Struct storing a [Field](crate::internal::field::Field)'s annotations.
+/// Struct storing a [Field](crate::internal::field::ModelField)'s annotations.
 #[derive(Copy, Clone)]
 pub struct Annotations {
     /// The `#[rorm(auto_create_time)]` annotation

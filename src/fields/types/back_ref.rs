@@ -16,8 +16,9 @@ use crate::fields::utils::check::disallow_annotations_check;
 use crate::fields::utils::get_annotations::forward_annotations;
 use crate::fields::utils::get_names::no_columns_names;
 use crate::internal::field::foreign_model::{ForeignModelField, ForeignModelTrait};
-use crate::internal::field::{foreign_model, Field, FieldProxy, SingleColumnField};
+use crate::internal::field::{foreign_model, FieldProxy, ModelField, SingleColumnField};
 use crate::model::GetField;
+use crate::new::Field;
 use crate::query;
 #[allow(unused_imports)] // clion needs this import to access Patch::field on a Model
 use crate::Patch;
@@ -66,7 +67,7 @@ impl<FMF: ForeignModelField> FieldType for BackRef<FMF> {
 
 impl<BRF, FMF> FieldProxy<BRF, BRF::Model>
 where
-    BRF: Field<Type = BackRef<FMF>>,
+    BRF: ModelField<Type = BackRef<FMF>>,
 
     FMF: ForeignModelField + SingleColumnField,
     FMF::Type: ForeignModelTrait,

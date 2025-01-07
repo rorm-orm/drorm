@@ -8,8 +8,9 @@ use crate::crud::selector::AggregatedColumn;
 use crate::fields::traits::{
     FieldAvg, FieldCount, FieldEq, FieldLike, FieldMax, FieldMin, FieldOrd, FieldRegexp, FieldSum,
 };
-use crate::internal::field::{Field, FieldProxy};
+use crate::internal::field::{FieldProxy, ModelField};
 use crate::internal::relation_path::Path;
+use crate::new::Field;
 
 #[allow(non_snake_case)] // the macro produces a datatype which are named using CamelCase
 macro_rules! FieldType {
@@ -22,14 +23,14 @@ macro_rules! FieldType {
 ///
 /// ## Why
 /// ```no_run
-/// # use rorm::internal::field::{FieldProxy, Field, access::FieldAccess};
+/// # use rorm::internal::field::{FieldProxy, ModelField, access::FieldAccess};
 /// # use rorm::internal::relation_path::Path;
 ///
 /// // function using FieldProxy
 /// fn do_something<F, P>(proxy: FieldProxy<F, P>) {/* ... */}
 ///
 /// // but in order to do useful things with the proxy, you will need bounds:
-/// fn do_useful<F: Field, P: Path>(proxy: FieldProxy<F, P>) {/* ... */}
+/// fn do_useful<F: ModelField, P: Path>(proxy: FieldProxy<F, P>) {/* ... */}
 ///
 /// // function using FieldAccess
 /// fn do_something_else<A: FieldAccess>(proxy: A) {/* ... */}
@@ -60,7 +61,7 @@ pub trait FieldAccess: Sized + Send + Sync + 'static {
     /// Field which is accessed
     ///
     /// Corresponds to the proxy's `F` parameter
-    type Field: Field;
+    type Field: ModelField;
 
     /// Path the field is accessed through
     ///
@@ -248,7 +249,7 @@ pub trait FieldAccess: Sized + Send + Sync + 'static {
     }
 }
 
-impl<F: Field, P: Path> FieldAccess for FieldProxy<F, P> {
+impl<F: ModelField, P: Path> FieldAccess for FieldProxy<F, P> {
     type Field = F;
     type Path = P;
 }

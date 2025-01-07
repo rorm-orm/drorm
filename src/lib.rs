@@ -43,6 +43,7 @@ pub mod crud;
 pub mod fields;
 pub mod internal;
 pub mod model;
+pub mod new;
 
 /// This slice is populated by the [`Model`] macro with all models.
 ///

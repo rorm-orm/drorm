@@ -12,11 +12,11 @@ pub mod collections;
 pub use collections::{DynamicCollection, StaticCollection};
 
 use crate::internal::field::access::FieldAccess;
-use crate::internal::field::Field;
 use crate::internal::query_context::flat_conditions::FlatCondition;
 use crate::internal::query_context::ids::PathId;
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
+use crate::new::Field;
 
 /// Node in a condition tree
 pub trait Condition<'a>: Send + Sync {

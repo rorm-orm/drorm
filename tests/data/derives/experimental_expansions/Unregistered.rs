@@ -1,18 +1,10 @@
 ///rorm's representation of [`Unregistered`]'s `id` field
 #[allow(non_camel_case_types)]
 pub struct __Unregistered_id(::std::marker::PhantomData<()>);
-impl ::std::clone::Clone for __Unregistered_id {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl ::std::marker::Copy for __Unregistered_id {}
-impl ::rorm::internal::field::Field for __Unregistered_id {
-    type Type = i64;
-    type Model = Unregistered;
-    const INDEX: usize = 0usize;
-    const NAME: &'static str = "id";
-    const EXPLICIT_ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = ::rorm::internal::hmr::annotations::Annotations {
+impl ::rorm::new::Field for __Unregistered_id {
+    type Struct = Unregistered;
+    const POSITION: usize = 0usize;
+    const ANNOTATIONS: ::rorm::internal::hmr::annotations::Annotations = ::rorm::internal::hmr::annotations::Annotations {
         auto_create_time: None,
         auto_update_time: None,
         auto_increment: Some(::rorm::internal::hmr::annotations::AutoIncrement),
@@ -27,14 +19,11 @@ impl ::rorm::internal::field::Field for __Unregistered_id {
         nullable: false,
         foreign: None,
     };
-    const SOURCE: ::rorm::internal::hmr::Source = ::rorm::internal::hmr::Source {
-        file: ::std::file!(),
-        line: ::std::line!() as usize,
-        column: ::std::column!() as usize,
-    };
-    fn new() -> Self {
-        Self(::std::marker::PhantomData)
-    }
+    const NAME: &'static str = "id";
+    type Type = i64;
+    const FILE: &'static str = ::core::file!();
+    const LINE: u32 = ::core::line!();
+    const COLUMN: u32 = ::core::column!();
 }
 ///[`Unregistered`]'s [`Fields`](::rorm::model::Model::Fields) struct.
 #[allow(non_camel_case_types)]
@@ -49,6 +38,7 @@ impl<Path: 'static> ::rorm::model::ConstNew for __Unregistered_Fields_Struct<Pat
     const REF: &'static Self = &Self::NEW;
 }
 const _: () = {
+    impl ::rorm::new::Struct for Unregistered {}
     impl ::rorm::model::Model for Unregistered {
         type Primary = __Unregistered_id;
         type Fields<P: ::rorm::internal::relation_path::Path> = __Unregistered_Fields_Struct<

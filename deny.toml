@@ -22,6 +22,7 @@ allow = [
     "ISC",
     "Unicode-3.0",
     "LicenseRef-ring",
+    "Zlib",
 ]
 
 [[licenses.clarify]]

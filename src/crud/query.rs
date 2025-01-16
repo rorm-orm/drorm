@@ -349,8 +349,8 @@ macro_rules! query {
         $crate::crud::query::QueryBuilder::new(
             $db,
             ($(
-                $($model)::+.$($field).+ $(($($args)?))? $(as $patch)?
-            ),+)
+                $($model)::+.$($field).+ $(($($args)?))? $(as $patch)?,
+            )+)
         )
     };
     ($db:expr, $patch:ty) => {

@@ -83,6 +83,18 @@ pub use __Unregistered_Value_Space_Impl::*;
 pub struct __Unregistered_Decoder {
     id: <i64 as ::rorm::fields::traits::FieldType>::Decoder,
 }
+impl ::rorm::crud::selector::Selector for __Unregistered_Value_Space_Impl {
+    type Result = Unregistered;
+    type Model = Unregistered;
+    type Decoder = __Unregistered_Decoder;
+    const INSERT_COMPATIBLE: bool = true;
+    fn select(
+        self,
+        ctx: &mut ::rorm::internal::query_context::QueryContext,
+    ) -> Self::Decoder {
+        <Unregistered as ::rorm::model::Patch>::select::<Unregistered>(ctx)
+    }
+}
 impl ::rorm::crud::decoder::Decoder for __Unregistered_Decoder {
     type Result = Unregistered;
     fn by_name<'index>(

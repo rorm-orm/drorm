@@ -135,6 +135,19 @@ pub struct __Generic_Decoder<X: rorm::fields::traits::FieldType> {
     id: <i64 as ::rorm::fields::traits::FieldType>::Decoder,
     x: <X as ::rorm::fields::traits::FieldType>::Decoder,
 }
+impl<X: rorm::fields::traits::FieldType> ::rorm::crud::selector::Selector
+for __Generic_Value_Space_Impl<X> {
+    type Result = Generic<X>;
+    type Model = Generic<X>;
+    type Decoder = __Generic_Decoder<X>;
+    const INSERT_COMPATIBLE: bool = true;
+    fn select(
+        self,
+        ctx: &mut ::rorm::internal::query_context::QueryContext,
+    ) -> Self::Decoder {
+        <Generic<X> as ::rorm::model::Patch>::select::<Generic<X>>(ctx)
+    }
+}
 impl<X: rorm::fields::traits::FieldType> ::rorm::crud::decoder::Decoder
 for __Generic_Decoder<X> {
     type Result = Generic<X>;

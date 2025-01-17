@@ -8,6 +8,18 @@ pub enum __BasicPatch_Value_Space_Impl {
 }
 pub use __BasicPatch_Value_Space_Impl::*;
 pub struct __BasicPatch_Decoder {}
+impl ::rorm::crud::selector::Selector for __BasicPatch_Value_Space_Impl {
+    type Result = BasicPatch;
+    type Model = BasicModel;
+    type Decoder = __BasicPatch_Decoder;
+    const INSERT_COMPATIBLE: bool = true;
+    fn select(
+        self,
+        ctx: &mut ::rorm::internal::query_context::QueryContext,
+    ) -> Self::Decoder {
+        <BasicPatch as ::rorm::model::Patch>::select::<BasicModel>(ctx)
+    }
+}
 impl ::rorm::crud::decoder::Decoder for __BasicPatch_Decoder {
     type Result = BasicPatch;
     fn by_name<'index>(

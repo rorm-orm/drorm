@@ -88,6 +88,18 @@ pub use __BasicModel_Value_Space_Impl::*;
 pub struct __BasicModel_Decoder {
     id: <i64 as ::rorm::fields::traits::FieldType>::Decoder,
 }
+impl ::rorm::crud::selector::Selector for __BasicModel_Value_Space_Impl {
+    type Result = BasicModel;
+    type Model = BasicModel;
+    type Decoder = __BasicModel_Decoder;
+    const INSERT_COMPATIBLE: bool = true;
+    fn select(
+        self,
+        ctx: &mut ::rorm::internal::query_context::QueryContext,
+    ) -> Self::Decoder {
+        <BasicModel as ::rorm::model::Patch>::select::<BasicModel>(ctx)
+    }
+}
 impl ::rorm::crud::decoder::Decoder for __BasicModel_Decoder {
     type Result = BasicModel;
     fn by_name<'index>(

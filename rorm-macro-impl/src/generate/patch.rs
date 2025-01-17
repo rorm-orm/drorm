@@ -75,9 +75,7 @@ pub fn partially_generate_patch<'a>(
         }
     };
     quote! {
-        // use ::rorm::fields::traits::FieldType;
-
-        // Credit and explanation https://github.com/dtolnay/case-studies/tree/master/unit-type-parameters
+        // Credit and explanation: https://github.com/dtolnay/case-studies/tree/master/unit-type-parameters
         #[doc(hidden)]
         #[allow(non_camel_case_types)]
         #vis enum #value_space_impl #impl_generics #where_clause {
@@ -94,6 +92,17 @@ pub fn partially_generate_patch<'a>(
                 #fields_1: <#types as ::rorm::fields::traits::FieldType>::Decoder,
             )*
         }
+
+        impl #impl_generics ::rorm::crud::selector::Selector for #value_space_impl #type_generics #where_clause {
+            type Result = #patch #type_generics;
+            type Model = #model #type_generics;
+            type Decoder = #decoder #type_generics;
+            const INSERT_COMPATIBLE: bool = true;
+            fn select(self, ctx: &mut ::rorm::internal::query_context::QueryContext) -> Self::Decoder {
+                <#patch #type_generics as ::rorm::model::Patch>::select::<#model #type_generics>(ctx)
+            }
+        }
+
         impl #impl_generics ::rorm::crud::decoder::Decoder for #decoder #type_generics #where_clause {
             type Result = #patch #type_generics;
 

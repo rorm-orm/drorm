@@ -96,9 +96,26 @@ for __Generic_Fields_Struct<X, Path> {
     };
     const REF: &'static Self = &Self::NEW;
 }
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub enum __Generic_Access_Enum<X: rorm::fields::traits::FieldType> {
+    Generic,
+    #[allow(dead_code)]
+    #[doc(hidden)]
+    __Generic_Access_Enum_Marker(::std::marker::PhantomData<Generic<X>>),
+}
+pub use __Generic_Access_Enum::*;
 const _: () = {
+    impl<X: rorm::fields::traits::FieldType> ::std::ops::Deref
+    for __Generic_Access_Enum<X> {
+        type Target = <Generic<X> as ::rorm::Model>::Fields<Generic<X>>;
+        fn deref(&self) -> &Self::Target {
+            ::rorm::model::ConstNew::REF
+        }
+    }
     impl<X: rorm::fields::traits::FieldType> ::rorm::model::Model for Generic<X> {
         type Primary = __Generic_id<X>;
+        type AccessEnum = __Generic_Access_Enum<X>;
         type Fields<P: ::rorm::internal::relation_path::Path> = __Generic_Fields_Struct<
             X,
             P,

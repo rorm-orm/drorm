@@ -48,9 +48,25 @@ impl<Path: 'static> ::rorm::model::ConstNew for __Unregistered_Fields_Struct<Pat
     };
     const REF: &'static Self = &Self::NEW;
 }
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub enum __Unregistered_Access_Enum {
+    Unregistered,
+    #[allow(dead_code)]
+    #[doc(hidden)]
+    __Unregistered_Access_Enum_Marker(::std::marker::PhantomData<Unregistered>),
+}
+pub use __Unregistered_Access_Enum::*;
 const _: () = {
+    impl ::std::ops::Deref for __Unregistered_Access_Enum {
+        type Target = <Unregistered as ::rorm::Model>::Fields<Unregistered>;
+        fn deref(&self) -> &Self::Target {
+            ::rorm::model::ConstNew::REF
+        }
+    }
     impl ::rorm::model::Model for Unregistered {
         type Primary = __Unregistered_id;
+        type AccessEnum = __Unregistered_Access_Enum;
         type Fields<P: ::rorm::internal::relation_path::Path> = __Unregistered_Fields_Struct<
             P,
         >;

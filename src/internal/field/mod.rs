@@ -251,7 +251,7 @@ impl<F: Field, P> FieldProxy<F, P> {
     }
 
     /// Get the field's position in the Model
-    pub const fn index(_field: Self) -> usize {
+    pub const fn index(_field: fn() -> Self) -> usize {
         F::INDEX
     }
 

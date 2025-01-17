@@ -9,8 +9,9 @@ use crate::generate::utils::phantom_data;
 use crate::parse::annotations::{Index, NamedIndex, OnAction};
 
 pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
-    let fields_struct = generate_fields_struct(model);
-    let fields_struct_ident = format_ident!("__{}_Fields_Struct", model.ident);
+    let (fields_struct_ident, fields_struct) = generate_fields_struct(model);
+    let access_enum_ident = format_ident!("__{}_Access_Enum", model.ident);
+    let access_enum_marker_ident = format_ident!("__{}_Access_Enum_Marker", model.ident);
     let field_declarations = generate_fields(model);
     let AnalyzedModel {
         vis,
@@ -59,7 +60,25 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
         #field_declarations
         #fields_struct
 
+        // Credit and explanation https://github.com/dtolnay/case-studies/tree/master/unit-type-parameters
+        #[doc(hidden)]
+        #[allow(non_camel_case_types)]
+        #vis enum #access_enum_ident #impl_generics #where_clause {
+            #ident,
+
+            #[allow(dead_code)]
+            #[doc(hidden)]
+            #access_enum_marker_ident(::std::marker::PhantomData<#ident #type_generics>)
+        }
+        #vis use #access_enum_ident::*;
         const _: () = {
+            impl #impl_generics ::std::ops::Deref for #access_enum_ident #type_generics #where_clause {
+                type Target = <#ident #type_generics as ::rorm::Model>::Fields<#ident  #type_generics>;
+
+                fn deref(&self) -> &Self::Target {
+                    ::rorm::model::ConstNew::REF
+                }
+            }
             impl #impl_generics ::rorm::model::Model for #ident #type_generics #where_clause {
                 type Primary = #primary_struct #type_generics;
 
@@ -80,10 +99,6 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
     };
     if !*experimental_unregistered {
         tokens.extend(quote! {
-            #[doc = concat!("Constant representing the model [`", stringify!(#ident), "`] as a value")]
-            #[allow(non_upper_case_globals)]
-            #vis const #ident: #fields_struct_ident<#ident> = ::rorm::model::ConstNew::NEW;
-
             const _: () = {
                 #[::rorm::linkme::distributed_slice(::rorm::MODELS)]
                 #[linkme(crate = ::rorm::linkme)]
@@ -293,7 +308,7 @@ fn generate_field_annotations(annos: &AnalyzedModelFieldAnnotations) -> TokenStr
     }
 }
 
-fn generate_fields_struct(model: &AnalyzedModel) -> TokenStream {
+fn generate_fields_struct(model: &AnalyzedModel) -> (Ident, TokenStream) {
     let vis = &model.vis;
     let ident = format_ident!("__{}_Fields_Struct", model.ident);
     let doc = LitStr::new(
@@ -322,7 +337,7 @@ fn generate_fields_struct(model: &AnalyzedModel) -> TokenStream {
     let (impl_generics_with_path, type_generics_with_path, _) = generics.split_for_impl();
     let (_, type_generics, where_clause) = model.experimental_generics.split_for_impl();
 
-    quote! {
+    let tokens = quote! {
         #[doc = #doc]
         #[allow(non_camel_case_types)]
         #vis struct #ident #impl_generics_with_path #where_clause {
@@ -339,5 +354,6 @@ fn generate_fields_struct(model: &AnalyzedModel) -> TokenStream {
             };
             const REF: &'static Self = &Self::NEW;
         }
-    }
+    };
+    (ident, tokens)
 }

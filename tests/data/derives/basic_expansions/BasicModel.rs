@@ -53,9 +53,25 @@ impl<Path: 'static> ::rorm::model::ConstNew for __BasicModel_Fields_Struct<Path>
     };
     const REF: &'static Self = &Self::NEW;
 }
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub enum __BasicModel_Access_Enum {
+    BasicModel,
+    #[allow(dead_code)]
+    #[doc(hidden)]
+    __BasicModel_Access_Enum_Marker(::std::marker::PhantomData<BasicModel>),
+}
+pub use __BasicModel_Access_Enum::*;
 const _: () = {
+    impl ::std::ops::Deref for __BasicModel_Access_Enum {
+        type Target = <BasicModel as ::rorm::Model>::Fields<BasicModel>;
+        fn deref(&self) -> &Self::Target {
+            ::rorm::model::ConstNew::REF
+        }
+    }
     impl ::rorm::model::Model for BasicModel {
         type Primary = __BasicModel_id;
+        type AccessEnum = __BasicModel_Access_Enum;
         type Fields<P: ::rorm::internal::relation_path::Path> = __BasicModel_Fields_Struct<
             P,
         >;
@@ -142,11 +158,6 @@ const _: () = {
         }
     }
 };
-#[doc = concat!(
-    "Constant representing the model [`", stringify!(BasicModel), "`] as a value"
-)]
-#[allow(non_upper_case_globals)]
-pub const BasicModel: __BasicModel_Fields_Struct<BasicModel> = ::rorm::model::ConstNew::NEW;
 const _: () = {
     #[::rorm::linkme::distributed_slice(::rorm::MODELS)]
     #[linkme(crate = ::rorm::linkme)]

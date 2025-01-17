@@ -48,111 +48,103 @@ impl<Path: 'static> ::rorm::model::ConstNew for __Unregistered_Fields_Struct<Pat
     };
     const REF: &'static Self = &Self::NEW;
 }
+impl ::std::ops::Deref for __Unregistered_Value_Space_Impl {
+    type Target = <Unregistered as ::rorm::Model>::Fields<Unregistered>;
+    fn deref(&self) -> &Self::Target {
+        ::rorm::model::ConstNew::REF
+    }
+}
+impl ::rorm::model::Model for Unregistered {
+    type Primary = __Unregistered_id;
+    type Fields<P: ::rorm::internal::relation_path::Path> = __Unregistered_Fields_Struct<
+        P,
+    >;
+    const F: __Unregistered_Fields_Struct<Self> = ::rorm::model::ConstNew::NEW;
+    const FIELDS: __Unregistered_Fields_Struct<Self> = ::rorm::model::ConstNew::NEW;
+    const TABLE: &'static str = "unregistered";
+    const SOURCE: ::rorm::internal::hmr::Source = ::rorm::internal::hmr::Source {
+        file: ::std::file!(),
+        line: ::std::line!() as usize,
+        column: ::std::column!() as usize,
+    };
+    fn push_fields_imr(fields: &mut Vec<::rorm::imr::Field>) {
+        ::rorm::internal::field::push_imr::<__Unregistered_id>(&mut *fields);
+    }
+}
 #[doc(hidden)]
 #[allow(non_camel_case_types)]
-pub enum __Unregistered_Access_Enum {
+pub enum __Unregistered_Value_Space_Impl {
     Unregistered,
     #[allow(dead_code)]
     #[doc(hidden)]
-    __Unregistered_Access_Enum_Marker(::std::marker::PhantomData<Unregistered>),
+    __Unregistered_Value_Space_Impl_Marker(::std::marker::PhantomData<Unregistered>),
 }
-pub use __Unregistered_Access_Enum::*;
-const _: () = {
-    impl ::std::ops::Deref for __Unregistered_Access_Enum {
-        type Target = <Unregistered as ::rorm::Model>::Fields<Unregistered>;
-        fn deref(&self) -> &Self::Target {
-            ::rorm::model::ConstNew::REF
+pub use __Unregistered_Value_Space_Impl::*;
+pub struct __Unregistered_Decoder {
+    id: <i64 as ::rorm::fields::traits::FieldType>::Decoder,
+}
+impl ::rorm::crud::decoder::Decoder for __Unregistered_Decoder {
+    type Result = Unregistered;
+    fn by_name<'index>(
+        &'index self,
+        row: &'_ ::rorm::db::Row,
+    ) -> Result<Self::Result, ::rorm::db::row::RowError<'index>> {
+        Ok(Unregistered {
+            id: self.id.by_name(row)?,
+        })
+    }
+    fn by_index<'index>(
+        &'index self,
+        row: &'_ ::rorm::db::Row,
+    ) -> Result<Self::Result, ::rorm::db::row::RowError<'index>> {
+        Ok(Unregistered {
+            id: self.id.by_index(row)?,
+        })
+    }
+}
+impl ::rorm::model::Patch for Unregistered {
+    type Model = Unregistered;
+    type Decoder = __Unregistered_Decoder;
+    fn select<P: ::rorm::internal::relation_path::Path>(
+        ctx: &mut ::rorm::internal::query_context::QueryContext,
+    ) -> Self::Decoder {
+        __Unregistered_Decoder {
+            id: ::rorm::internal::field::decoder::FieldDecoder::new(
+                ctx,
+                <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
+                    .id
+                    .through::<P>(),
+            ),
         }
     }
-    impl ::rorm::model::Model for Unregistered {
-        type Primary = __Unregistered_id;
-        type AccessEnum = __Unregistered_Access_Enum;
-        type Fields<P: ::rorm::internal::relation_path::Path> = __Unregistered_Fields_Struct<
-            P,
-        >;
-        const F: __Unregistered_Fields_Struct<Self> = ::rorm::model::ConstNew::NEW;
-        const FIELDS: __Unregistered_Fields_Struct<Self> = ::rorm::model::ConstNew::NEW;
-        const TABLE: &'static str = "unregistered";
-        const SOURCE: ::rorm::internal::hmr::Source = ::rorm::internal::hmr::Source {
-            file: ::std::file!(),
-            line: ::std::line!() as usize,
-            column: ::std::column!() as usize,
-        };
-        fn push_fields_imr(fields: &mut Vec<::rorm::imr::Field>) {
-            ::rorm::internal::field::push_imr::<__Unregistered_id>(&mut *fields);
-        }
-    }
-    use ::rorm::internal::field::decoder::FieldDecoder;
-    use ::rorm::fields::traits::FieldType;
-    pub struct __Unregistered_Decoder {
-        id: <i64 as ::rorm::fields::traits::FieldType>::Decoder,
-    }
-    impl ::rorm::crud::decoder::Decoder for __Unregistered_Decoder {
-        type Result = Unregistered;
-        fn by_name<'index>(
-            &'index self,
-            row: &'_ ::rorm::db::Row,
-        ) -> Result<Self::Result, ::rorm::db::row::RowError<'index>> {
-            Ok(Unregistered {
-                id: self.id.by_name(row)?,
-            })
-        }
-        fn by_index<'index>(
-            &'index self,
-            row: &'_ ::rorm::db::Row,
-        ) -> Result<Self::Result, ::rorm::db::row::RowError<'index>> {
-            Ok(Unregistered {
-                id: self.id.by_index(row)?,
-            })
-        }
-    }
-    impl ::rorm::model::Patch for Unregistered {
-        type Model = Unregistered;
-        type Decoder = __Unregistered_Decoder;
-        fn select<P: ::rorm::internal::relation_path::Path>(
-            ctx: &mut ::rorm::internal::query_context::QueryContext,
-        ) -> Self::Decoder {
-            __Unregistered_Decoder {
-                id: FieldDecoder::new(
-                    ctx,
+    fn push_columns(columns: &mut Vec<&'static str>) {
+        columns
+            .extend(
+                ::rorm::internal::field::FieldProxy::columns(
                     <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
-                        .id
-                        .through::<P>(),
+                        .id,
                 ),
-            }
-        }
-        fn push_columns(columns: &mut Vec<&'static str>) {
-            columns
-                .extend(
-                    ::rorm::internal::field::FieldProxy::columns(
-                        <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
-                            .id,
-                    ),
-                );
-        }
-        fn push_references<'a>(
-            &'a self,
-            values: &mut Vec<::rorm::conditions::Value<'a>>,
-        ) {
-            values.extend(self.id.as_values());
-        }
-        fn push_values(self, values: &mut Vec<::rorm::conditions::Value>) {
-            values.extend(self.id.into_values());
-        }
+            );
     }
-    impl<'a> ::rorm::internal::patch::IntoPatchCow<'a> for Unregistered {
-        type Patch = Unregistered;
-        fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, Unregistered> {
-            ::rorm::internal::patch::PatchCow::Owned(self)
-        }
+    fn push_references<'a>(&'a self, values: &mut Vec<::rorm::conditions::Value<'a>>) {
+        values.extend(::rorm::fields::traits::FieldType::as_values(&self.id));
     }
-    impl<'a> ::rorm::internal::patch::IntoPatchCow<'a> for &'a Unregistered {
-        type Patch = Unregistered;
-        fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, Unregistered> {
-            ::rorm::internal::patch::PatchCow::Borrowed(self)
-        }
+    fn push_values(self, values: &mut Vec<::rorm::conditions::Value>) {
+        values.extend(::rorm::fields::traits::FieldType::into_values(self.id));
     }
-};
+}
+impl<'a> ::rorm::internal::patch::IntoPatchCow<'a> for Unregistered {
+    type Patch = Unregistered;
+    fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, Unregistered> {
+        ::rorm::internal::patch::PatchCow::Owned(self)
+    }
+}
+impl<'a> ::rorm::internal::patch::IntoPatchCow<'a> for &'a Unregistered {
+    type Patch = Unregistered;
+    fn into_patch_cow(self) -> ::rorm::internal::patch::PatchCow<'a, Unregistered> {
+        ::rorm::internal::patch::PatchCow::Borrowed(self)
+    }
+}
 impl ::rorm::model::FieldByIndex<{ 0usize }> for Unregistered {
     type Field = __Unregistered_id;
 }

@@ -10,8 +10,7 @@ use crate::parse::annotations::{Index, NamedIndex, OnAction};
 
 pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
     let (fields_struct_ident, fields_struct) = generate_fields_struct(model);
-    let access_enum_ident = format_ident!("__{}_Access_Enum", model.ident);
-    let access_enum_marker_ident = format_ident!("__{}_Access_Enum_Marker", model.ident);
+    let value_space_impl = format_ident!("__{}_Value_Space_Impl", model.ident);
     let field_declarations = generate_fields(model);
     let AnalyzedModel {
         vis,
@@ -60,42 +59,29 @@ pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
         #field_declarations
         #fields_struct
 
-        // Credit and explanation https://github.com/dtolnay/case-studies/tree/master/unit-type-parameters
-        #[doc(hidden)]
-        #[allow(non_camel_case_types)]
-        #vis enum #access_enum_ident #impl_generics #where_clause {
-            #ident,
+        impl #impl_generics ::std::ops::Deref for #value_space_impl #type_generics #where_clause {
+            type Target = <#ident #type_generics as ::rorm::Model>::Fields<#ident  #type_generics>;
 
-            #[allow(dead_code)]
-            #[doc(hidden)]
-            #access_enum_marker_ident(::std::marker::PhantomData<#ident #type_generics>)
+            fn deref(&self) -> &Self::Target {
+                ::rorm::model::ConstNew::REF
+            }
         }
-        #vis use #access_enum_ident::*;
-        const _: () = {
-            impl #impl_generics ::std::ops::Deref for #access_enum_ident #type_generics #where_clause {
-                type Target = <#ident #type_generics as ::rorm::Model>::Fields<#ident  #type_generics>;
+        impl #impl_generics ::rorm::model::Model for #ident #type_generics #where_clause {
+            type Primary = #primary_struct #type_generics;
 
-                fn deref(&self) -> &Self::Target {
-                    ::rorm::model::ConstNew::REF
-                }
-            }
-            impl #impl_generics ::rorm::model::Model for #ident #type_generics #where_clause {
-                type Primary = #primary_struct #type_generics;
+            type Fields<P: ::rorm::internal::relation_path::Path> = #fields_struct_ident #type_generics_with_path;
+            const F: #fields_struct_ident #type_generics_with_self = ::rorm::model::ConstNew::NEW;
+            const FIELDS: #fields_struct_ident #type_generics_with_self = ::rorm::model::ConstNew::NEW;
 
-                type Fields<P: ::rorm::internal::relation_path::Path> = #fields_struct_ident #type_generics_with_path;
-                const F: #fields_struct_ident #type_generics_with_self = ::rorm::model::ConstNew::NEW;
-                const FIELDS: #fields_struct_ident #type_generics_with_self = ::rorm::model::ConstNew::NEW;
+            const TABLE: &'static str = #table;
+            const SOURCE: ::rorm::internal::hmr::Source = #source;
 
-                const TABLE: &'static str = #table;
-                const SOURCE: ::rorm::internal::hmr::Source = #source;
+            fn push_fields_imr(fields: &mut Vec<::rorm::imr::Field>) {#(
+                ::rorm::internal::field::push_imr::<#field_structs_1 #type_generics>(&mut *fields);
+            )*}
+        }
 
-                fn push_fields_imr(fields: &mut Vec<::rorm::imr::Field>) {#(
-                    ::rorm::internal::field::push_imr::<#field_structs_1 #type_generics>(&mut *fields);
-                )*}
-            }
-
-            #impl_patch
-        };
+        #impl_patch
     };
     if !*experimental_unregistered {
         tokens.extend(quote! {

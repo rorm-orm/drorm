@@ -28,23 +28,21 @@ pub fn generate_patch(patch: &ParsedPatch) -> TokenStream {
     );
 
     quote! {
-        const _: () = {
-            #partial
+        #partial
 
-            #(
-                impl ::rorm::model::GetField<::rorm::get_field!(#ident, #field_idents_2)> for #ident {
-                    fn get_field(self) -> #field_types {
-                        self.#field_idents_2
-                    }
-                    fn borrow_field(&self) -> &#field_types {
-                        &self.#field_idents_2
-                    }
-                    fn borrow_field_mut(&mut self) -> &mut #field_types {
-                        &mut self.#field_idents_2
-                    }
+        #(
+            impl ::rorm::model::GetField<::rorm::get_field!(#ident, #field_idents_2)> for #ident {
+                fn get_field(self) -> #field_types {
+                    self.#field_idents_2
                 }
-            )*
-        };
+                fn borrow_field(&self) -> &#field_types {
+                    &self.#field_idents_2
+                }
+                fn borrow_field_mut(&mut self) -> &mut #field_types {
+                    &mut self.#field_idents_2
+                }
+            }
+        )*
     }
 }
 
@@ -56,6 +54,9 @@ pub fn partially_generate_patch<'a>(
     fields: impl Iterator<Item = &'a Ident> + Clone,
     types: impl Iterator<Item = &'a Type> + Clone,
 ) -> TokenStream {
+    let value_space_impl = format_ident!("__{patch}_Value_Space_Impl");
+    let value_space_marker_impl = format_ident!("__{patch}_Value_Space_Impl_Marker");
+
     let decoder = format_ident!("__{patch}_Decoder");
     let [fields_1, fields_2, fields_3, fields_4, fields_5, fields_6, fields_7] =
         array::from_fn(|_| fields.clone());
@@ -74,8 +75,19 @@ pub fn partially_generate_patch<'a>(
         }
     };
     quote! {
-        use ::rorm::internal::field::decoder::FieldDecoder;
-        use ::rorm::fields::traits::FieldType;
+        // use ::rorm::fields::traits::FieldType;
+
+        // Credit and explanation https://github.com/dtolnay/case-studies/tree/master/unit-type-parameters
+        #[doc(hidden)]
+        #[allow(non_camel_case_types)]
+        #vis enum #value_space_impl #impl_generics #where_clause {
+            #patch,
+
+            #[allow(dead_code)]
+            #[doc(hidden)]
+            #value_space_marker_impl(::std::marker::PhantomData<#patch #type_generics>),
+        }
+        #vis use #value_space_impl::*;
 
         #vis struct #decoder #impl_generics #where_clause {
             #(
@@ -105,7 +117,7 @@ pub fn partially_generate_patch<'a>(
 
             fn select<P: ::rorm::internal::relation_path::Path>(ctx: &mut ::rorm::internal::query_context::QueryContext) -> Self::Decoder {
                 #decoder {#(
-                    #fields_4: FieldDecoder::new(
+                    #fields_4: ::rorm::internal::field::decoder::FieldDecoder::new(
                         ctx,
                         <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS.#fields_4.through::<P>(),
                     ),
@@ -120,13 +132,13 @@ pub fn partially_generate_patch<'a>(
 
             fn push_references<'a>(&'a self, values: &mut Vec<::rorm::conditions::Value<'a>>) {
                 #(
-                    values.extend(self.#fields_6.as_values());
+                    values.extend(::rorm::fields::traits::FieldType::as_values(&self.#fields_6));
                 )*
             }
 
             fn push_values(self, values: &mut Vec<::rorm::conditions::Value>) {
                 #(
-                    values.extend(self.#fields_7.into_values());
+                    values.extend(::rorm::fields::traits::FieldType::into_values(self.#fields_7));
                 )*
             }
         }

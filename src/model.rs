@@ -19,6 +19,11 @@ pub trait Patch: Sized + 'static {
     /// The model this patch is for
     type Model: Model;
 
+    /// Enum implementing the "value space" representation of the patch
+    ///
+    /// This is more of an implementation detail of the derive macro.
+    type ValueSpaceImpl: Selector<Result = Self, Model = Self::Model> + Default;
+
     /// [`Decoder`] returned by [`Patch::select`] which decodes this patch from a row
     type Decoder: Decoder<Result = Self>;
 
@@ -59,8 +64,10 @@ pub trait Patch: Sized + 'static {
 }
 
 /// [`Selector`] selecting a [`Patch`] through its [`Patch::select`] method
+#[deprecated(note = "Simply use the patch's identifier directly")]
 pub struct PatchSelector<Ptch: Patch, Pth = <Ptch as Patch>::Model>(PhantomData<(Ptch, Pth)>);
 
+#[allow(deprecated)]
 impl<Ptch: Patch, Pth> PatchSelector<Ptch, Pth> {
     /// construct a new instance
     pub fn new() -> Self {
@@ -68,12 +75,14 @@ impl<Ptch: Patch, Pth> PatchSelector<Ptch, Pth> {
     }
 }
 
+#[allow(deprecated)]
 impl<Ptch: Patch, Pth: Path> Default for PatchSelector<Ptch, Pth> {
     fn default() -> Self {
         Self(PhantomData)
     }
 }
 
+#[allow(deprecated)]
 impl<Ptch: Patch, Pth: Path> Selector for PatchSelector<Ptch, Pth> {
     type Result = Ptch;
     type Model = Pth::Origin;

@@ -356,7 +356,7 @@ macro_rules! query {
     ($db:expr, $patch:ty) => {
         $crate::crud::query::QueryBuilder::new(
             $db,
-            $crate::model::PatchSelector::<$patch>::new(),
+            <<$patch as $crate::model::Patch>::ValueSpaceImpl as ::std::default::Default>::default(),
         )
     };
 }

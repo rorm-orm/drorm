@@ -12,7 +12,7 @@ use crate::crud::selector::Selector;
 use crate::internal::field::FieldProxy;
 use crate::internal::patch::{IntoPatchCow, PatchCow};
 use crate::internal::query_context::QueryContext;
-use crate::model::{Model, Patch, PatchSelector};
+use crate::model::{Model, Patch};
 
 /// Builder for insert queries
 ///
@@ -38,7 +38,7 @@ pub struct InsertBuilder<E, M, S> {
     model: PhantomData<M>,
 }
 
-impl<'ex, E, M> InsertBuilder<E, M, PatchSelector<M, M>>
+impl<'ex, E, M> InsertBuilder<E, M, M::ValueSpaceImpl>
 where
     E: Executor<'ex>,
     M: Model,
@@ -47,7 +47,7 @@ where
     pub fn new(executor: E) -> Self {
         InsertBuilder {
             executor,
-            selector: PatchSelector::new(),
+            selector: Default::default(),
             model: PhantomData,
         }
     }
@@ -85,11 +85,11 @@ where
     }
 
     /// Set a patch to be returned after performing the insert
-    pub fn return_patch<Return>(self) -> InsertBuilder<E, M, PatchSelector<Return, M>>
+    pub fn return_patch<Return>(self) -> InsertBuilder<E, M, Return::ValueSpaceImpl>
     where
         Return: Patch<Model = M>,
     {
-        self.set_return(PatchSelector::new())
+        self.set_return(Default::default())
     }
 }
 

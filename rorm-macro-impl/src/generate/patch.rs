@@ -103,6 +103,12 @@ pub fn partially_generate_patch<'a>(
             }
         }
 
+        impl #impl_generics ::std::default::Default for #value_space_impl #type_generics #where_clause {
+            fn default() -> Self {
+                Self::#patch
+            }
+        }
+
         impl #impl_generics ::rorm::crud::decoder::Decoder for #decoder #type_generics #where_clause {
             type Result = #patch #type_generics;
 
@@ -121,6 +127,8 @@ pub fn partially_generate_patch<'a>(
 
         impl #impl_generics ::rorm::model::Patch for #patch #type_generics #where_clause {
             type Model = #model #type_generics;
+
+            type ValueSpaceImpl = #value_space_impl #type_generics;
 
             type Decoder = #decoder #type_generics;
 

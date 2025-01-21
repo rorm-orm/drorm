@@ -1,14 +1,14 @@
 #[doc(hidden)]
 #[allow(non_camel_case_types)]
-pub enum __BasicPatch_Value_Space_Impl {
+pub enum __BasicPatch_ValueSpaceImpl {
     BasicPatch,
     #[allow(dead_code)]
     #[doc(hidden)]
-    __BasicPatch_Value_Space_Impl_Marker(::std::marker::PhantomData<BasicPatch>),
+    __BasicPatch_ValueSpaceImplMarker(::std::marker::PhantomData<BasicPatch>),
 }
-pub use __BasicPatch_Value_Space_Impl::*;
+pub use __BasicPatch_ValueSpaceImpl::*;
 pub struct __BasicPatch_Decoder {}
-impl ::rorm::crud::selector::Selector for __BasicPatch_Value_Space_Impl {
+impl ::rorm::crud::selector::Selector for __BasicPatch_ValueSpaceImpl {
     type Result = BasicPatch;
     type Model = BasicModel;
     type Decoder = __BasicPatch_Decoder;
@@ -18,6 +18,11 @@ impl ::rorm::crud::selector::Selector for __BasicPatch_Value_Space_Impl {
         ctx: &mut ::rorm::internal::query_context::QueryContext,
     ) -> Self::Decoder {
         <BasicPatch as ::rorm::model::Patch>::select::<BasicModel>(ctx)
+    }
+}
+impl ::std::default::Default for __BasicPatch_ValueSpaceImpl {
+    fn default() -> Self {
+        Self::BasicPatch
     }
 }
 impl ::rorm::crud::decoder::Decoder for __BasicPatch_Decoder {
@@ -37,6 +42,7 @@ impl ::rorm::crud::decoder::Decoder for __BasicPatch_Decoder {
 }
 impl ::rorm::model::Patch for BasicPatch {
     type Model = BasicModel;
+    type ValueSpaceImpl = __BasicPatch_ValueSpaceImpl;
     type Decoder = __BasicPatch_Decoder;
     fn select<P: ::rorm::internal::relation_path::Path>(
         ctx: &mut ::rorm::internal::query_context::QueryContext,

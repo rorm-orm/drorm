@@ -53,7 +53,7 @@ impl<Path: 'static> ::rorm::model::ConstNew for __BasicModel_Fields_Struct<Path>
     };
     const REF: &'static Self = &Self::NEW;
 }
-impl ::std::ops::Deref for __BasicModel_Value_Space_Impl {
+impl ::std::ops::Deref for __BasicModel_ValueSpaceImpl {
     type Target = <BasicModel as ::rorm::Model>::Fields<BasicModel>;
     fn deref(&self) -> &Self::Target {
         ::rorm::model::ConstNew::REF
@@ -78,17 +78,17 @@ impl ::rorm::model::Model for BasicModel {
 }
 #[doc(hidden)]
 #[allow(non_camel_case_types)]
-pub enum __BasicModel_Value_Space_Impl {
+pub enum __BasicModel_ValueSpaceImpl {
     BasicModel,
     #[allow(dead_code)]
     #[doc(hidden)]
-    __BasicModel_Value_Space_Impl_Marker(::std::marker::PhantomData<BasicModel>),
+    __BasicModel_ValueSpaceImplMarker(::std::marker::PhantomData<BasicModel>),
 }
-pub use __BasicModel_Value_Space_Impl::*;
+pub use __BasicModel_ValueSpaceImpl::*;
 pub struct __BasicModel_Decoder {
     id: <i64 as ::rorm::fields::traits::FieldType>::Decoder,
 }
-impl ::rorm::crud::selector::Selector for __BasicModel_Value_Space_Impl {
+impl ::rorm::crud::selector::Selector for __BasicModel_ValueSpaceImpl {
     type Result = BasicModel;
     type Model = BasicModel;
     type Decoder = __BasicModel_Decoder;
@@ -98,6 +98,11 @@ impl ::rorm::crud::selector::Selector for __BasicModel_Value_Space_Impl {
         ctx: &mut ::rorm::internal::query_context::QueryContext,
     ) -> Self::Decoder {
         <BasicModel as ::rorm::model::Patch>::select::<BasicModel>(ctx)
+    }
+}
+impl ::std::default::Default for __BasicModel_ValueSpaceImpl {
+    fn default() -> Self {
+        Self::BasicModel
     }
 }
 impl ::rorm::crud::decoder::Decoder for __BasicModel_Decoder {
@@ -121,6 +126,7 @@ impl ::rorm::crud::decoder::Decoder for __BasicModel_Decoder {
 }
 impl ::rorm::model::Patch for BasicModel {
     type Model = BasicModel;
+    type ValueSpaceImpl = __BasicModel_ValueSpaceImpl;
     type Decoder = __BasicModel_Decoder;
     fn select<P: ::rorm::internal::relation_path::Path>(
         ctx: &mut ::rorm::internal::query_context::QueryContext,

@@ -97,7 +97,7 @@ for __Generic_Fields_Struct<X, Path> {
     const REF: &'static Self = &Self::NEW;
 }
 impl<X: rorm::fields::traits::FieldType> ::std::ops::Deref
-for __Generic_Value_Space_Impl<X> {
+for __Generic_ValueSpaceImpl<X> {
     type Target = <Generic<X> as ::rorm::Model>::Fields<Generic<X>>;
     fn deref(&self) -> &Self::Target {
         ::rorm::model::ConstNew::REF
@@ -124,19 +124,19 @@ impl<X: rorm::fields::traits::FieldType> ::rorm::model::Model for Generic<X> {
 }
 #[doc(hidden)]
 #[allow(non_camel_case_types)]
-pub enum __Generic_Value_Space_Impl<X: rorm::fields::traits::FieldType> {
+pub enum __Generic_ValueSpaceImpl<X: rorm::fields::traits::FieldType> {
     Generic,
     #[allow(dead_code)]
     #[doc(hidden)]
-    __Generic_Value_Space_Impl_Marker(::std::marker::PhantomData<Generic<X>>),
+    __Generic_ValueSpaceImplMarker(::std::marker::PhantomData<Generic<X>>),
 }
-pub use __Generic_Value_Space_Impl::*;
+pub use __Generic_ValueSpaceImpl::*;
 pub struct __Generic_Decoder<X: rorm::fields::traits::FieldType> {
     id: <i64 as ::rorm::fields::traits::FieldType>::Decoder,
     x: <X as ::rorm::fields::traits::FieldType>::Decoder,
 }
 impl<X: rorm::fields::traits::FieldType> ::rorm::crud::selector::Selector
-for __Generic_Value_Space_Impl<X> {
+for __Generic_ValueSpaceImpl<X> {
     type Result = Generic<X>;
     type Model = Generic<X>;
     type Decoder = __Generic_Decoder<X>;
@@ -146,6 +146,12 @@ for __Generic_Value_Space_Impl<X> {
         ctx: &mut ::rorm::internal::query_context::QueryContext,
     ) -> Self::Decoder {
         <Generic<X> as ::rorm::model::Patch>::select::<Generic<X>>(ctx)
+    }
+}
+impl<X: rorm::fields::traits::FieldType> ::std::default::Default
+for __Generic_ValueSpaceImpl<X> {
+    fn default() -> Self {
+        Self::Generic
     }
 }
 impl<X: rorm::fields::traits::FieldType> ::rorm::crud::decoder::Decoder
@@ -172,6 +178,7 @@ for __Generic_Decoder<X> {
 }
 impl<X: rorm::fields::traits::FieldType> ::rorm::model::Patch for Generic<X> {
     type Model = Generic<X>;
+    type ValueSpaceImpl = __Generic_ValueSpaceImpl<X>;
     type Decoder = __Generic_Decoder<X>;
     fn select<P: ::rorm::internal::relation_path::Path>(
         ctx: &mut ::rorm::internal::query_context::QueryContext,

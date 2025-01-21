@@ -48,7 +48,7 @@ impl<Path: 'static> ::rorm::model::ConstNew for __Unregistered_Fields_Struct<Pat
     };
     const REF: &'static Self = &Self::NEW;
 }
-impl ::std::ops::Deref for __Unregistered_Value_Space_Impl {
+impl ::std::ops::Deref for __Unregistered_ValueSpaceImpl {
     type Target = <Unregistered as ::rorm::Model>::Fields<Unregistered>;
     fn deref(&self) -> &Self::Target {
         ::rorm::model::ConstNew::REF
@@ -73,17 +73,17 @@ impl ::rorm::model::Model for Unregistered {
 }
 #[doc(hidden)]
 #[allow(non_camel_case_types)]
-pub enum __Unregistered_Value_Space_Impl {
+pub enum __Unregistered_ValueSpaceImpl {
     Unregistered,
     #[allow(dead_code)]
     #[doc(hidden)]
-    __Unregistered_Value_Space_Impl_Marker(::std::marker::PhantomData<Unregistered>),
+    __Unregistered_ValueSpaceImplMarker(::std::marker::PhantomData<Unregistered>),
 }
-pub use __Unregistered_Value_Space_Impl::*;
+pub use __Unregistered_ValueSpaceImpl::*;
 pub struct __Unregistered_Decoder {
     id: <i64 as ::rorm::fields::traits::FieldType>::Decoder,
 }
-impl ::rorm::crud::selector::Selector for __Unregistered_Value_Space_Impl {
+impl ::rorm::crud::selector::Selector for __Unregistered_ValueSpaceImpl {
     type Result = Unregistered;
     type Model = Unregistered;
     type Decoder = __Unregistered_Decoder;
@@ -93,6 +93,11 @@ impl ::rorm::crud::selector::Selector for __Unregistered_Value_Space_Impl {
         ctx: &mut ::rorm::internal::query_context::QueryContext,
     ) -> Self::Decoder {
         <Unregistered as ::rorm::model::Patch>::select::<Unregistered>(ctx)
+    }
+}
+impl ::std::default::Default for __Unregistered_ValueSpaceImpl {
+    fn default() -> Self {
+        Self::Unregistered
     }
 }
 impl ::rorm::crud::decoder::Decoder for __Unregistered_Decoder {
@@ -116,6 +121,7 @@ impl ::rorm::crud::decoder::Decoder for __Unregistered_Decoder {
 }
 impl ::rorm::model::Patch for Unregistered {
     type Model = Unregistered;
+    type ValueSpaceImpl = __Unregistered_ValueSpaceImpl;
     type Decoder = __Unregistered_Decoder;
     fn select<P: ::rorm::internal::relation_path::Path>(
         ctx: &mut ::rorm::internal::query_context::QueryContext,

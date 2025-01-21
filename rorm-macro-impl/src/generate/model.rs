@@ -10,7 +10,7 @@ use crate::parse::annotations::{Index, NamedIndex, OnAction};
 
 pub fn generate_model(model: &AnalyzedModel) -> TokenStream {
     let (fields_struct_ident, fields_struct) = generate_fields_struct(model);
-    let value_space_impl = format_ident!("__{}_Value_Space_Impl", model.ident);
+    let value_space_impl = format_ident!("__{}_ValueSpaceImpl", model.ident);
     let field_declarations = generate_fields(model);
     let AnalyzedModel {
         vis,

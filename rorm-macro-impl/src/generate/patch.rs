@@ -54,8 +54,8 @@ pub fn partially_generate_patch<'a>(
     fields: impl Iterator<Item = &'a Ident> + Clone,
     types: impl Iterator<Item = &'a Type> + Clone,
 ) -> TokenStream {
-    let value_space_impl = format_ident!("__{patch}_Value_Space_Impl");
-    let value_space_marker_impl = format_ident!("__{patch}_Value_Space_Impl_Marker");
+    let value_space_impl = format_ident!("__{patch}_ValueSpaceImpl");
+    let value_space_marker_impl = format_ident!("__{patch}_ValueSpaceImplMarker");
 
     let decoder = format_ident!("__{patch}_Decoder");
     let [fields_1, fields_2, fields_3, fields_4, fields_5, fields_6, fields_7] =

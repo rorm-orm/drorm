@@ -40,6 +40,7 @@ impl<'v> QueryContext<'v> {
 
     /// Add a field to select returning its index and alias
     pub fn select_field<F: Field, P: Path>(&mut self) -> (usize, String) {
+        P::add_to_context(self);
         let alias = format!("{}", NumberAsAZ(self.selects.len()));
         self.selects.push(Select {
             table_name: PathId::of::<P>(),
@@ -235,6 +236,7 @@ impl<'v> QueryContext<'v> {
     {
         let path_id = PathId::of::<P::Step<F>>();
         if !self.join_aliases.contains_key(&path_id) {
+            P::add_to_context(self);
             let alias = format!("{}", NumberAsAZ(self.join_aliases.len()));
             self.join_aliases.insert(path_id, alias);
             self.joins.push({

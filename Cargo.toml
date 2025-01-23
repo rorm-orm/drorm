@@ -71,6 +71,9 @@ rmp-serde = { version = "~1", optional = true }
 # `ToSchema` support for `MaxStr`
 utoipa = { version = "~4", optional = true }
 
+# `JsonSchema` support for `MaxStr`
+schemars = { version = "~0.8", optional = true }
+
 [build-dependencies]
 rustc_version = "0.4.0"
 
@@ -109,6 +112,7 @@ time = ["dep:time"]
 uuid = ["dep:uuid"]
 url = ["dep:url"]
 utoipa = ["dep:utoipa"]
+schemars = ["dep:schemars"]
 
 msgpack = ["dep:rmp-serde"]
 cli = ["dep:rorm-cli"]

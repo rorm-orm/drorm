@@ -234,41 +234,6 @@ where
     }
 }
 
-pub struct OptionMaxStrDecoder<const MAX_LEN: usize, Impl: LenImpl> {
-    column: String,
-    index: usize,
-    generics: PhantomData<Impl>,
-}
-
-impl<const MAX_LEN: usize, Impl> Decoder for OptionMaxStrDecoder<MAX_LEN, Impl>
-where
-    Impl: LenImpl + Default,
-{
-    type Result = Option<MaxStr<MAX_LEN, Impl, String>>;
-
-    fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
-        row.get::<Option<String>>(self.column.as_str())?
-            .map(|string| {
-                MaxStr::<MAX_LEN, Impl, String>::new(string).map_err(|error| RowError::Decode {
-                    index: self.column.as_str().into(),
-                    source: error.into(),
-                })
-            })
-            .transpose()
-    }
-
-    fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
-        row.get::<Option<String>>(self.index)?
-            .map(|string| {
-                MaxStr::<MAX_LEN, Impl, String>::new(string).map_err(|error| RowError::Decode {
-                    index: self.column.as_str().into(),
-                    source: error.into(),
-                })
-            })
-            .transpose()
-    }
-}
-
 /// Type passed to [`merge_annotations`] to set the `max_length` annotation;
 pub struct ImplicitMaxLength<const MAX_LEN: usize>;
 impl<const MAX_LEN: usize> Contains<Annotations> for ImplicitMaxLength<MAX_LEN> {
@@ -289,34 +254,21 @@ impl<const MAX_LEN: usize> Contains<Annotations> for ImplicitMaxLengthAndNullabl
     };
 }
 
-impl<const MAX_LEN: usize, Impl> FieldDecoder for OptionMaxStrDecoder<MAX_LEN, Impl>
-where
-    Impl: LenImpl + Default,
-{
-    fn new<F, P>(ctx: &mut QueryContext, _: FieldProxy<F, P>) -> Self
-    where
-        F: Field<Type = Self::Result>,
-        P: Path,
-    {
-        let (index, column) = ctx.select_field::<F, P>();
-        Self {
-            column,
-            index,
-            generics: PhantomData,
-        }
-    }
-}
-
 impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, &'rhs str> for MaxStr<MAX_LEN, Impl> { conv_string });
 impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, &'rhs String> for MaxStr<MAX_LEN, Impl> { conv_string });
 impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, String> for MaxStr<MAX_LEN, Impl> { conv_string });
 impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Cow<'rhs, str>> for MaxStr<MAX_LEN, Impl> { conv_string });
-impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Option<&'rhs str>> for Option<MaxStr<MAX_LEN, Impl>> { |option: Option<_>| option.map(conv_string).unwrap_or(Value::Null(NullType::String)) });
-impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Option<&'rhs String>> for Option<MaxStr<MAX_LEN, Impl>> { |option: Option<_>| option.map(conv_string).unwrap_or(Value::Null(NullType::String)) });
-impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Option<String>> for Option<MaxStr<MAX_LEN, Impl>> { |option: Option<_>| option.map(conv_string).unwrap_or(Value::Null(NullType::String)) });
-impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Option<Cow<'rhs, str>>> for Option<MaxStr<MAX_LEN, Impl>> { |option: Option<_>| option.map(conv_string).unwrap_or(Value::Null(NullType::String)) });
+impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Option<&'rhs str>> for Option<MaxStr<MAX_LEN, Impl>> { conv_opt_string });
+impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Option<&'rhs String>> for Option<MaxStr<MAX_LEN, Impl>> { conv_opt_string });
+impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Option<String>> for Option<MaxStr<MAX_LEN, Impl>> { conv_opt_string });
+impl_FieldEq!(impl<'rhs, const MAX_LEN: usize, Impl> FieldEq<'rhs, Option<Cow<'rhs, str>>> for Option<MaxStr<MAX_LEN, Impl>> { conv_opt_string });
 fn conv_string<'a>(value: impl Into<Cow<'a, str>>) -> Value<'a> {
     Value::String(value.into())
+}
+fn conv_opt_string<'a>(value: Option<impl Into<Cow<'a, str>>>) -> Value<'a> {
+    value
+        .map(conv_string)
+        .unwrap_or(Value::Null(NullType::String))
 }
 
 #[cfg(feature = "utoipa")]
@@ -333,6 +285,27 @@ mod utoipa_impl {
                 "MaxStr",
                 RefOr::T(Schema::Object(Object::with_type(SchemaType::String))),
             )
+        }
+    }
+}
+
+#[cfg(feature = "schemars")]
+mod schemars_impl {
+    use schemars::gen::SchemaGenerator;
+    use schemars::schema::{Schema, SchemaObject};
+    use schemars::JsonSchema;
+
+    use crate::fields::types::MaxStr;
+
+    impl<const MAX_LEN: usize> JsonSchema for MaxStr<MAX_LEN> {
+        fn schema_name() -> String {
+            format!("MaxStr_{MAX_LEN}")
+        }
+
+        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+            let mut object = SchemaObject::default();
+            object.string().max_length = Some(MAX_LEN as u32);
+            Schema::Object(object)
         }
     }
 }

@@ -292,7 +292,7 @@ mod utoipa_impl {
 #[cfg(feature = "schemars")]
 mod schemars_impl {
     use schemars::gen::SchemaGenerator;
-    use schemars::schema::{Schema, SchemaObject};
+    use schemars::schema::{InstanceType, Schema, SchemaObject, SingleOrVec};
     use schemars::JsonSchema;
 
     use crate::fields::types::MaxStr;
@@ -304,6 +304,7 @@ mod schemars_impl {
 
         fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
             let mut object = SchemaObject::default();
+            object.instance_type = Some(SingleOrVec::Single(Box::new(InstanceType::String)));
             object.string().max_length = Some(MAX_LEN as u32);
             Schema::Object(object)
         }

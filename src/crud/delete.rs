@@ -7,10 +7,61 @@ use rorm_db::error::Error;
 use rorm_db::executor::Executor;
 
 use crate::conditions::{Condition, DynamicCollection};
+use crate::crud::selector::Selector;
 use crate::internal::patch::{IntoPatchCow, PatchCow};
 use crate::internal::query_context::QueryContext;
 use crate::model::{Identifiable, Model};
 use crate::Patch;
+
+/// Create a DELETE query.
+///
+/// # Usage
+/// ```no_run
+/// # use rorm::{Model, Patch, Database, delete, FieldAccess};
+/// # #[derive(Model)] pub struct User { #[rorm(id)] id: i64, age: i32, }
+/// # #[derive(Patch)] #[rorm(model = "User")] pub struct UserPatch { id: i64, }
+/// pub async fn delete_single_user(db: &Database, user: &UserPatch) {
+///     delete(db, User)
+///         .single(user)
+///         .await
+///         .unwrap();
+/// }
+/// pub async fn delete_many_users(db: &Database, users: &[UserPatch]) {
+///     delete(db, User)
+///         .bulk(users)
+///         .await
+///         .unwrap();
+/// }
+/// pub async fn delete_underage(db: &Database) {
+///     let num_deleted: u64 = delete(db, User)
+///         .condition(User.age.less_equals(18))
+///         .await
+///         .unwrap();
+/// }
+///```
+///
+/// Like every crud macro `delete!` starts a [builder](DeleteBuilder) which is consumed to execute the query.
+///
+/// `delete!`'s first argument is a reference to the [`Database`](crate::Database).
+/// Its second is the [`Model`] type of whose table you want to delete columns from.
+///
+/// To specify what rows to delete use the following methods,
+/// which will consume the builder and execute the query:
+/// - [`single`](DeleteBuilder::single): Delete a single row identified by a patch instance
+/// - [`bulk`](DeleteBuilder::bulk): Delete a bulk of rows identified by patch instances
+/// - [`condition`](DeleteBuilder::condition): Delete all rows matching a condition
+/// - [`all`](DeleteBuilder::all): Unconditionally delete all rows
+pub fn delete<'ex, E, S>(executor: E, _: S) -> DeleteBuilder<E, S::Model>
+where
+    E: Executor<'ex>,
+    S: Selector<Model: Patch<ValueSpaceImpl = S>>,
+{
+    DeleteBuilder {
+        executor,
+
+        _phantom: PhantomData,
+    }
+}
 
 /// Builder for delete queries
 ///
@@ -37,13 +88,10 @@ where
     E: Executor<'ex>,
     M: Model,
 {
-    /// Start building a delete query
+    #[doc(hidden)]
+    #[deprecated(note = "Use the delete function instead")]
     pub fn new(executor: E) -> Self {
-        DeleteBuilder {
-            executor,
-
-            _phantom: PhantomData,
-        }
+        delete(executor, M::ValueSpaceImpl::default())
     }
 }
 
@@ -116,44 +164,8 @@ where
     }
 }
 
-/// Create a DELETE query.
-///
-/// # Usage
-/// ```no_run
-/// # use rorm::{Model, Patch, Database, delete, FieldAccess};
-/// # #[derive(Model)] pub struct User { #[rorm(id)] id: i64, age: i32, }
-/// # #[derive(Patch)] #[rorm(model = "User")] pub struct UserPatch { id: i64, }
-/// pub async fn delete_single_user(db: &Database, user: &UserPatch) {
-///     delete!(db, User)
-///         .single(user)
-///         .await
-///         .unwrap();
-/// }
-/// pub async fn delete_many_users(db: &Database, users: &[UserPatch]) {
-///     delete!(db, User)
-///         .bulk(users)
-///         .await
-///         .unwrap();
-/// }
-/// pub async fn delete_underage(db: &Database) {
-///     let num_deleted: u64 = delete!(db, User)
-///         .condition(User::F.age.less_equals(18))
-///         .await
-///         .unwrap();
-/// }
-///```
-///
-/// Like every crud macro `delete!` starts a [builder](DeleteBuilder) which is consumed to execute the query.
-///
-/// `delete!`'s first argument is a reference to the [`Database`](crate::Database).
-/// Its second is the [`Model`] type of whose table you want to delete columns from.
-///
-/// To specify what rows to delete use the following methods,
-/// which will consume the builder and execute the query:
-/// - [`single`](DeleteBuilder::single): Delete a single row identified by a patch instance
-/// - [`bulk`](DeleteBuilder::bulk): Delete a bulk of rows identified by patch instances
-/// - [`condition`](DeleteBuilder::condition): Delete all rows matching a condition
-/// - [`all`](DeleteBuilder::all): Unconditionally delete all rows
+#[doc(hidden)]
+#[deprecated(note = "Use the delete function instead i.e. remove the `!`")]
 #[macro_export]
 macro_rules! delete {
     ($db:expr, $model:path) => {

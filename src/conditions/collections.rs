@@ -38,7 +38,7 @@
 //!     // but the actual number of conditions are only known at runtime.
 //!     // Also note the "AND" of an empty set is "TRUE"
 //!     // yielding the expected result of not filtering the users at all.
-//!     query!(db, User)
+//!     query(db, User)
 //!         .condition(and![
 //!             filter_name.map(|name| User.name.equals(name)),
 //!             filter_region.map(|region| User.region.equals(region)),

@@ -38,6 +38,11 @@ pub mod prelude {
     pub use crate::model::{Model, Patch};
 }
 
+pub use crate::crud::delete::delete;
+pub use crate::crud::insert::insert;
+pub use crate::crud::query::query;
+pub use crate::crud::update::update;
+
 pub mod conditions;
 pub mod crud;
 pub mod fields;
@@ -135,6 +140,7 @@ macro_rules! field {
 /// #[rorm_main("other-name")]
 /// fn main() {}
 /// ```
+#[deprecated(note = "Use `write_models` or `print_models` to implement it yourself")]
 pub use rorm_macro::rorm_main;
 /// ```no_run
 /// use rorm::DbEnum;

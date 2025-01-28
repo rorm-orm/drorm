@@ -33,15 +33,15 @@ use crate::{sealed, Model};
 /// # }
 /// // Direct access
 /// let _: FieldProxy<__Group_name, Group>
-///     = Group::F.name;
+///     = Group.name;
 ///
 /// // Access through a single relation
 /// let _: FieldProxy<__Group_name, (__User_group, User)>
-///     = User::F.group.name;
+///     = User.group.name;
 ///
 /// // Access through two relation steps
 /// let _: FieldProxy<__Group_name, (__User_group, (__Comment_user, Comment))>
-///     = Comment::F.user.group.name;
+///     = Comment.user.group.name;
 /// ```
 ///
 /// Paths start at a model (`Origin`), step through relational fields ([`PathField`]) and end on a model (`Current`).

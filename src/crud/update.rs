@@ -7,11 +7,80 @@ use rorm_db::error::Error;
 use rorm_db::executor::Executor;
 
 use crate::conditions::{Condition, DynamicCollection, Value};
+use crate::crud::selector::Selector;
 use crate::internal::field::{FieldProxy, SingleColumnField};
 use crate::internal::patch::{IntoPatchCow, PatchCow};
 use crate::internal::query_context::QueryContext;
 use crate::model::Identifiable;
 use crate::{Model, Patch};
+
+/// Create a UPDATE query.
+///
+/// # Basic usage
+/// ```no_run
+/// # use rorm::{Model, Database, update, FieldAccess};
+/// # #[derive(Model)] struct User { #[rorm(id)] id: i64, #[rorm(max_length = 255)] password: String, }
+/// pub async fn set_good_password(db: &Database) {
+///     update(db, User)
+///         .set(User.password, "I am way more secure™".to_string())
+///         .condition(User.password.equals("password"))
+///         .await
+///         .unwrap();
+/// }
+/// ```
+///
+/// Like every crud macro `update!` starts a [builder](UpdateBuilder) which is consumed to execute the query.
+///
+/// `update!`'s first argument is a reference to the [`Database`](crate::Database).
+/// Its second is the [`Model`] type you want to update rows of.
+///
+/// # Dynamic number of [`set`](UpdateBuilder::set)
+/// ```no_run
+/// # use std::collections::HashMap;
+/// # use rorm::{Model, Database, update, FieldAccess};
+/// # #[derive(Model)] struct User { #[rorm(id)] id: i64, #[rorm(max_length = 255)] nickname: String, #[rorm(max_length = 255)] password: String, }
+/// /// POST endpoint allowing a user to change its nickname or password
+/// pub async fn update_user(db: &Database, id: i64, post_params: HashMap<String, String>) {
+///     let mut builder = update(db, User).begin_dyn_set();
+///
+///     if let Some(password) = post_params.get("password") {
+///         builder = builder.set(User.password, password.clone());
+///     }
+///     if let Some(nickname) = post_params.get("nickname") {
+///         builder = builder.set(User.nickname, nickname.clone())
+///     }
+///
+///     if let Ok(builder) = builder.finish_dyn_set() {
+///         builder.condition(User.id.equals(id)).await.unwrap();
+///     } else {
+///         panic!("Invalid POST request: missing fields to update")
+///     }
+/// }
+/// ```
+///
+/// Before executing the query [`set`](UpdateBuilder::set) has to be called at least once
+/// to set a value to set for a column (The first call changes the builders type).
+/// Otherwise the query wouldn't do anything.
+///
+/// This can be limiting when your calls are made conditionally.
+///
+/// To support this, the builder can be put into a "dynamic" mode by calling [begin_dyn_set](UpdateBuilder::begin_dyn_set).
+/// Then calls to [`set`](UpdateBuilder::set) won't change the type.
+/// When you're done use [finish_dyn_set](UpdateBuilder::finish_dyn_set) to go back to "normal" mode.
+/// It will check the number of "sets" and return `Result` which is `Ok` for at least one and an
+/// `Err` for zero.
+/// Both variants contain the builder in "normal" mode to continue.
+pub fn update<'rf, 'e, E, S>(executor: E, _: S) -> UpdateBuilder<'rf, E, S::Model, columns::Empty>
+where
+    E: Executor<'e>,
+    S: Selector<Model: Patch<ValueSpaceImpl = S>>,
+{
+    UpdateBuilder {
+        executor,
+        columns: Vec::new(),
+        _phantom: PhantomData,
+    }
+}
 
 /// Builder for update queries
 ///
@@ -54,13 +123,10 @@ where
     E: Executor<'e>,
     M: Model,
 {
-    /// Start building a delete query
+    #[doc(hidden)]
+    #[deprecated(note = "Use the update function instead")]
     pub fn new(executor: E) -> Self {
-        Self {
-            executor,
-            columns: Vec::new(),
-            _phantom: PhantomData,
-        }
+        update(executor, M::ValueSpaceImpl::default())
     }
 }
 
@@ -233,62 +299,8 @@ where
     }
 }
 
-/// Create a UPDATE query.
-///
-/// # Basic usage
-/// ```no_run
-/// # use rorm::{Model, Database, update, FieldAccess};
-/// # #[derive(Model)] struct User { #[rorm(id)] id: i64, #[rorm(max_length = 255)] password: String, }
-/// pub async fn set_good_password(db: &Database) {
-///     update!(db, User)
-///         .set(User::F.password, "I am way more secure™".to_string())
-///         .condition(User::F.password.equals("password"))
-///         .await
-///         .unwrap();
-/// }
-/// ```
-///
-/// Like every crud macro `update!` starts a [builder](UpdateBuilder) which is consumed to execute the query.
-///
-/// `update!`'s first argument is a reference to the [`Database`](crate::Database).
-/// Its second is the [`Model`] type you want to update rows of.
-///
-/// # Dynamic number of [`set`](UpdateBuilder::set)
-/// ```no_run
-/// # use std::collections::HashMap;
-/// # use rorm::{Model, Database, update, FieldAccess};
-/// # #[derive(Model)] struct User { #[rorm(id)] id: i64, #[rorm(max_length = 255)] nickname: String, #[rorm(max_length = 255)] password: String, }
-/// /// POST endpoint allowing a user to change its nickname or password
-/// pub async fn update_user(db: &Database, id: i64, post_params: HashMap<String, String>) {
-///     let mut builder = update!(db, User).begin_dyn_set();
-///
-///     if let Some(password) = post_params.get("password") {
-///         builder = builder.set(User::F.password, password.clone());
-///     }
-///     if let Some(nickname) = post_params.get("nickname") {
-///         builder = builder.set(User::F.nickname, nickname.clone())
-///     }
-///
-///     if let Ok(builder) = builder.finish_dyn_set() {
-///         builder.condition(User::F.id.equals(id)).await.unwrap();
-///     } else {
-///         panic!("Invalid POST request: missing fields to update")
-///     }
-/// }
-/// ```
-///
-/// Before executing the query [`set`](UpdateBuilder::set) has to be called at least once
-/// to set a value to set for a column (The first call changes the builders type).
-/// Otherwise the query wouldn't do anything.
-///
-/// This can be limiting when your calls are made conditionally.
-///
-/// To support this, the builder can be put into a "dynamic" mode by calling [begin_dyn_set](UpdateBuilder::begin_dyn_set).
-/// Then calls to [`set`](UpdateBuilder::set) won't change the type.
-/// When you're done use [finish_dyn_set](UpdateBuilder::finish_dyn_set) to go back to "normal" mode.
-/// It will check the number of "sets" and return `Result` which is `Ok` for at least one and an
-/// `Err` for zero.
-/// Both variants contain the builder in "normal" mode to continue.
+#[doc(hidden)]
+#[deprecated(note = "Use the query function instead i.e. remove the `!`")]
 #[macro_export]
 macro_rules! update {
     ($db:expr, $model:path) => {

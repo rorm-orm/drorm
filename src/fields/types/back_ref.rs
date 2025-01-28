@@ -11,6 +11,7 @@ use rorm_db::Error;
 use crate::conditions::collections::CollectionOperator::Or;
 use crate::conditions::{Binary, BinaryOperator, Column, Condition, DynamicCollection, Value};
 use crate::crud::decoder::NoopDecoder;
+use crate::crud::query::query;
 use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::fields::utils::check::disallow_annotations_check;
 use crate::fields::utils::get_annotations::forward_annotations;
@@ -18,7 +19,6 @@ use crate::fields::utils::get_names::no_columns_names;
 use crate::internal::field::foreign_model::{ForeignModelField, ForeignModelTrait};
 use crate::internal::field::{foreign_model, Field, FieldProxy, SingleColumnField};
 use crate::model::GetField;
-use crate::query;
 #[allow(unused_imports)] // clion needs this import to access Patch::field on a Model
 use crate::Patch;
 
@@ -128,7 +128,7 @@ where
         {
             Ok(models)
         } else {
-            query!(executor, FMF::Model)
+            query(executor, <FMF::Model as Patch>::ValueSpaceImpl::default())
                 .condition(Self::model_as_condition(patch))
                 .all()
                 .await
@@ -150,7 +150,7 @@ where
         BRP: GetField<foreign_model::RF<FMF>>,
     {
         let cached = Some(
-            query!(executor, FMF::Model)
+            query(executor, <FMF::Model as Patch>::ValueSpaceImpl::default())
                 .condition(Self::model_as_condition(patch))
                 .all()
                 .await?,
@@ -184,7 +184,7 @@ where
         let mut cache: HashMap<<foreign_model::RF<FMF> as Field>::Type, Option<Vec<FMF::Model>>> =
             HashMap::new();
         {
-            let mut stream = query!(executor, FMF::Model)
+            let mut stream = query(executor, <FMF::Model as Patch>::ValueSpaceImpl::default())
                 .condition(DynamicCollection {
                     operator: Or,
                     vector: patches.iter().map(Self::model_as_condition).collect(),

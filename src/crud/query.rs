@@ -18,6 +18,94 @@ use crate::internal::relation_path::Path;
 use crate::model::Model;
 use crate::sealed;
 
+/// Create a SELECT query.
+///
+/// 1. Give a reference to your db and the patch to query.
+///     If you just need a few fields and don't want to create a patch for it,
+///     you can specify these fields directly as a tuple as well.
+///
+///     `query!(&db, MyModelType)`
+///
+///     `query!(&db, (MyModelType::F.some_field, MyModelType::F.another_field, ))`
+///
+/// 2. Set a condition which rows to query.
+///
+///     `.condition(MyModelType::F.some_field.equals("some_value"))`
+///
+/// 3. *Optionally* add a limit or offset to restrict your query size.
+///
+///     `.limit(5)`
+///
+///     `.offset(2)`
+///
+///     `.range(2..7)`
+///
+/// 5. Finally specify how to get the queries results. This will also execute the query.
+///     - Get [`all`](QueryBuilder::all) matching rows in a vector.
+///
+///         `.all().await`
+///
+///     - Get all matching rows in an async [`stream`](QueryBuilder::stream).
+///
+///         `.stream()`
+///
+///     - Just get exactly [`one`](QueryBuilder::one) row.
+///
+///         `.one().await`
+///
+///     - Get one row if any. ([`optional`](QueryBuilder::optional))
+///
+///         `.optional().await`
+///
+///     Each of these methods decodes the database's rows into the patch you specified in step 1.
+///     If you want to work with raw rows, each of the methods in step 4 has a `*_as_row` twin.
+///
+/// Example:
+/// ```no_run
+/// # use rorm::{Model, Database, query, FieldAccess};
+/// #
+/// # #[derive(Model)]
+/// # struct User {
+/// #     #[rorm(id)]
+/// #     id: i64,
+/// #
+/// #     #[rorm(max_length = 255)]
+/// #     username: String,
+/// #
+/// #     #[rorm(max_length = 255)]
+/// #     password: String,
+/// # }
+/// #
+/// #
+/// # async fn shame_user(_user: &User) {}
+/// #
+/// pub async fn shame_users(db: &Database) {
+///     for (id, password) in query(db, (User.id, User.password)).all().await.unwrap() {
+///         if password == "password" {
+///             let user = query(db, User)
+///                 .condition(User.id.equals(id))
+///                 .one()
+///                 .await
+///                 .unwrap();
+///             shame_user(&user).await;
+///         }
+///     }
+/// }
+/// ```
+pub fn query<'ex, E, S>(executor: E, selector: S) -> QueryBuilder<E, S, (), ()>
+where
+    E: Executor<'ex>,
+    S: Selector,
+{
+    QueryBuilder {
+        executor,
+        selector,
+        condition: (),
+        lim_off: (),
+        modify_ctx: Vec::new(),
+    }
+}
+
 /// Builder for select queries
 ///
 /// Is is recommended to start a builder using [`query!`](macro@crate::query).
@@ -51,15 +139,10 @@ where
     E: Executor<'ex>,
     S: Selector,
 {
-    /// Start building a query using a generic [`Selector`](Selector)
+    #[doc(hidden)]
+    #[deprecated(note = "Use the query function instead")]
     pub fn new(executor: E, selector: S) -> Self {
-        QueryBuilder {
-            executor,
-            selector,
-            condition: (),
-            lim_off: (),
-            modify_ctx: Vec::new(),
-        }
+        query(executor, selector)
     }
 }
 
@@ -267,80 +350,8 @@ where
     }
 }
 
-/// Create a SELECT query.
-///
-/// 1. Give a reference to your db and the patch to query.
-///     If you just need a few fields and don't want to create a patch for it,
-///     you can specify these fields directly as a tuple as well.
-///
-///     `query!(&db, MyModelType)`
-///
-///     `query!(&db, (MyModelType::F.some_field, MyModelType::F.another_field, ))`
-///
-/// 2. Set a condition which rows to query.
-///
-///     `.condition(MyModelType::F.some_field.equals("some_value"))`
-///
-/// 3. *Optionally* add a limit or offset to restrict your query size.
-///
-///     `.limit(5)`
-///
-///     `.offset(2)`
-///
-///     `.range(2..7)`
-///
-/// 5. Finally specify how to get the queries results. This will also execute the query.
-///     - Get [`all`](QueryBuilder::all) matching rows in a vector.
-///
-///         `.all().await`
-///
-///     - Get all matching rows in an async [`stream`](QueryBuilder::stream).
-///
-///         `.stream()`
-///
-///     - Just get exactly [`one`](QueryBuilder::one) row.
-///
-///         `.one().await`
-///
-///     - Get one row if any. ([`optional`](QueryBuilder::optional))
-///
-///         `.optional().await`
-///
-///     Each of these methods decodes the database's rows into the patch you specified in step 1.
-///     If you want to work with raw rows, each of the methods in step 4 has a `*_as_row` twin.
-///
-/// Example:
-/// ```no_run
-/// # use rorm::{Model, Database, query, FieldAccess};
-/// #
-/// # #[derive(Model)]
-/// # struct User {
-/// #     #[rorm(id)]
-/// #     id: i64,
-/// #
-/// #     #[rorm(max_length = 255)]
-/// #     username: String,
-/// #
-/// #     #[rorm(max_length = 255)]
-/// #     password: String,
-/// # }
-/// #
-/// #
-/// # async fn shame_user(_user: &User) {}
-/// #
-/// pub async fn shame_users(db: &Database) {
-///     for (id, password) in query!(db, (User::F.id, User::F.password)).all().await.unwrap() {
-///         if password == "password" {
-///             let user = query!(db, User)
-///                 .condition(User::F.id.equals(id))
-///                 .one()
-///                 .await
-///                 .unwrap();
-///             shame_user(&user).await;
-///         }
-///     }
-/// }
-/// ```
+#[doc(hidden)]
+#[deprecated(note = "Use the query function instead i.e. remove the `!`")]
 #[macro_export]
 macro_rules! query {
     ($db:expr, ($(

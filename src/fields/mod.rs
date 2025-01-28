@@ -63,8 +63,8 @@
 //!
 //!     // relations
 //!     other_model: ForeignModel<OtherModel>,
-//!     also_other_model: ForeignModelByField<field!(OtherModel::F.name)>,
-//!     other_model_set: BackRef<field!(OtherModel::F.some_model)>,
+//!     also_other_model: ForeignModelByField<field!(OtherModel.name)>,
+//!     other_model_set: BackRef<field!(OtherModel.some_model)>,
 //!
 //!     // serde
 //!     data: Json<Data>,

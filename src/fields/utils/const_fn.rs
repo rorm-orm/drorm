@@ -21,9 +21,10 @@
 //!     const RETURN<const ARGS: Args>: Ret;
 //! }
 //!
+//! # #[allow(non_camel_case_types)]
 //! pub struct add;
 //! impl IdealConstFn<(i32, i32), i32> for add {
-//!     const RETURN<const ARGS: (i32, i32))>: i32 = {
+//!     const RETURN<const ARGS: (i32, i32)>: i32 = {
 //!         let (x, y) = ARGS;
 //!
 //!         // The actual function body
@@ -51,7 +52,7 @@
 //!
 //! pub struct add;
 //! impl NotSoIdealConstFn<(i32, i32), i32> for add {
-//!     type Call<const ARGS: (i32, i32))> = addBody<ARGS>;
+//!     type Call<const ARGS: (i32, i32)> = addBody<ARGS>;
 //! }
 //! pub struct addBody<const: ARGS: (i32, i32)>;
 //! impl<const ARGS: (i32, i32)> Return<i32> for addBody<ARGS> {
@@ -88,10 +89,12 @@
 //!     type Body<T: Contains<Arg>>: Contains<Ret>;
 //! }
 //!
+//! # #[allow(non_camel_case_types)]
 //! pub struct add;
 //! impl ConstFn<(i32, i32), i32> for add {
 //!     type Body<T: Contains<(i32, i32)>> = addBody<T>;
 //! }
+//! # #[allow(non_camel_case_types)]
 //! pub struct addBody<T>([T; 0]);
 //! impl<T: Contains<(i32, i32)>> Contains<i32> for addBody<T> {
 //!     const ITEM: i32 = {

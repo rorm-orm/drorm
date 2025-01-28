@@ -14,6 +14,89 @@ use crate::internal::patch::{IntoPatchCow, PatchCow};
 use crate::internal::query_context::QueryContext;
 use crate::model::{Model, Patch};
 
+/// Create an INSERT query.
+///
+/// # Basic usage
+/// ```no_run
+/// # use rorm::{Model, Patch, Database, insert};
+/// # #[derive(Model)] pub struct User { #[rorm(id)] id: i64, #[rorm(max_length = 255)] name: String, }
+/// # #[derive(Patch)] #[rorm(model = "User")] pub struct NewUser { name: String, }
+/// pub async fn create_single_user(db: &Database, user: &NewUser) {
+///     insert(db, User)
+///         .single(user)
+///         .await
+///         .unwrap();
+/// }
+/// pub async fn create_many_users(db: &Database, users: &[NewUser]) {
+///     insert(db, User)
+///         .bulk(users)
+///         .await
+///         .unwrap();
+/// }
+///```
+///
+/// Like every crud macro `insert!` starts a [builder](InsertBuilder) which is consumed to execute the query.
+///
+/// `insert!`'s first argument is a reference to the [`Database`](crate::Database).
+/// Its second is the [`Patch`] type you want to insert instances of.
+///
+/// Since your [`Model`] type will probably contain a primary key which is set by the database,
+/// you'll rarely insert your actual model instances.
+///
+/// To specify the patch instances use the method [`single`](InsertBuilder::single) or
+/// [`bulk`](InsertBuilder::bulk), which will consume the builder and execute the query.
+///
+/// # Return value
+/// ```no_run
+/// # use rorm::{Model, Patch, Database, insert, Error};
+/// # #[derive(Model)] pub struct User { #[rorm(id)] id: i64, #[rorm(max_length = 255)] name: String, }
+/// # #[derive(Patch)] #[rorm(model = "User")] pub struct NewUser { name: String, }
+/// # pub type UserPatch = NewUser;
+/// pub async fn show_various_returns(db: &Database, user: &NewUser) -> Result<(), Error> {
+///     // Return model instance by default
+///     let _: User = insert(db, User)
+///         .single(user)
+///         .await?;
+///
+///     // Return any patch instance (including the one used to insert and the model itself)
+///     let _: UserPatch = insert(db, User)
+///         .return_patch::<UserPatch>() // turbo fish not necessarily required but more readable
+///         .single(user)
+///         .await?;
+///
+///     // Return a tuple of fields
+///     let _: (i64, String) = insert(db, User)
+///         .return_tuple((User.id, User.name))
+///         .single(user)
+///         .await?;
+///
+///     // Return the model's primary key
+///     let _: i64 = insert(db, User)
+///         .return_primary_key()
+///         .single(user)
+///         .await?;
+///
+///     // Return nothing
+///     let _: () = insert(db, User)
+///         .return_nothing()
+///         .single(user)
+///         .await?;
+///
+///     Ok(())
+/// }
+///```
+pub fn insert<'ex, E, S>(executor: E, selector: S) -> InsertBuilder<E, S::Model, S>
+where
+    E: Executor<'ex>,
+    S: Selector<Model: Patch<ValueSpaceImpl = S>>,
+{
+    InsertBuilder {
+        executor,
+        selector,
+        model: PhantomData,
+    }
+}
+
 /// Builder for insert queries
 ///
 /// Is is recommended to start a builder using [`insert!`](macro@crate::insert).
@@ -43,13 +126,10 @@ where
     E: Executor<'ex>,
     M: Model,
 {
-    /// Start building a insert query
+    #[doc(hidden)]
+    #[deprecated(note = "Use the insert function instead")]
     pub fn new(executor: E) -> Self {
-        InsertBuilder {
-            executor,
-            selector: Default::default(),
-            model: PhantomData,
-        }
+        insert(executor, M::ValueSpaceImpl::default())
     }
 
     fn set_return<S>(self, selector: S) -> InsertBuilder<E, M, S>
@@ -228,77 +308,8 @@ where
     }
 }
 
-/// Create an INSERT query.
-///
-/// # Basic usage
-/// ```no_run
-/// # use rorm::{Model, Patch, Database, insert};
-/// # #[derive(Model)] pub struct User { #[rorm(id)] id: i64, #[rorm(max_length = 255)] name: String, }
-/// # #[derive(Patch)] #[rorm(model = "User")] pub struct NewUser { name: String, }
-/// pub async fn create_single_user(db: &Database, user: &NewUser) {
-///     insert!(db, NewUser)
-///         .single(user)
-///         .await
-///         .unwrap();
-/// }
-/// pub async fn create_many_users(db: &Database, users: &[NewUser]) {
-///     insert!(db, NewUser)
-///         .bulk(users)
-///         .await
-///         .unwrap();
-/// }
-///```
-///
-/// Like every crud macro `insert!` starts a [builder](InsertBuilder) which is consumed to execute the query.
-///
-/// `insert!`'s first argument is a reference to the [`Database`](crate::Database).
-/// Its second is the [`Patch`] type you want to insert instances of.
-///
-/// Since your [`Model`] type will probably contain a primary key which is set by the database,
-/// you'll rarely insert your actual model instances.
-///
-/// To specify the patch instances use the method [`single`](InsertBuilder::single) or
-/// [`bulk`](InsertBuilder::bulk), which will consume the builder and execute the query.
-///
-/// # Return value
-/// ```no_run
-/// # use rorm::{Model, Patch, Database, insert, Error};
-/// # #[derive(Model)] pub struct User { #[rorm(id)] id: i64, #[rorm(max_length = 255)] name: String, }
-/// # #[derive(Patch)] #[rorm(model = "User")] pub struct NewUser { name: String, }
-/// # pub type UserPatch = NewUser;
-/// pub async fn show_various_returns(db: &Database, user: &NewUser) -> Result<(), Error> {
-///     // Return model instance by default
-///     let _: User = insert!(db, NewUser)
-///         .single(user)
-///         .await?;
-///
-///     // Return any patch instance (including the one used to insert and the model itself)
-///     let _: UserPatch = insert!(db, NewUser)
-///         .return_patch::<UserPatch>() // turbo fish not necessarily required but more readable
-///         .single(user)
-///         .await?;
-///
-///     // Return a tuple of fields
-///     let _: (i64, String) = insert!(db, NewUser)
-///         .return_tuple((User::F.id, User::F.name))
-///         .single(user)
-///         .await?;
-///
-///     // Return the model's primary key
-///     let _: i64 = insert!(db, NewUser)
-///         .return_primary_key()
-///         .single(user)
-///         .await?;
-///
-///     // Return nothing
-///     let _: () = insert!(db, NewUser)
-///         .return_nothing()
-///         .single(user)
-///         .await?;
-///
-///     Ok(())
-/// }
-///```
+#[doc(hidden)]
+#[deprecated(note = "Use the insert function instead i.e. remove the `!`")]
 #[macro_export]
 macro_rules! insert {
     ($db:expr, $patch:path) => {

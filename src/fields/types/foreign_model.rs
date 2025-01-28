@@ -5,9 +5,10 @@ use std::fmt;
 use rorm_db::Executor;
 
 use crate::conditions::{Binary, BinaryOperator, Column};
+use crate::crud::query::query;
 use crate::internal::field::{FieldProxy, SingleColumnField};
 use crate::model::Model;
-use crate::query;
+use crate::Patch;
 
 /// Alias for [ForeignModelByField] which only takes a model uses to its primary key.
 pub type ForeignModel<M> = ForeignModelByField<<M as Model>::Primary>;
@@ -20,7 +21,7 @@ pub struct ForeignModelByField<FF: SingleColumnField>(pub FF::Type);
 impl<FF: SingleColumnField> ForeignModelByField<FF> {
     /// Queries the associated model
     pub async fn query(self, executor: impl Executor<'_>) -> Result<FF::Model, crate::Error> {
-        query!(executor, FF::Model)
+        query(executor, <FF::Model as Patch>::ValueSpaceImpl::default())
             .condition(Binary {
                 operator: BinaryOperator::Equals,
                 fst_arg: Column(FieldProxy::<FF, FF::Model>::new()),

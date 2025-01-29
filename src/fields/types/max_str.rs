@@ -1,5 +1,7 @@
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
+use std::cmp::Ordering;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::ops::Deref;
 
@@ -102,6 +104,11 @@ where
             len_impl: &self.len_impl,
         }
     }
+
+    /// Get the actual string, discarding the length guarantee
+    pub fn into_inner(self) -> Str {
+        self.string
+    }
 }
 
 /// Error returned by [`MaxStr`]'s constructors when the input string is too long
@@ -130,6 +137,59 @@ where
     type Target = str;
     fn deref(&self) -> &Self::Target {
         &self.string
+    }
+}
+
+impl<const MAX_LEN: usize, Impl, Str> Borrow<str> for MaxStr<MAX_LEN, Impl, Str>
+where
+    Str: Deref<Target = str>,
+{
+    fn borrow(&self) -> &str {
+        &*self.string
+    }
+}
+
+impl<const MAX_LEN: usize, Impl, Str> Eq for MaxStr<MAX_LEN, Impl, Str> where
+    Str: Deref<Target = str>
+{
+}
+
+impl<const MAX_LEN: usize, Impl, Str> PartialEq for MaxStr<MAX_LEN, Impl, Str>
+where
+    Str: Deref<Target = str>,
+{
+    fn eq(&self, other: &Self) -> bool {
+        *self.string == *other.string
+    }
+}
+
+impl<const MAX_LEN: usize, Impl, Str> Ord for MaxStr<MAX_LEN, Impl, Str>
+where
+    Str: Deref<Target = str>,
+{
+    fn cmp(&self, other: &Self) -> Ordering {
+        let this = &*self.string;
+        let other = &*other.string;
+        this.cmp(other)
+    }
+}
+
+impl<const MAX_LEN: usize, Impl, Str> PartialOrd for MaxStr<MAX_LEN, Impl, Str>
+where
+    Str: Deref<Target = str>,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<const MAX_LEN: usize, Impl, Str> Hash for MaxStr<MAX_LEN, Impl, Str>
+where
+    Str: Deref<Target = str>,
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let this = &*self.string;
+        this.hash(state)
     }
 }
 

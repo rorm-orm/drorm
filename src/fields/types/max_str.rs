@@ -193,6 +193,16 @@ where
     }
 }
 
+impl<const MAX_LEN: usize, Impl, Str> fmt::Display for MaxStr<MAX_LEN, Impl, Str>
+where
+    Str: Deref<Target = str>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let this = &*self.string;
+        this.fmt(f)
+    }
+}
+
 impl<const MAX_LEN: usize, Impl, Str> Serialize for MaxStr<MAX_LEN, Impl, Str>
 where
     Str: Serialize,

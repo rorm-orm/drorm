@@ -254,6 +254,9 @@ where
 
         let decoder = self.selector.select(&mut ctx);
         let condition_index = self.condition.build(&mut ctx);
+        for modify in self.modify_ctx {
+            modify(&mut ctx);
+        }
 
         let condition = ctx.get_condition_opt(condition_index);
 
@@ -284,6 +287,9 @@ where
 
         let decoder = self.selector.select(&mut ctx);
         let condition_index = self.condition.build(&mut ctx);
+        for modify in self.modify_ctx {
+            modify(&mut ctx);
+        }
 
         QueryStream::new(decoder, ctx, move |ctx| {
             database::query::<Stream>(
@@ -309,6 +315,9 @@ where
 
         let decoder = self.selector.select(&mut ctx);
         let condition_index = self.condition.build(&mut ctx);
+        for modify in self.modify_ctx {
+            modify(&mut ctx);
+        }
 
         let row = database::query::<One>(
             self.executor,
@@ -332,6 +341,9 @@ where
 
         let decoder = self.selector.select(&mut ctx);
         let condition_index = self.condition.build(&mut ctx);
+        for modify in self.modify_ctx {
+            modify(&mut ctx);
+        }
 
         let row = database::query::<Optional>(
             self.executor,

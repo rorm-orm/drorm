@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 
 use rorm_db::sql::aggregation::SelectAggregator;
 
+use crate::conditions::{Binary, Column, In, InOperator, Value};
 use crate::crud::selector::AggregatedColumn;
 use crate::fields::traits::{
     FieldAvg, FieldCount, FieldEq, FieldLike, FieldMax, FieldMin, FieldOrd, FieldRegexp, FieldSum,
@@ -56,7 +57,7 @@ macro_rules! FieldType {
 /// // Uses the `FieldEq` impl of `String`
 /// let condition = User.name.equals("Bob".to_string());
 /// ```
-pub trait FieldAccess: Sized + Send + Sync + 'static {
+pub trait FieldAccess: Copy + Sized + Send + Sync + 'static {
     /// Field which is accessed
     ///
     /// Corresponds to the proxy's `F` parameter
@@ -87,6 +88,44 @@ pub trait FieldAccess: Sized + Send + Sync + 'static {
         FieldType!(): FieldEq<'rhs, Rhs, Any>,
     {
         <FieldType!()>::field_not_equals(self, rhs)
+    }
+
+    /// Check if the field's value is in a given list of values
+    fn r#in<'rhs, Rhs: 'rhs, Any>(
+        self,
+        rhs: impl IntoIterator<Item = Rhs>,
+    ) -> In<Column<Self>, Value<'rhs>>
+    where
+        FieldType!(): FieldEq<'rhs, Rhs, Any, EqCond<Self> = Binary<Column<Self>, Value<'rhs>>>,
+    {
+        let values = rhs
+            .into_iter()
+            .map(|rhs| self.equals(rhs).snd_arg)
+            .collect();
+        In {
+            operator: InOperator::In,
+            fst_arg: Column(self),
+            snd_arg: values,
+        }
+    }
+
+    /// Check if the field's value is not in a given list of values
+    fn not_in<'rhs, Rhs: 'rhs, Any>(
+        self,
+        rhs: impl IntoIterator<Item = Rhs>,
+    ) -> In<Column<Self>, Value<'rhs>>
+    where
+        FieldType!(): FieldEq<'rhs, Rhs, Any, EqCond<Self> = Binary<Column<Self>, Value<'rhs>>>,
+    {
+        let values = rhs
+            .into_iter()
+            .map(|rhs| self.equals(rhs).snd_arg)
+            .collect();
+        In {
+            operator: InOperator::NotIn,
+            fst_arg: Column(self),
+            snd_arg: values,
+        }
     }
 
     /// Compare the field to another value using `<`

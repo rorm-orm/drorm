@@ -9,7 +9,10 @@ use std::sync::Arc;
 use rorm_db::sql::value;
 
 pub mod collections;
+mod r#in;
+
 pub use collections::{DynamicCollection, StaticCollection};
+pub use r#in::{In, InOperator};
 
 use crate::internal::field::access::FieldAccess;
 use crate::internal::field::Field;

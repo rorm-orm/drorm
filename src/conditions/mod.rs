@@ -84,9 +84,9 @@ impl<'a> Condition<'a> for Arc<dyn Condition<'a> + '_> {
         self
     }
 }
-impl<'a> Condition<'a> for &'_ dyn Condition<'a> {
+impl<'a, C: Condition<'a> + ?Sized> Condition<'a> for &'_ C {
     fn build(&self, context: &mut QueryContext<'a>) {
-        <dyn Condition as Condition>::build(self, context)
+        <C as Condition<'a>>::build(*self, context);
     }
 }
 

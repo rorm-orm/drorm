@@ -261,6 +261,9 @@ impl<T> Clone for FieldProxy<T> {
 }
 impl<T> Copy for FieldProxy<T> {}
 
+/// Implementation detail of [`FieldProxy`], `FieldProxy`'s generic must implement this trait.
+///
+/// This trait is not relevant for the average rorm user.
 pub trait FieldProxyImpl: 'static {
     sealed!(trait);
 
@@ -286,14 +289,30 @@ where
     type Through<NewPath: Path> = (F, NewPath);
 }
 
+/// Construct a new `FieldProxy`
+///
+/// *Not relevant for the average rorm user*
+///
+/// This function is used by the `#[derive(Model)]` macro to populate the Fields struct.
 pub const fn new<I: FieldProxyImpl>() -> FieldProxy<I> {
     FieldProxy(PhantomData)
 }
 
+/// Get a [`Field`]'s `INDEX` from a `FieldProxy`
+///
+/// *Not relevant for the average rorm user*
+///
+/// This function is used by the [`get_field`](crate::get_field) and [`field`](crate::field) macros.
 pub const fn index<I: FieldProxyImpl>(_: fn() -> FieldProxy<I>) -> usize {
     <I::Field as Field>::INDEX
 }
 
+/// Change a `FieldProxy`'s path
+///
+/// *Not relevant for the average rorm user*
+///
+/// This function is used by the `#[derive(Patch)]` to construct a `Selector` with a custom path.
+/// This is subject to change.
 pub const fn through<I: FieldProxyImpl, NewPath: Path>(
     _: fn() -> FieldProxy<I>,
 ) -> FieldProxy<I::Through<NewPath>> {
@@ -301,13 +320,12 @@ pub const fn through<I: FieldProxyImpl, NewPath: Path>(
 }
 
 /// Get the names of the columns which store the field
+///
+/// *Not relevant for the average rorm user*
+///
+/// This function is used by the `#[derive(Patch)]` macro to gather a list of all columns.
 pub const fn columns<T: FieldProxyImpl>(
     _: fn() -> FieldProxy<T>,
 ) -> FieldColumns<<T::Field as Field>::Type, &'static str> {
     <T::Field as Field>::EFFECTIVE_NAMES
-}
-
-/// Get the underlying field to call its methods
-pub fn field<T: FieldProxyImpl>(_: fn() -> FieldProxy<T>) -> T::Field {
-    <T::Field as Field>::new()
 }

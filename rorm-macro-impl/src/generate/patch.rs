@@ -136,14 +136,16 @@ pub fn partially_generate_patch<'a>(
                 #decoder {#(
                     #fields_4: ::rorm::internal::field::decoder::FieldDecoder::new(
                         ctx,
-                        <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS.#fields_4.through::<P>(),
+                        ::rorm::fields::proxy::through::<_, P>(
+                            || <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS.#fields_4
+                        ),
                     ),
                 )*}
             }
 
             fn push_columns(columns: &mut Vec<&'static str>) {#(
                 columns.extend(
-                    ::rorm::internal::field::FieldProxy::columns(<<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS.#fields_5)
+                    ::rorm::fields::proxy::columns(|| <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS.#fields_5)
                 );
             )*}
 

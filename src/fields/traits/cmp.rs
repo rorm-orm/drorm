@@ -13,25 +13,24 @@
 
 use super::FieldType;
 use crate::conditions::{Binary, BinaryOperator, Column, Condition};
-use crate::internal::field::access::FieldAccess;
-use crate::internal::field::{Field, FieldProxy, SingleColumnField};
-use crate::internal::relation_path::Path;
+use crate::fields::proxy::{FieldProxy, FieldProxyImpl};
+use crate::internal::field::{Field, SingleColumnField};
 
 /// Trait for equality comparisons.
 ///
 /// **Read module notes, before using.**
 pub trait FieldEq<'rhs, Rhs: 'rhs, Any = ()>: FieldType {
     /// Condition type returned from [`FieldEq::field_equals`]
-    type EqCond<A: FieldAccess>: Condition<'rhs>;
+    type EqCond<I: FieldProxyImpl>: Condition<'rhs>;
 
     /// Compare the field to another value using `==`
-    fn field_equals<A: FieldAccess>(access: A, value: Rhs) -> Self::EqCond<A>;
+    fn field_equals<I: FieldProxyImpl>(field: FieldProxy<I>, value: Rhs) -> Self::EqCond<I>;
 
     /// Condition type returned from [`FieldEq::field_not_equals`]
-    type NeCond<A: FieldAccess>: Condition<'rhs>;
+    type NeCond<I: FieldProxyImpl>: Condition<'rhs>;
 
     /// Compare the field to another value using `!=`
-    fn field_not_equals<A: FieldAccess>(access: A, value: Rhs) -> Self::NeCond<A>;
+    fn field_not_equals<I: FieldProxyImpl>(field: FieldProxy<I>, value: Rhs) -> Self::NeCond<I>;
 }
 
 /// Trait for field types that form an order.
@@ -39,28 +38,29 @@ pub trait FieldEq<'rhs, Rhs: 'rhs, Any = ()>: FieldType {
 /// **Read module notes, before using.**
 pub trait FieldOrd<'rhs, Rhs: 'rhs, Any = ()>: FieldType {
     /// Condition type returned from [`FieldOrd::field_less_than`]
-    type LtCond<A: FieldAccess>: Condition<'rhs>;
+    type LtCond<I: FieldProxyImpl>: Condition<'rhs>;
 
     /// Compare the field to another value using `<`
-    fn field_less_than<A: FieldAccess>(access: A, value: Rhs) -> Self::LtCond<A>;
+    fn field_less_than<I: FieldProxyImpl>(field: FieldProxy<I>, value: Rhs) -> Self::LtCond<I>;
 
     /// Condition type returned from [`FieldOrd::field_less_equals`]
-    type LeCond<A: FieldAccess>: Condition<'rhs>;
+    type LeCond<I: FieldProxyImpl>: Condition<'rhs>;
 
     /// Compare the field to another value using `<=`
-    fn field_less_equals<A: FieldAccess>(access: A, value: Rhs) -> Self::LeCond<A>;
+    fn field_less_equals<I: FieldProxyImpl>(field: FieldProxy<I>, value: Rhs) -> Self::LeCond<I>;
 
     /// Condition type returned from [`FieldOrd::field_greater_than`]
-    type GtCond<A: FieldAccess>: Condition<'rhs>;
+    type GtCond<I: FieldProxyImpl>: Condition<'rhs>;
 
     /// Compare the field to another value using `<`
-    fn field_greater_than<A: FieldAccess>(access: A, value: Rhs) -> Self::GtCond<A>;
+    fn field_greater_than<I: FieldProxyImpl>(field: FieldProxy<I>, value: Rhs) -> Self::GtCond<I>;
 
     /// Condition type returned from [`FieldOrd::field_greater_equals`]
-    type GeCond<A: FieldAccess>: Condition<'rhs>;
+    type GeCond<I: FieldProxyImpl>: Condition<'rhs>;
 
     /// Compare the field to another value using `>=`
-    fn field_greater_equals<A: FieldAccess>(access: A, value: Rhs) -> Self::GeCond<A>;
+    fn field_greater_equals<I: FieldProxyImpl>(field: FieldProxy<I>, value: Rhs)
+        -> Self::GeCond<I>;
 }
 
 /// Trait for field types to implement sql's `LIKE` comparison.
@@ -68,16 +68,16 @@ pub trait FieldOrd<'rhs, Rhs: 'rhs, Any = ()>: FieldType {
 /// **Read module notes, before using.**
 pub trait FieldLike<'rhs, Rhs: 'rhs, Any = ()>: FieldType {
     /// Condition type returned from [`FieldLike::field_like`]
-    type LiCond<A: FieldAccess>: Condition<'rhs>;
+    type LiCond<I: FieldProxyImpl>: Condition<'rhs>;
 
     /// Compare the field to another value using `LIKE`
-    fn field_like<A: FieldAccess>(access: A, value: Rhs) -> Self::LiCond<A>;
+    fn field_like<I: FieldProxyImpl>(field: FieldProxy<I>, value: Rhs) -> Self::LiCond<I>;
 
     /// Condition type returned from [`FieldLike::field_not_like`]
-    type NlCond<A: FieldAccess>: Condition<'rhs>;
+    type NlCond<I: FieldProxyImpl>: Condition<'rhs>;
 
     /// Compare the field to another value using `NOT LIKE`
-    fn field_not_like<A: FieldAccess>(access: A, value: Rhs) -> Self::NlCond<A>;
+    fn field_not_like<I: FieldProxyImpl>(field: FieldProxy<I>, value: Rhs) -> Self::NlCond<I>;
 }
 
 /// Trait for field types to implement sql's `REGEXP` comparison.
@@ -85,16 +85,16 @@ pub trait FieldLike<'rhs, Rhs: 'rhs, Any = ()>: FieldType {
 /// **Read module notes, before using.**
 pub trait FieldRegexp<'rhs, Rhs: 'rhs, Any = ()>: FieldType {
     /// Condition type returned from [`FieldRegexp::field_regexp`]
-    type ReCond<A: FieldAccess>: Condition<'rhs>;
+    type ReCond<I: FieldProxyImpl>: Condition<'rhs>;
 
     /// Compare the field to another value using `REGEXP`
-    fn field_regexp<A: FieldAccess>(access: A, value: Rhs) -> Self::ReCond<A>;
+    fn field_regexp<I: FieldProxyImpl>(field: FieldProxy<I>, value: Rhs) -> Self::ReCond<I>;
 
     /// Condition type returned from [`FieldRegexp::field_not_regexp`]
-    type NrCond<A: FieldAccess>: Condition<'rhs>;
+    type NrCond<I: FieldProxyImpl>: Condition<'rhs>;
 
     /// Compare the field to another value using `NOT REGEXP`
-    fn field_not_regexp<A: FieldAccess>(access: A, value: Rhs) -> Self::NrCond<A>;
+    fn field_not_regexp<I: FieldProxyImpl>(field: FieldProxy<I>, value: Rhs) -> Self::NrCond<I>;
 }
 
 // TODO: null check, BETWEEN, IN
@@ -113,21 +113,35 @@ macro_rules! impl_FieldEq {
             $lhs: $crate::fields::traits::FieldType,
             $($( $bound_left : $bound_right ,)*)?
         {
-            type EqCond<A: $crate::FieldAccess> = $crate::conditions::Binary<$crate::conditions::Column<A>, $crate::conditions::Value<'rhs>>;
-            fn field_equals<A: $crate::FieldAccess>(access: A, value: $rhs) -> Self::EqCond<A> {
+            type EqCond<I: $crate::fields::proxy::FieldProxyImpl>
+                = $crate::conditions::Binary<
+                    $crate::conditions::Column<I>,
+                    $crate::conditions::Value<'rhs>,
+                >;
+            fn field_equals<I: $crate::fields::proxy::FieldProxyImpl>(
+                field: $crate::fields::proxy::FieldProxy<I>,
+                value: $rhs
+            ) -> Self::EqCond<I> {
                 $crate::conditions::Binary {
                     operator: $crate::conditions::BinaryOperator::Equals,
-                    fst_arg: $crate::conditions::Column(access),
+                    fst_arg: $crate::conditions::Column(field),
                     #[allow(clippy::redundant_closure_call)] // clean way to pass code to a macro
                     snd_arg: $into_value(value),
                 }
             }
 
-            type NeCond<A: $crate::FieldAccess> = $crate::conditions::Binary<$crate::conditions::Column<A>, $crate::conditions::Value<'rhs>>;
-            fn field_not_equals<A: $crate::FieldAccess>(access: A, value: $rhs) -> Self::NeCond<A> {
+            type NeCond<I: $crate::fields::proxy::FieldProxyImpl>
+                = $crate::conditions::Binary<
+                    $crate::conditions::Column<I>,
+                    $crate::conditions::Value<'rhs>,
+                >;
+            fn field_not_equals<I: $crate::fields::proxy::FieldProxyImpl>(
+                field: $crate::fields::proxy::FieldProxy<I>,
+                value: $rhs
+            ) -> Self::NeCond<I> {
                 $crate::conditions::Binary {
                     operator: $crate::conditions::BinaryOperator::NotEquals,
-                    fst_arg: $crate::conditions::Column(access),
+                    fst_arg: $crate::conditions::Column(field),
                     #[allow(clippy::redundant_closure_call)] // clean way to pass code to a macro
                     snd_arg: $into_value(value),
                 }
@@ -137,28 +151,33 @@ macro_rules! impl_FieldEq {
 }
 
 // Impl FieldEq<FieldProxy> iff FieldEq<Self>
-impl<'rhs, F, P, T> FieldEq<'rhs, FieldProxy<F, P>> for T
+impl<'rhs, I2, T> FieldEq<'rhs, FieldProxy<I2>> for T
 where
     T: FieldEq<'rhs, T>,
-    F: Field<Type = T> + SingleColumnField,
-    P: Path,
+    I2: FieldProxyImpl<Field: Field<Type = T> + SingleColumnField>,
 {
-    type EqCond<A: FieldAccess> = Binary<Column<A>, Column<FieldProxy<F, P>>>;
+    type EqCond<I: FieldProxyImpl> = Binary<Column<I>, Column<I2>>;
 
-    fn field_equals<A: FieldAccess>(access: A, value: FieldProxy<F, P>) -> Self::EqCond<A> {
+    fn field_equals<I: FieldProxyImpl>(
+        field: FieldProxy<I>,
+        value: FieldProxy<I2>,
+    ) -> Self::EqCond<I> {
         Binary {
             operator: BinaryOperator::Equals,
-            fst_arg: Column(access),
+            fst_arg: Column(field),
             snd_arg: Column(value),
         }
     }
 
-    type NeCond<A: FieldAccess> = Binary<Column<A>, Column<FieldProxy<F, P>>>;
+    type NeCond<I: FieldProxyImpl> = Binary<Column<I>, Column<I2>>;
 
-    fn field_not_equals<A: FieldAccess>(access: A, value: FieldProxy<F, P>) -> Self::NeCond<A> {
+    fn field_not_equals<I: FieldProxyImpl>(
+        field: FieldProxy<I>,
+        value: FieldProxy<I2>,
+    ) -> Self::NeCond<I> {
         Binary {
             operator: BinaryOperator::NotEquals,
-            fst_arg: Column(access),
+            fst_arg: Column(field),
             snd_arg: Column(value),
         }
     }
@@ -176,41 +195,69 @@ where
 macro_rules! impl_FieldOrd {
     ($lhs:ty, $rhs:ty, $into_value:expr) => {
         impl<'rhs> $crate::fields::traits::cmp::FieldOrd<'rhs, $rhs> for $lhs {
-            type LtCond<A: $crate::FieldAccess> = $crate::conditions::Binary<$crate::conditions::Column<A>, $crate::conditions::Value<'rhs>>;
-            fn field_less_than<A: $crate::FieldAccess>(access: A, value: $rhs) -> Self::LtCond<A> {
+            type LtCond<I: $crate::fields::proxy::FieldProxyImpl>
+                = $crate::conditions::Binary<
+                    $crate::conditions::Column<I>,
+                    $crate::conditions::Value<'rhs>,
+                >;
+            fn field_less_than<I: $crate::fields::proxy::FieldProxyImpl>(
+                field: $crate::fields::proxy::FieldProxy<I>,
+                value: $rhs,
+            ) -> Self::LtCond<I> {
                 $crate::conditions::Binary {
                     operator: $crate::conditions::BinaryOperator::Less,
-                    fst_arg: $crate::conditions::Column(access),
+                    fst_arg: $crate::conditions::Column(field),
                     #[allow(clippy::redundant_closure_call)] // clean way to pass code to a macro
                     snd_arg: $into_value(value),
                 }
             }
 
-            type LeCond<A: $crate::FieldAccess> = $crate::conditions::Binary<$crate::conditions::Column<A>, $crate::conditions::Value<'rhs>>;
-            fn field_less_equals<A: $crate::FieldAccess>(access: A, value: $rhs) -> Self::LeCond<A> {
+            type LeCond<I: $crate::fields::proxy::FieldProxyImpl>
+                = $crate::conditions::Binary<
+                    $crate::conditions::Column<I>,
+                    $crate::conditions::Value<'rhs>,
+                >;
+            fn field_less_equals<I: $crate::fields::proxy::FieldProxyImpl>(
+                field: $crate::fields::proxy::FieldProxy<I>,
+                value: $rhs,
+            ) -> Self::LeCond<I> {
                 $crate::conditions::Binary {
                     operator: $crate::conditions::BinaryOperator::LessOrEquals,
-                    fst_arg: $crate::conditions::Column(access),
+                    fst_arg: $crate::conditions::Column(field),
                     #[allow(clippy::redundant_closure_call)] // clean way to pass code to a macro
                     snd_arg: $into_value(value),
                 }
             }
 
-            type GtCond<A: $crate::FieldAccess> = $crate::conditions::Binary<$crate::conditions::Column<A>, $crate::conditions::Value<'rhs>>;
-            fn field_greater_than<A: $crate::FieldAccess>(access: A, value: $rhs) -> Self::GtCond<A> {
+            type GtCond<I: $crate::fields::proxy::FieldProxyImpl>
+                = $crate::conditions::Binary<
+                    $crate::conditions::Column<I>,
+                    $crate::conditions::Value<'rhs>,
+                >;
+            fn field_greater_than<I: $crate::fields::proxy::FieldProxyImpl>(
+                field: $crate::fields::proxy::FieldProxy<I>,
+                value: $rhs,
+            ) -> Self::GtCond<I> {
                 $crate::conditions::Binary {
                     operator: $crate::conditions::BinaryOperator::Greater,
-                    fst_arg: $crate::conditions::Column(access),
+                    fst_arg: $crate::conditions::Column(field),
                     #[allow(clippy::redundant_closure_call)] // clean way to pass code to a macro
                     snd_arg: $into_value(value),
                 }
             }
 
-            type GeCond<A: $crate::FieldAccess> = $crate::conditions::Binary<$crate::conditions::Column<A>, $crate::conditions::Value<'rhs>>;
-            fn field_greater_equals<A: $crate::FieldAccess>(access: A, value: $rhs) -> Self::GeCond<A> {
+            type GeCond<I: $crate::fields::proxy::FieldProxyImpl>
+                = $crate::conditions::Binary<
+                    $crate::conditions::Column<I>,
+                    $crate::conditions::Value<'rhs>,
+                >;
+            fn field_greater_equals<I: $crate::fields::proxy::FieldProxyImpl>(
+                field: $crate::fields::proxy::FieldProxy<I>,
+                value: $rhs,
+            ) -> Self::GeCond<I> {
                 $crate::conditions::Binary {
                     operator: $crate::conditions::BinaryOperator::GreaterOrEquals,
-                    fst_arg: $crate::conditions::Column(access),
+                    fst_arg: $crate::conditions::Column(field),
                     #[allow(clippy::redundant_closure_call)] // clean way to pass code to a macro
                     snd_arg: $into_value(value),
                 }
@@ -220,44 +267,55 @@ macro_rules! impl_FieldOrd {
 }
 
 // Impl FieldOrd<FieldProxy> iff FieldOrd<Self>
-impl<'rhs, F, P, T> FieldOrd<'rhs, FieldProxy<F, P>> for T
+impl<'rhs, I2, T> FieldOrd<'rhs, FieldProxy<I2>> for T
 where
     T: FieldOrd<'rhs, T>,
-    F: Field<Type = T> + SingleColumnField,
-    P: Path,
+    I2: FieldProxyImpl<Field: Field<Type = T> + SingleColumnField>,
 {
-    type LtCond<A: FieldAccess> = Binary<Column<A>, Column<FieldProxy<F, P>>>;
-    fn field_less_than<A: FieldAccess>(access: A, value: FieldProxy<F, P>) -> Self::LtCond<A> {
+    type LtCond<I: FieldProxyImpl> = Binary<Column<I>, Column<I2>>;
+    fn field_less_than<I: FieldProxyImpl>(
+        field: FieldProxy<I>,
+        value: FieldProxy<I2>,
+    ) -> Self::LtCond<I> {
         Binary {
             operator: BinaryOperator::Less,
-            fst_arg: Column(access),
+            fst_arg: Column(field),
             snd_arg: Column(value),
         }
     }
 
-    type LeCond<A: FieldAccess> = Binary<Column<A>, Column<FieldProxy<F, P>>>;
-    fn field_less_equals<A: FieldAccess>(access: A, value: FieldProxy<F, P>) -> Self::LeCond<A> {
+    type LeCond<I: FieldProxyImpl> = Binary<Column<I>, Column<I2>>;
+    fn field_less_equals<I: FieldProxyImpl>(
+        field: FieldProxy<I>,
+        value: FieldProxy<I2>,
+    ) -> Self::LeCond<I> {
         Binary {
             operator: BinaryOperator::LessOrEquals,
-            fst_arg: Column(access),
+            fst_arg: Column(field),
             snd_arg: Column(value),
         }
     }
 
-    type GtCond<A: FieldAccess> = Binary<Column<A>, Column<FieldProxy<F, P>>>;
-    fn field_greater_than<A: FieldAccess>(access: A, value: FieldProxy<F, P>) -> Self::GtCond<A> {
+    type GtCond<I: FieldProxyImpl> = Binary<Column<I>, Column<I2>>;
+    fn field_greater_than<I: FieldProxyImpl>(
+        field: FieldProxy<I>,
+        value: FieldProxy<I2>,
+    ) -> Self::GtCond<I> {
         Binary {
             operator: BinaryOperator::Greater,
-            fst_arg: Column(access),
+            fst_arg: Column(field),
             snd_arg: Column(value),
         }
     }
 
-    type GeCond<A: FieldAccess> = Binary<Column<A>, Column<FieldProxy<F, P>>>;
-    fn field_greater_equals<A: FieldAccess>(access: A, value: FieldProxy<F, P>) -> Self::GeCond<A> {
+    type GeCond<I: FieldProxyImpl> = Binary<Column<I>, Column<I2>>;
+    fn field_greater_equals<I: FieldProxyImpl>(
+        field: FieldProxy<I>,
+        value: FieldProxy<I2>,
+    ) -> Self::GeCond<I> {
         Binary {
             operator: BinaryOperator::GreaterOrEquals,
-            fst_arg: Column(access),
+            fst_arg: Column(field),
             snd_arg: Column(value),
         }
     }

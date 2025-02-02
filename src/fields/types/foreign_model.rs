@@ -6,7 +6,8 @@ use rorm_db::Executor;
 
 use crate::conditions::{Binary, BinaryOperator, Column};
 use crate::crud::query::query;
-use crate::internal::field::{FieldProxy, SingleColumnField};
+use crate::fields::proxy;
+use crate::internal::field::SingleColumnField;
 use crate::model::Model;
 use crate::Patch;
 
@@ -24,7 +25,7 @@ impl<FF: SingleColumnField> ForeignModelByField<FF> {
         query(executor, <FF::Model as Patch>::ValueSpaceImpl::default())
             .condition(Binary {
                 operator: BinaryOperator::Equals,
-                fst_arg: Column(FieldProxy::<FF, FF::Model>::new()),
+                fst_arg: Column(proxy::new::<(FF, FF::Model)>()),
                 snd_arg: FF::type_into_value(self.0),
             })
             .one()

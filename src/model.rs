@@ -7,7 +7,8 @@ use rorm_declaration::imr;
 use crate::conditions::{Binary, BinaryOperator, Column, Value};
 use crate::crud::decoder::Decoder;
 use crate::crud::selector::Selector;
-use crate::internal::field::{Field, FieldProxy, SingleColumnField};
+use crate::fields::proxy;
+use crate::internal::field::{Field, SingleColumnField};
 use crate::internal::hmr::{AsImr, Source};
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
@@ -96,10 +97,8 @@ impl<Ptch: Patch, Pth: Path> Selector for PatchSelector<Ptch, Pth> {
 }
 
 /// The [Condition](crate::conditions::Condition) type returned by [Identifiable::as_condition]
-pub type PatchAsCondition<'a, P> = Binary<
-    Column<FieldProxy<<<P as Patch>::Model as Model>::Primary, <P as Patch>::Model>>,
-    Value<'a>,
->;
+pub type PatchAsCondition<'a, P> =
+    Binary<Column<(<<P as Patch>::Model as Model>::Primary, <P as Patch>::Model)>, Value<'a>>;
 
 /// Trait implementing most database interactions for a struct.
 ///
@@ -194,7 +193,7 @@ pub trait Identifiable: Patch {
     fn as_condition(&self) -> PatchAsCondition<Self> {
         Binary {
             operator: BinaryOperator::Equals,
-            fst_arg: Column(FieldProxy::new()),
+            fst_arg: Column(proxy::new()),
             snd_arg: <Self::Model as Model>::Primary::type_as_value(self.get_primary_key()),
         }
     }

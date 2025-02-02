@@ -12,7 +12,6 @@ use crate::conditions::Condition;
 use crate::crud::builder::ConditionMarker;
 use crate::crud::decoder::Decoder;
 use crate::crud::selector::Selector;
-use crate::internal::field::{Field, FieldProxy};
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
 use crate::model::Model;
@@ -204,14 +203,17 @@ where
     /// Order the query by a field
     ///
     /// You can add multiple orderings from most to least significant.
-    pub fn order_by<F, P>(mut self, _field: FieldProxy<F, P>, order: Ordering) -> Self
+    pub fn order_by<I>(mut self, _field: FieldProxy<I>, order: Ordering) -> Self
     where
-        F: Field,
-        P: Path<Origin = S::Model>,
+        I: FieldProxyImpl<Path: Path<Origin = S::Model>>,
     {
         self.modify_ctx.push(match order {
-            Ordering::Asc => |ctx: &mut QueryContext| ctx.order_by_field::<F, P>(Ordering::Asc),
-            Ordering::Desc => |ctx: &mut QueryContext| ctx.order_by_field::<F, P>(Ordering::Desc),
+            Ordering::Asc => {
+                |ctx: &mut QueryContext| ctx.order_by_field::<I::Field, I::Path>(Ordering::Asc)
+            }
+            Ordering::Desc => {
+                |ctx: &mut QueryContext| ctx.order_by_field::<I::Field, I::Path>(Ordering::Desc)
+            }
         });
         self
     }
@@ -219,10 +221,9 @@ where
     /// Order the query ascending by a field
     ///
     /// You can add multiple orderings from most to least significant.
-    pub fn order_asc<F, P>(self, field: FieldProxy<F, P>) -> Self
+    pub fn order_asc<I>(self, field: FieldProxy<I>) -> Self
     where
-        F: Field,
-        P: Path<Origin = S::Model>,
+        I: FieldProxyImpl<Path: Path<Origin = S::Model>>,
     {
         self.order_by(field, Ordering::Asc)
     }
@@ -230,10 +231,9 @@ where
     /// Order the query descending by a field
     ///
     /// You can add multiple orderings from most to least significant.
-    pub fn order_desc<F, P>(self, field: FieldProxy<F, P>) -> Self
+    pub fn order_desc<I>(self, field: FieldProxy<I>) -> Self
     where
-        F: Field,
-        P: Path<Origin = S::Model>,
+        I: FieldProxyImpl<Path: Path<Origin = S::Model>>,
     {
         self.order_by(field, Ordering::Desc)
     }
@@ -454,6 +454,8 @@ mod query_stream {
     }
 }
 use query_stream::QueryStream;
+
+use crate::fields::proxy::{FieldProxy, FieldProxyImpl};
 
 /// Finite alternative to [`RangeBounds`](std::ops::RangeBounds)
 ///

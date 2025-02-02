@@ -9,7 +9,8 @@ use rorm_db::executor::Executor;
 use crate::conditions::Value;
 use crate::crud::decoder::Decoder;
 use crate::crud::selector::Selector;
-use crate::internal::field::FieldProxy;
+use crate::fields::proxy;
+use crate::fields::proxy::FieldProxy;
 use crate::internal::patch::{IntoPatchCow, PatchCow};
 use crate::internal::query_context::QueryContext;
 use crate::model::{Model, Patch};
@@ -152,8 +153,8 @@ where
     }
 
     /// Return the tables primary key after performing the insert
-    pub fn return_primary_key(self) -> InsertBuilder<E, M, FieldProxy<M::Primary, M>> {
-        self.set_return(FieldProxy::new())
+    pub fn return_primary_key(self) -> InsertBuilder<E, M, FieldProxy<(M::Primary, M)>> {
+        self.set_return(proxy::new())
     }
 
     /// Set a tuple of fields to be returned after performing the insert

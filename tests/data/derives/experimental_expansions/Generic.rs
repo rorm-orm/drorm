@@ -82,17 +82,22 @@ for __Generic_x<X> {
 }
 ///[`Generic`]'s [`Fields`](::rorm::model::Model::Fields) struct.
 #[allow(non_camel_case_types)]
-pub struct __Generic_Fields_Struct<X: rorm::fields::traits::FieldType, Path: 'static> {
+pub struct __Generic_Fields_Struct<
+    X: rorm::fields::traits::FieldType,
+    Path: ::rorm::internal::relation_path::Path,
+> {
     ///[`Generic`]'s `id` field
-    pub id: ::rorm::internal::field::FieldProxy<__Generic_id<X>, Path>,
+    pub id: ::rorm::fields::proxy::FieldProxy<(__Generic_id<X>, Path)>,
     ///[`Generic`]'s `x` field
-    pub x: ::rorm::internal::field::FieldProxy<__Generic_x<X>, Path>,
+    pub x: ::rorm::fields::proxy::FieldProxy<(__Generic_x<X>, Path)>,
 }
-impl<X: rorm::fields::traits::FieldType, Path: 'static> ::rorm::model::ConstNew
-for __Generic_Fields_Struct<X, Path> {
+impl<
+    X: rorm::fields::traits::FieldType,
+    Path: ::rorm::internal::relation_path::Path,
+> ::rorm::model::ConstNew for __Generic_Fields_Struct<X, Path> {
     const NEW: Self = Self {
-        id: ::rorm::internal::field::FieldProxy::new(),
-        x: ::rorm::internal::field::FieldProxy::new(),
+        id: ::rorm::fields::proxy::new(),
+        x: ::rorm::fields::proxy::new(),
     };
     const REF: &'static Self = &Self::NEW;
 }
@@ -186,32 +191,40 @@ impl<X: rorm::fields::traits::FieldType> ::rorm::model::Patch for Generic<X> {
         __Generic_Decoder {
             id: ::rorm::internal::field::decoder::FieldDecoder::new(
                 ctx,
-                <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
-                    .id
-                    .through::<P>(),
+                ::rorm::fields::proxy::through::<
+                    _,
+                    P,
+                >(|| {
+                    <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
+                        .id
+                }),
             ),
             x: ::rorm::internal::field::decoder::FieldDecoder::new(
                 ctx,
-                <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
-                    .x
-                    .through::<P>(),
+                ::rorm::fields::proxy::through::<
+                    _,
+                    P,
+                >(|| {
+                    <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
+                        .x
+                }),
             ),
         }
     }
     fn push_columns(columns: &mut Vec<&'static str>) {
         columns
             .extend(
-                ::rorm::internal::field::FieldProxy::columns(
+                ::rorm::fields::proxy::columns(|| {
                     <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
-                        .id,
-                ),
+                        .id
+                }),
             );
         columns
             .extend(
-                ::rorm::internal::field::FieldProxy::columns(
+                ::rorm::fields::proxy::columns(|| {
                     <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
-                        .x,
-                ),
+                        .x
+                }),
             );
     }
     fn push_references<'a>(&'a self, values: &mut Vec<::rorm::conditions::Value<'a>>) {

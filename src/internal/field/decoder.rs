@@ -5,29 +5,27 @@ use std::marker::PhantomData;
 use rorm_db::row::DecodeOwned;
 
 use crate::crud::decoder::{Decoder, DirectDecoder, NoopDecoder};
+use crate::fields::proxy::FieldProxyImpl;
 use crate::internal::field::{Field, FieldProxy};
 use crate::internal::query_context::QueryContext;
-use crate::internal::relation_path::Path;
 
 /// [`Decoder`] for a single field's [`Field::Type`](Field::Type)
 pub trait FieldDecoder: Decoder {
     /// Construct decoder for a specific field and path
-    fn new<F, P>(ctx: &mut QueryContext, _: FieldProxy<F, P>) -> Self
+    fn new<I>(ctx: &mut QueryContext, _: FieldProxy<I>) -> Self
     where
-        F: Field<Type = Self::Result>,
-        P: Path;
+        I: FieldProxyImpl<Field: Field<Type = Self::Result>>;
 }
 
 impl<T> FieldDecoder for DirectDecoder<T>
 where
     T: DecodeOwned,
 {
-    fn new<F, P>(ctx: &mut QueryContext, _: FieldProxy<F, P>) -> Self
+    fn new<I>(ctx: &mut QueryContext, _: FieldProxy<I>) -> Self
     where
-        F: Field<Type = Self::Result>,
-        P: Path,
+        I: FieldProxyImpl<Field: Field<Type = Self::Result>>,
     {
-        let (index, column) = ctx.select_field::<F, P>();
+        let (index, column) = ctx.select_field::<I::Field, I::Path>();
         Self {
             result: PhantomData,
             column,
@@ -40,10 +38,9 @@ impl<T> FieldDecoder for NoopDecoder<T>
 where
     T: Default,
 {
-    fn new<F, P>(_: &mut QueryContext, _: FieldProxy<F, P>) -> Self
+    fn new<I>(_: &mut QueryContext, _: FieldProxy<I>) -> Self
     where
-        F: Field<Type = Self::Result>,
-        P: Path,
+        I: FieldProxyImpl<Field: Field<Type = Self::Result>>,
     {
         Self(PhantomData)
     }
@@ -93,12 +90,18 @@ macro_rules! new_converting_decoder {
             $($generic: $boundN,)*
             )?)+)?
         {
-            fn new<F, P>(ctx: &mut $crate::internal::query_context::QueryContext, _: $crate::internal::field::FieldProxy<F, P>) -> Self
+            fn new<I>(
+                ctx: &mut $crate::internal::query_context::QueryContext,
+                _: $crate::fields::proxy::FieldProxy<I>
+            ) -> Self
             where
-                F: $crate::internal::field::Field<Type = $result>,
-                P: $crate::internal::relation_path::Path
+                I: $crate::fields::proxy::FieldProxyImpl<
+                    Field: $crate::internal::field::Field<
+                        Type = Self::Result
+                    >,
+                >,
             {
-                let (index, column) = ctx.select_field::<F, P>();
+                let (index, column) = ctx.select_field::<I::Field, I::Path>();
                 Self {
                     column,
                     index,

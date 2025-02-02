@@ -8,14 +8,15 @@ pub use self::aggregate::*;
 pub use self::cmp::*;
 use crate::conditions::Value;
 use crate::crud::decoder::Decoder;
+use crate::fields::proxy;
+use crate::fields::proxy::{FieldProxy, FieldProxyImpl};
 use crate::fields::utils::const_fn::ConstFn;
 use crate::internal::const_concat::ConstString;
 use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::fake_field::FakeField;
-use crate::internal::field::{Field, FieldProxy};
+use crate::internal::field::Field;
 use crate::internal::hmr::annotations::Annotations;
 use crate::internal::query_context::QueryContext;
-use crate::internal::relation_path::Path;
 use crate::sealed;
 
 pub mod aggregate;
@@ -127,14 +128,13 @@ impl<T: FieldType> FieldType for Option<T> {
 /// [`FieldDecoder`] for [`Option<T>`]
 pub struct OptionDecoder<T: FieldType>(T::Decoder);
 impl<T: FieldType> FieldDecoder for OptionDecoder<T> {
-    fn new<F, P>(ctx: &mut QueryContext, _: FieldProxy<F, P>) -> Self
+    fn new<I>(ctx: &mut QueryContext, _: FieldProxy<I>) -> Self
     where
-        F: Field<Type = Self::Result>,
-        P: Path,
+        I: FieldProxyImpl<Field: Field<Type = Self::Result>>,
     {
-        Self(T::Decoder::new::<FakeField<T, F>, P>(
+        Self(T::Decoder::new::<(FakeField<T, I::Field>, I::Path)>(
             ctx,
-            FieldProxy::new(),
+            proxy::new(),
         ))
     }
 }

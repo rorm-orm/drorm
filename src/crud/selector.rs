@@ -6,13 +6,14 @@ use rorm_db::row::DecodeOwned;
 use rorm_db::sql::aggregation::SelectAggregator;
 
 use crate::crud::decoder::{Decoder, DirectDecoder};
+use crate::fields::proxy::{FieldProxy, FieldProxyImpl};
 use crate::fields::traits::FieldType;
 use crate::internal::field::decoder::FieldDecoder;
-use crate::internal::field::{Field, FieldProxy};
+use crate::internal::field::Field;
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::{Path, PathField};
 use crate::model::{Model, PatchSelector};
-use crate::{FieldAccess, Patch};
+use crate::Patch;
 
 /// Something which "selects" a value from a certain table,
 /// by configuring a [`QueryContext`] and providing a [`Decoder`]
@@ -33,26 +34,29 @@ pub trait Selector {
     fn select(self, ctx: &mut QueryContext) -> Self::Decoder;
 }
 
-impl<F, P> Selector for FieldProxy<F, P>
+impl<T, F, P, I> Selector for FieldProxy<I>
 where
+    T: FieldType,
+    F: Field<Type = T>,
     P: Path,
-    F: Field,
+    I: FieldProxyImpl<Field = F, Path = P>,
 {
     type Result = F::Type;
     type Model = P::Origin;
-    type Decoder = <F::Type as FieldType>::Decoder;
+    type Decoder = T::Decoder;
     const INSERT_COMPATIBLE: bool = P::IS_ORIGIN;
 
     fn select(self, ctx: &mut QueryContext) -> Self::Decoder {
-        FieldDecoder::new(ctx, FieldProxy::<F, P>::new())
+        FieldDecoder::new(ctx, self)
     }
 }
 
 #[doc(hidden)]
-impl<F, P> FieldProxy<F, P>
+impl<F, P, I> FieldProxy<I>
 where
     F: Field + PathField<<F as Field>::Type>,
     P: Path<Current = <F::ParentField as Field>::Model>,
+    I: FieldProxyImpl<Field = F, Path = P>,
 {
     pub fn select_as<Ptch>(self) -> PatchSelector<Ptch, P::Step<F>>
     where
@@ -64,19 +68,19 @@ where
 
 /// A column to select and call an aggregation function on
 #[derive(Copy, Clone)]
-pub struct AggregatedColumn<A, R> {
+pub struct AggregatedColumn<I, R> {
     pub(crate) sql: SelectAggregator,
     pub(crate) alias: &'static str,
-    pub(crate) field_access: PhantomData<A>,
+    pub(crate) field: FieldProxy<I>,
     pub(crate) result: PhantomData<R>,
 }
-impl<A, R> Selector for AggregatedColumn<A, R>
+impl<I, R> Selector for AggregatedColumn<I, R>
 where
-    A: FieldAccess,
+    I: FieldProxyImpl,
     R: DecodeOwned,
 {
     type Result = R;
-    type Model = <A::Path as Path>::Origin;
+    type Model = <I::Path as Path>::Origin;
     type Decoder = DirectDecoder<R>;
     const INSERT_COMPATIBLE: bool = false;
 

@@ -7,6 +7,8 @@ use rorm_db::Row;
 use crate::conditions::Value;
 use crate::const_fn;
 use crate::crud::decoder::Decoder;
+use crate::fields::proxy;
+use crate::fields::proxy::FieldProxyImpl;
 use crate::fields::traits::{Array, FieldColumns};
 use crate::fields::types::ForeignModelByField;
 use crate::fields::utils::get_names::single_column_name;
@@ -16,7 +18,6 @@ use crate::internal::field::{Field, FieldProxy, FieldType, SingleColumnField};
 use crate::internal::hmr;
 use crate::internal::hmr::annotations::Annotations;
 use crate::internal::query_context::QueryContext;
-use crate::internal::relation_path::Path;
 use crate::model::Model;
 use crate::{impl_FieldEq, sealed};
 
@@ -130,14 +131,13 @@ where
     FF: SingleColumnField,
     FF::Type: FieldType<Columns = Array<1>>,
 {
-    fn new<F, P>(ctx: &mut QueryContext, _: FieldProxy<F, P>) -> Self
+    fn new<I>(ctx: &mut QueryContext, _: FieldProxy<I>) -> Self
     where
-        F: Field<Type = Self::Result>,
-        P: Path,
+        I: FieldProxyImpl<Field: Field<Type = Self::Result>>,
     {
         Self(FieldDecoder::new(
             ctx,
-            FieldProxy::<FakeField<FF::Type, F>, P>::new(),
+            proxy::new::<(FakeField<FF::Type, I::Field>, I::Path)>(),
         ))
     }
 }

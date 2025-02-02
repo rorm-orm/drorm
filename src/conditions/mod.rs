@@ -14,7 +14,7 @@ mod r#in;
 pub use collections::{DynamicCollection, StaticCollection};
 pub use r#in::{In, InOperator};
 
-use crate::internal::field::access::FieldAccess;
+use crate::fields::proxy::{FieldProxy, FieldProxyImpl};
 use crate::internal::field::Field;
 use crate::internal::query_context::flat_conditions::FlatCondition;
 use crate::internal::query_context::ids::PathId;
@@ -206,14 +206,14 @@ impl<'a> Condition<'a> for Value<'a> {
 
 /// A column name
 #[derive(Copy, Clone)]
-pub struct Column<A: FieldAccess>(pub A);
+pub struct Column<I: FieldProxyImpl>(pub FieldProxy<I>);
 
-impl<'a, A: FieldAccess> Condition<'a> for Column<A> {
+impl<'a, I: FieldProxyImpl> Condition<'a> for Column<I> {
     fn build(&self, context: &mut QueryContext<'a>) {
-        A::Path::add_to_context(context);
+        I::Path::add_to_context(context);
         context.conditions.push(FlatCondition::Column(
-            PathId::of::<A::Path>(),
-            <A::Field as Field>::NAME,
+            PathId::of::<I::Path>(),
+            <I::Field as Field>::NAME,
         ))
     }
 }

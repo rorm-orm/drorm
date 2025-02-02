@@ -317,9 +317,9 @@ fn generate_fields_struct(model: &AnalyzedModel) -> (Ident, TokenStream) {
     let fields_type = model.fields.iter().map(|field| &field.unit);
 
     let mut generics = model.experimental_generics.clone();
-    generics
-        .params
-        .push(GenericParam::Type(syn::parse_quote!(Path: 'static)));
+    generics.params.push(GenericParam::Type(
+        syn::parse_quote!(Path: ::rorm::internal::relation_path::Path),
+    ));
     let (impl_generics_with_path, type_generics_with_path, _) = generics.split_for_impl();
     let (_, type_generics, where_clause) = model.experimental_generics.split_for_impl();
 
@@ -329,13 +329,13 @@ fn generate_fields_struct(model: &AnalyzedModel) -> (Ident, TokenStream) {
         #vis struct #ident #impl_generics_with_path #where_clause {
             #(
                 #[doc = #fields_doc]
-                #fields_vis #fields_ident_1: ::rorm::internal::field::FieldProxy<#fields_type #type_generics, Path>,
+                #fields_vis #fields_ident_1: ::rorm::fields::proxy::FieldProxy<(#fields_type #type_generics, Path)>,
             )*
         }
         impl #impl_generics_with_path ::rorm::model::ConstNew for #ident #type_generics_with_path #where_clause {
             const NEW: Self = Self {
                 #(
-                    #fields_ident_2: ::rorm::internal::field::FieldProxy::new(),
+                    #fields_ident_2: ::rorm::fields::proxy::new(),
                 )*
             };
             const REF: &'static Self = &Self::NEW;

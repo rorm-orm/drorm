@@ -38,19 +38,17 @@
 //! From there the various methods and associated type from [`FieldType`] take over.
 //! TODO more docs
 
-use std::marker::PhantomData;
-use std::mem::ManuallyDrop;
-
 use rorm_db::sql::value::NullType;
 use rorm_declaration::imr;
 
 use crate::conditions::Value;
+use crate::fields::proxy::FieldProxy;
+use crate::fields::proxy::FieldProxyImpl;
 use crate::internal::hmr::annotations::Annotations;
 use crate::internal::hmr::{AsImr, Source};
 use crate::internal::relation_path::{Path, PathField};
 use crate::model::{ConstNew, Model};
 
-pub mod access;
 pub mod as_db_type;
 pub mod decoder;
 pub mod fake_field;
@@ -196,90 +194,6 @@ where
     }
 }
 
-/// This struct acts as a proxy exposing type level information from the [`Field`] trait on the value level.
-///
-/// On top of that it can be used to keep track of the "path" this field is accessed through, when dealing with relations.
-///
-/// ## Type as Value
-/// In other words [`FieldProxy`] allows access to things like [`Field::NAME`] without access to the concrete field type.
-///
-/// Pseudo code for illustration:
-/// ```skip
-/// // The following is a rough sketch of what the #[derive(Model)] will do:
-/// pub struct Id;
-/// impl Field for Id {
-///     ...
-/// }
-///
-/// pub struct Fields {
-///     pub id: FieldProxy<Id>,
-///     ...
-/// }
-///
-/// pub struct User {
-///     pub id: i32,
-/// }
-/// impl Model for User {
-///     type Fields = Fields;
-///     const FIELDS: Self::Fields = Fields {
-///         id: Id,
-///         ...
-///     }
-/// }
-///
-/// // To access Id::NAME from user code, we can't use the Field trait itself,
-/// // because the type Id is not really accessible. (It's been generated from a macro.)
-/// // Also User::FIELDS or User::F should have more of a struct like syntax.
-/// //
-/// // So, the Fields struct holds FieldProxy<Id> instead of Id, which implements simple methods
-/// // forwarding varies data and behaviors from Id:
-///
-/// Id::NAME ~ User::F.id.name()
-/// Id::Index ~ User::F.id.index()
-/// ```
-pub struct FieldProxy<Field, Path>(PhantomData<ManuallyDrop<(Field, Path)>>);
-
-// SAFETY:
-// struct contains no data
-unsafe impl<F, P> Send for FieldProxy<F, P> {}
-unsafe impl<F, P> Sync for FieldProxy<F, P> {}
-
-impl<F: Field, P> FieldProxy<F, P> {
-    /// Create a new instance
-    pub const fn new() -> Self {
-        Self(PhantomData)
-    }
-
-    /// Get the field's position in the Model
-    pub const fn index(_field: fn() -> Self) -> usize {
-        F::INDEX
-    }
-
-    /// Change the path
-    pub const fn through<NewP>(self) -> FieldProxy<F, NewP> {
-        FieldProxy::new()
-    }
-}
-impl<F: Field, P> FieldProxy<F, P> {
-    /// Get the names of the columns which store the field
-    pub const fn columns(_field: Self) -> FieldColumns<F::Type, &'static str> {
-        <<<F::Type as FieldType>::GetNames as ConstFn<_, _>>::Body<(contains::Name<F>,)> as Contains<
-            _,
-        >>::ITEM
-    }
-
-    /// Get the underlying field to call its methods
-    pub fn field(&self) -> F {
-        F::new()
-    }
-}
-impl<Field, Path> Clone for FieldProxy<Field, Path> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-impl<Field, Path> Copy for FieldProxy<Field, Path> {}
-
 /// A field whose proxy should implement [`Deref`](std::ops::Deref) to some collection of fields.
 ///
 /// Depending on the field, this collection might differ in meaning
@@ -291,9 +205,12 @@ pub trait ContainerField<T: FieldType, P: Path>: Field<Type = T> {
     type Target: ConstNew;
 }
 
-impl<T: FieldType, F: Field<Type = T>, P: Path> std::ops::Deref for FieldProxy<F, P>
+impl<I, T, F, P> std::ops::Deref for FieldProxy<I>
 where
-    F: ContainerField<T, P>,
+    T: FieldType,
+    F: Field<Type = T> + ContainerField<T, P>,
+    P: Path,
+    I: FieldProxyImpl<Field = F, Path = P>,
 {
     type Target = F::Target;
 

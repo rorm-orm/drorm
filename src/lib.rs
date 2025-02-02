@@ -9,7 +9,6 @@ compile_error!("You cannot enable postgres-only with other drivers active");
 
 pub use rorm_db::{Database, DatabaseConfiguration, DatabaseDriver, Error, Row};
 
-pub use crate::internal::field::access::FieldAccess;
 pub use crate::model::{Model, Patch};
 
 /// Re-export of [rorm-cli](rorm_cli)
@@ -34,7 +33,6 @@ pub mod prelude {
 
     pub use crate::field;
     pub use crate::fields::types::{BackRef, ForeignModel, ForeignModelByField};
-    pub use crate::internal::field::access::FieldAccess;
     pub use crate::model::{Model, Patch};
 }
 
@@ -96,7 +94,7 @@ macro_rules! get_field {
     ($patch:ty, $field:ident) => {
         <<$patch as $crate::model::Patch>::Model as $crate::model::FieldByIndex<
             {
-                $crate::internal::field::FieldProxy::index(|| {
+                $crate::fields::proxy::index(|| {
                     <<Self as $crate::model::Patch>::Model as $crate::model::Model>::FIELDS.$field
                 })
             },
@@ -111,12 +109,12 @@ macro_rules! get_field {
 macro_rules! field {
     ($model:ident.$field:ident) => {
         <$model as $crate::model::FieldByIndex<
-            { $crate::internal::field::FieldProxy::index(|| $model.$field) },
+            { $crate::fields::proxy::index(|| $model.$field) },
         >>::Field
     };
     ($model:ident::F.$field:ident) => {
         <$model as $crate::model::FieldByIndex<
-            { $crate::internal::field::FieldProxy::index(|| $model::F.$field) },
+            { $crate::fields::proxy::index(|| $model::F.$field) },
         >>::Field
     };
 }

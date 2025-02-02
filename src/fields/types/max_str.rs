@@ -13,6 +13,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::conditions::Value;
 use crate::crud::decoder::Decoder;
+use crate::fields::proxy::{FieldProxy, FieldProxyImpl};
 use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::fields::types::max_str_impl::{LenImpl, NumBytes};
 use crate::fields::utils::check::shared_linter_check;
@@ -21,10 +22,9 @@ use crate::fields::utils::get_annotations::merge_annotations;
 use crate::fields::utils::get_names::single_column_name;
 use crate::impl_FieldEq;
 use crate::internal::field::decoder::FieldDecoder;
-use crate::internal::field::{Field, FieldProxy};
+use crate::internal::field::Field;
 use crate::internal::hmr::annotations::{Annotations, MaxLength};
 use crate::internal::query_context::QueryContext;
-use crate::internal::relation_path::Path;
 
 /// String which is restricted to a maximum length
 ///
@@ -290,12 +290,11 @@ impl<const MAX_LEN: usize, Impl> FieldDecoder for MaxStrDecoder<MAX_LEN, Impl>
 where
     Impl: LenImpl + Default,
 {
-    fn new<F, P>(ctx: &mut QueryContext, _: FieldProxy<F, P>) -> Self
+    fn new<I>(ctx: &mut QueryContext, _: FieldProxy<I>) -> Self
     where
-        F: Field<Type = Self::Result>,
-        P: Path,
+        I: FieldProxyImpl<Field: Field<Type = Self::Result>>,
     {
-        let (index, column) = ctx.select_field::<F, P>();
+        let (index, column) = ctx.select_field::<I::Field, I::Path>();
         Self {
             column,
             index,

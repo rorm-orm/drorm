@@ -8,7 +8,8 @@ use rorm_db::executor::Executor;
 
 use crate::conditions::{Condition, DynamicCollection, Value};
 use crate::crud::selector::Selector;
-use crate::internal::field::{FieldProxy, SingleColumnField};
+use crate::fields::proxy::{FieldProxy, FieldProxyImpl};
+use crate::internal::field::{Field, SingleColumnField};
 use crate::internal::patch::{IntoPatchCow, PatchCow};
 use crate::internal::query_context::QueryContext;
 use crate::model::Identifiable;
@@ -158,19 +159,24 @@ impl<'rf, E, M> UpdateBuilder<'rf, E, M, columns::MaybeEmpty> {
     /// Add a column to update.
     ///
     /// Can be called multiple times.
-    pub fn set<F: SingleColumnField>(mut self, _field: FieldProxy<F, M>, value: F::Type) -> Self {
-        self.columns.push((F::NAME, F::type_into_value(value)));
+    pub fn set<I>(mut self, _field: FieldProxy<I>, value: <I::Field as Field>::Type) -> Self
+    where
+        I: FieldProxyImpl<Field: SingleColumnField, Path = M>,
+    {
+        self.columns.push((
+            <I::Field as Field>::NAME,
+            <I::Field as SingleColumnField>::type_into_value(value),
+        ));
         self
     }
 
     /// Add a column to update if `value` is `Some`
     ///
     /// Can be called multiple times.
-    pub fn set_if<F: SingleColumnField>(
-        self,
-        field: FieldProxy<F, M>,
-        value: Option<F::Type>,
-    ) -> Self {
+    pub fn set_if<I>(self, field: FieldProxy<I>, value: Option<<I::Field as Field>::Type>) -> Self
+    where
+        I: FieldProxyImpl<Field: SingleColumnField, Path = M>,
+    {
         if let Some(value) = value {
             self.set(field, value)
         } else {
@@ -201,12 +207,18 @@ where
     /// Add a column to update.
     ///
     /// Can be called multiple times.
-    pub fn set<F: SingleColumnField>(
+    pub fn set<I>(
         mut self,
-        _field: FieldProxy<F, M>,
-        value: F::Type,
-    ) -> UpdateBuilder<'rf, E, M, columns::NonEmpty> {
-        self.columns.push((F::NAME, F::type_into_value(value)));
+        _field: FieldProxy<I>,
+        value: <I::Field as Field>::Type,
+    ) -> UpdateBuilder<'rf, E, M, columns::NonEmpty>
+    where
+        I: FieldProxyImpl<Field: SingleColumnField, Path = M>,
+    {
+        self.columns.push((
+            <I::Field as Field>::NAME,
+            <I::Field as SingleColumnField>::type_into_value(value),
+        ));
         self.set_column_state()
     }
 }
@@ -218,8 +230,14 @@ where
     /// Add a column to update.
     ///
     /// Can be called multiple times.
-    pub fn set<F: SingleColumnField>(mut self, _field: FieldProxy<F, M>, value: F::Type) -> Self {
-        self.columns.push((F::NAME, F::type_into_value(value)));
+    pub fn set<I>(mut self, _field: FieldProxy<I>, value: <I::Field as Field>::Type) -> Self
+    where
+        I: FieldProxyImpl<Field: SingleColumnField, Path = M>,
+    {
+        self.columns.push((
+            <I::Field as Field>::NAME,
+            <I::Field as SingleColumnField>::type_into_value(value),
+        ));
         self
     }
 }

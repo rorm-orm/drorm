@@ -38,13 +38,14 @@ impl ::rorm::internal::field::Field for __Unregistered_id {
 }
 ///[`Unregistered`]'s [`Fields`](::rorm::model::Model::Fields) struct.
 #[allow(non_camel_case_types)]
-pub struct __Unregistered_Fields_Struct<Path: 'static> {
+pub struct __Unregistered_Fields_Struct<Path: ::rorm::internal::relation_path::Path> {
     ///[`Unregistered`]'s `id` field
-    pub id: ::rorm::internal::field::FieldProxy<__Unregistered_id, Path>,
+    pub id: ::rorm::fields::proxy::FieldProxy<(__Unregistered_id, Path)>,
 }
-impl<Path: 'static> ::rorm::model::ConstNew for __Unregistered_Fields_Struct<Path> {
+impl<Path: ::rorm::internal::relation_path::Path> ::rorm::model::ConstNew
+for __Unregistered_Fields_Struct<Path> {
     const NEW: Self = Self {
-        id: ::rorm::internal::field::FieldProxy::new(),
+        id: ::rorm::fields::proxy::new(),
     };
     const REF: &'static Self = &Self::NEW;
 }
@@ -129,19 +130,23 @@ impl ::rorm::model::Patch for Unregistered {
         __Unregistered_Decoder {
             id: ::rorm::internal::field::decoder::FieldDecoder::new(
                 ctx,
-                <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
-                    .id
-                    .through::<P>(),
+                ::rorm::fields::proxy::through::<
+                    _,
+                    P,
+                >(|| {
+                    <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
+                        .id
+                }),
             ),
         }
     }
     fn push_columns(columns: &mut Vec<&'static str>) {
         columns
             .extend(
-                ::rorm::internal::field::FieldProxy::columns(
+                ::rorm::fields::proxy::columns(|| {
                     <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
-                        .id,
-                ),
+                        .id
+                }),
             );
     }
     fn push_references<'a>(&'a self, values: &mut Vec<::rorm::conditions::Value<'a>>) {

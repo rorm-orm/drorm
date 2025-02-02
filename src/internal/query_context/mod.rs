@@ -10,11 +10,12 @@ use rorm_db::sql::ordering::Ordering;
 
 use crate::conditions::{BinaryOperator, Condition, Value};
 use crate::crud::selector::AggregatedColumn;
+use crate::fields::proxy::FieldProxyImpl;
 use crate::internal::field::Field;
 use crate::internal::query_context::flat_conditions::{FlatCondition, GetConditionError};
 use crate::internal::query_context::ids::PathId;
 use crate::internal::relation_path::{Path, PathField};
-use crate::{FieldAccess, Model};
+use crate::Model;
 
 pub mod flat_conditions;
 pub mod ids;
@@ -52,15 +53,15 @@ impl<'v> QueryContext<'v> {
     }
 
     /// Add a field to aggregate returning its index and alias
-    pub fn select_aggregation<A: FieldAccess, R>(
+    pub fn select_aggregation<I: FieldProxyImpl, R>(
         &mut self,
-        column: AggregatedColumn<A, R>,
+        column: AggregatedColumn<I, R>,
     ) -> (usize, String) {
-        A::Path::add_to_context(self);
+        I::Path::add_to_context(self);
         let alias = format!("{}", NumberAsAZ(self.selects.len()));
         self.selects.push(Select {
-            table_name: PathId::of::<A::Path>(),
-            column_name: A::Field::NAME,
+            table_name: PathId::of::<I::Path>(),
+            column_name: I::Field::NAME,
             select_alias: alias.clone(),
             aggregation: Some(column.sql),
         });

@@ -12,12 +12,14 @@ use crate::conditions::collections::CollectionOperator::Or;
 use crate::conditions::{Binary, BinaryOperator, Column, Condition, DynamicCollection, Value};
 use crate::crud::decoder::NoopDecoder;
 use crate::crud::query::query;
+use crate::fields::proxy;
+use crate::fields::proxy::FieldProxy;
 use crate::fields::traits::{Array, FieldColumns, FieldType};
 use crate::fields::utils::check::disallow_annotations_check;
 use crate::fields::utils::get_annotations::forward_annotations;
 use crate::fields::utils::get_names::no_columns_names;
 use crate::internal::field::foreign_model::{ForeignModelField, ForeignModelTrait};
-use crate::internal::field::{foreign_model, Field, FieldProxy, SingleColumnField};
+use crate::internal::field::{foreign_model, Field, SingleColumnField};
 use crate::model::GetField;
 #[allow(unused_imports)] // clion needs this import to access Patch::field on a Model
 use crate::Patch;
@@ -64,7 +66,7 @@ impl<FMF: ForeignModelField> FieldType for BackRef<FMF> {
     type GetNames = no_columns_names;
 }
 
-impl<BRF, FMF> FieldProxy<BRF, BRF::Model>
+impl<BRF, FMF> FieldProxy<(BRF, BRF::Model)>
 where
     BRF: Field<Type = BackRef<FMF>>,
 
@@ -80,7 +82,7 @@ where
     {
         Binary {
             operator: BinaryOperator::Equals,
-            fst_arg: Column(FieldProxy::<FMF, FMF::Model>::new()),
+            fst_arg: Column(proxy::new::<(FMF, FMF::Model)>()),
             snd_arg: foreign_model::RF::<FMF>::type_as_value(patch.borrow_field()),
         }
     }

@@ -49,7 +49,6 @@ use crate::internal::hmr::{AsImr, Source};
 use crate::internal::relation_path::{Path, PathField};
 use crate::model::{ConstNew, Model};
 
-pub mod as_db_type;
 pub mod decoder;
 pub mod fake_field;
 pub mod foreign_model;

@@ -1,3 +1,5 @@
+//! [`FieldProxy`] and some utility functions which are used by rorm's various macros
+
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 

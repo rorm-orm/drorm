@@ -13,7 +13,7 @@ use crate::{sealed, Model};
 ///
 /// They represent the "path" a field is access through:
 /// ```
-/// # use rorm::internal::field::FieldProxy;
+/// # use rorm::fields::proxy::FieldProxy;
 /// # use rorm::prelude::*;
 /// # #[derive(Model)]
 /// # struct Group {
@@ -35,15 +35,15 @@ use crate::{sealed, Model};
 /// #     user: ForeignModel<User>,
 /// # }
 /// // Direct access
-/// let _: FieldProxy<__Group_name, Group>
+/// let _: FieldProxy<(__Group_name, Group)>
 ///     = Group.name;
 ///
 /// // Access through a single relation
-/// let _: FieldProxy<__Group_name, (__User_group, User)>
+/// let _: FieldProxy<(__Group_name, (__User_group, User))>
 ///     = User.group.name;
 ///
 /// // Access through two relation steps
-/// let _: FieldProxy<__Group_name, (__User_group, (__Comment_user, Comment))>
+/// let _: FieldProxy<(__Group_name, (__User_group, (__Comment_user, Comment)))>
 ///     = Comment.user.group.name;
 /// ```
 ///

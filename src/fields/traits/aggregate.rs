@@ -1,21 +1,21 @@
 //! Marker traits which can be implemented on a [`FieldType`] to allow the usage of various aggregation functions.
 //!
 //! ## Using
-//! The traits don't prodived any methods. Instead use the corresponding method on [`FieldAccess`].
+//! The traits don't prodived any methods. Instead use the corresponding method on [`FieldProxy`].
 
 use rorm_db::row::DecodeOwned;
 
-use crate::fields::traits::{Array, FieldType};
 #[cfg(doc)]
-use crate::FieldAccess;
+use crate::fields::proxy::FieldProxy;
+use crate::fields::traits::{Array, FieldType};
 
-/// Marker for [`FieldAccess::count`]
+/// Marker for [`FieldProxy::count`]
 ///
 /// This is implemented for every [`SingleColumnFieldType`]
 pub trait FieldCount: FieldType {}
 impl<T> FieldCount for T where T: FieldType<Columns = Array<1>> {}
 
-/// Marker for [`FieldAccess::sum`]
+/// Marker for [`FieldProxy::sum`]
 pub trait FieldSum: FieldType<Columns = Array<1>> {
     /// The aggregation result's type
     ///
@@ -24,10 +24,10 @@ pub trait FieldSum: FieldType<Columns = Array<1>> {
     type Result: DecodeOwned;
 }
 
-/// Marker for [`FieldAccess::avg`]
+/// Marker for [`FieldProxy::avg`]
 pub trait FieldAvg: FieldType<Columns = Array<1>> {}
 
-/// Marker for [`FieldAccess::max`]
+/// Marker for [`FieldProxy::max`]
 pub trait FieldMax: FieldType<Columns = Array<1>> {
     /// The aggregation result's type
     ///
@@ -36,7 +36,7 @@ pub trait FieldMax: FieldType<Columns = Array<1>> {
     type Result: DecodeOwned;
 }
 
-/// Marker for [`FieldAccess::min`]
+/// Marker for [`FieldProxy::min`]
 pub trait FieldMin: FieldType<Columns = Array<1>> {
     /// The aggregation result's type
     ///

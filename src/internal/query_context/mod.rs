@@ -218,11 +218,10 @@ impl<'v> QueryContext<'v> {
     /// **Use [`Path::add_to_context`], this method is its impl detail!**
     ///
     /// Add the origin model to the builder
-    pub(crate) fn add_origin_path<M: Model>(&mut self) -> &'static str {
+    pub(crate) fn add_origin_path<M: Model>(&mut self) {
         self.join_aliases
             .entry(PathId::of::<M>())
             .or_insert_with(|| M::TABLE.to_string());
-        M::TABLE
     }
 
     /// **Use [`Path::add_to_context`], this method is its impl detail!**
@@ -230,7 +229,7 @@ impl<'v> QueryContext<'v> {
     /// Recursively add a relation path to the builder
     ///
     /// The generic parameters are the parameters defining the outer most [PathStep].
-    pub(crate) fn add_relation_path<F, P>(&mut self) -> &str
+    pub(crate) fn add_relation_path<F, P>(&mut self)
     where
         F: Field + PathField<<F as Field>::Type>,
         P: Path<Current = <F::ParentField as Field>::Model>,
@@ -253,7 +252,6 @@ impl<'v> QueryContext<'v> {
                 FlatCondition::Column(PathId::of::<P>(), <F as PathField<_>>::ParentField::NAME),
             ]);
         }
-        self.join_aliases.get(&path_id).unwrap()
     }
 }
 

@@ -80,7 +80,7 @@ pub trait Path: 'static {
     //    SubPath: Path<Origin = Self::Current>;
 
     /// Add all joins required to use this path to the query context
-    fn add_to_context<'ctx>(context: &'ctx mut QueryContext) -> &'ctx str;
+    fn add_to_context(context: &mut QueryContext);
 }
 
 /// A field representing a db relation which can be used to construct paths.
@@ -125,8 +125,8 @@ impl<M: Model> Path for M {
         F: Field + PathField<<F as Field>::Type>,
         F::ParentField: Field<Model = Self::Current>;
 
-    fn add_to_context<'ctx>(context: &'ctx mut QueryContext) -> &'ctx str {
-        context.add_origin_path::<Self>()
+    fn add_to_context(context: &mut QueryContext) {
+        context.add_origin_path::<Self>();
     }
 }
 
@@ -147,8 +147,8 @@ where
         F2: Field + PathField<<F2 as Field>::Type>,
         F2::ParentField: Field<Model = Self::Current>;
 
-    fn add_to_context<'ctx>(context: &'ctx mut QueryContext) -> &'ctx str {
-        context.add_relation_path::<F, P>()
+    fn add_to_context(context: &mut QueryContext) {
+        context.add_relation_path::<F, P>();
     }
 }
 

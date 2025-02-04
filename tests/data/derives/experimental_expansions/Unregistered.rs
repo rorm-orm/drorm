@@ -93,7 +93,9 @@ impl ::rorm::crud::selector::Selector for __Unregistered_ValueSpaceImpl {
         self,
         ctx: &mut ::rorm::internal::query_context::QueryContext,
     ) -> Self::Decoder {
-        <Unregistered as ::rorm::model::Patch>::select::<Unregistered>(ctx)
+        __Unregistered_Decoder {
+            id: <Unregistered as ::rorm::model::Model>::FIELDS.id.select(&mut *ctx),
+        }
     }
 }
 impl ::std::default::Default for __Unregistered_ValueSpaceImpl {
@@ -124,22 +126,6 @@ impl ::rorm::model::Patch for Unregistered {
     type Model = Unregistered;
     type ValueSpaceImpl = __Unregistered_ValueSpaceImpl;
     type Decoder = __Unregistered_Decoder;
-    fn select<P: ::rorm::internal::relation_path::Path>(
-        ctx: &mut ::rorm::internal::query_context::QueryContext,
-    ) -> Self::Decoder {
-        __Unregistered_Decoder {
-            id: ::rorm::internal::field::decoder::FieldDecoder::new(
-                ctx,
-                ::rorm::fields::proxy::through::<
-                    _,
-                    P,
-                >(|| {
-                    <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
-                        .id
-                }),
-            ),
-        }
-    }
     fn push_columns(columns: &mut Vec<&'static str>) {
         columns
             .extend(

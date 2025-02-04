@@ -17,7 +17,7 @@ impl ::rorm::crud::selector::Selector for __BasicPatch_ValueSpaceImpl {
         self,
         ctx: &mut ::rorm::internal::query_context::QueryContext,
     ) -> Self::Decoder {
-        <BasicPatch as ::rorm::model::Patch>::select::<BasicModel>(ctx)
+        __BasicPatch_Decoder {}
     }
 }
 impl ::std::default::Default for __BasicPatch_ValueSpaceImpl {
@@ -44,11 +44,6 @@ impl ::rorm::model::Patch for BasicPatch {
     type Model = BasicModel;
     type ValueSpaceImpl = __BasicPatch_ValueSpaceImpl;
     type Decoder = __BasicPatch_Decoder;
-    fn select<P: ::rorm::internal::relation_path::Path>(
-        ctx: &mut ::rorm::internal::query_context::QueryContext,
-    ) -> Self::Decoder {
-        __BasicPatch_Decoder {}
-    }
     fn push_columns(columns: &mut Vec<&'static str>) {}
     fn push_references<'a>(&'a self, values: &mut Vec<::rorm::conditions::Value<'a>>) {}
     fn push_values(self, values: &mut Vec<::rorm::conditions::Value>) {}

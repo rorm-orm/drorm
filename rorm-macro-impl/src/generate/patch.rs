@@ -99,7 +99,9 @@ pub fn partially_generate_patch<'a>(
             type Decoder = #decoder #type_generics;
             const INSERT_COMPATIBLE: bool = true;
             fn select(self, ctx: &mut ::rorm::internal::query_context::QueryContext) -> Self::Decoder {
-                <#patch #type_generics as ::rorm::model::Patch>::select::<#model #type_generics>(ctx)
+                #decoder {#(
+                    #fields_4: <#model #type_generics as ::rorm::model::Model>::FIELDS.#fields_4.select(&mut *ctx),
+                )*}
             }
         }
 
@@ -131,17 +133,6 @@ pub fn partially_generate_patch<'a>(
             type ValueSpaceImpl = #value_space_impl #type_generics;
 
             type Decoder = #decoder #type_generics;
-
-            fn select<P: ::rorm::internal::relation_path::Path>(ctx: &mut ::rorm::internal::query_context::QueryContext) -> Self::Decoder {
-                #decoder {#(
-                    #fields_4: ::rorm::internal::field::decoder::FieldDecoder::new(
-                        ctx,
-                        ::rorm::fields::proxy::through::<_, P>(
-                            || <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS.#fields_4
-                        ),
-                    ),
-                )*}
-            }
 
             fn push_columns(columns: &mut Vec<&'static str>) {#(
                 columns.extend(

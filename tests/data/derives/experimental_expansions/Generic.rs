@@ -150,7 +150,10 @@ for __Generic_ValueSpaceImpl<X> {
         self,
         ctx: &mut ::rorm::internal::query_context::QueryContext,
     ) -> Self::Decoder {
-        <Generic<X> as ::rorm::model::Patch>::select::<Generic<X>>(ctx)
+        __Generic_Decoder {
+            id: <Generic<X> as ::rorm::model::Model>::FIELDS.id.select(&mut *ctx),
+            x: <Generic<X> as ::rorm::model::Model>::FIELDS.x.select(&mut *ctx),
+        }
     }
 }
 impl<X: rorm::fields::traits::FieldType> ::std::default::Default
@@ -185,32 +188,6 @@ impl<X: rorm::fields::traits::FieldType> ::rorm::model::Patch for Generic<X> {
     type Model = Generic<X>;
     type ValueSpaceImpl = __Generic_ValueSpaceImpl<X>;
     type Decoder = __Generic_Decoder<X>;
-    fn select<P: ::rorm::internal::relation_path::Path>(
-        ctx: &mut ::rorm::internal::query_context::QueryContext,
-    ) -> Self::Decoder {
-        __Generic_Decoder {
-            id: ::rorm::internal::field::decoder::FieldDecoder::new(
-                ctx,
-                ::rorm::fields::proxy::through::<
-                    _,
-                    P,
-                >(|| {
-                    <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
-                        .id
-                }),
-            ),
-            x: ::rorm::internal::field::decoder::FieldDecoder::new(
-                ctx,
-                ::rorm::fields::proxy::through::<
-                    _,
-                    P,
-                >(|| {
-                    <<Self as ::rorm::model::Patch>::Model as ::rorm::model::Model>::FIELDS
-                        .x
-                }),
-            ),
-        }
-    }
     fn push_columns(columns: &mut Vec<&'static str>) {
         columns
             .extend(

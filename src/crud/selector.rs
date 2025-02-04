@@ -11,9 +11,8 @@ use crate::fields::traits::FieldType;
 use crate::internal::field::decoder::FieldDecoder;
 use crate::internal::field::Field;
 use crate::internal::query_context::QueryContext;
-use crate::internal::relation_path::{Path, PathField};
-use crate::model::{Model, PatchSelector};
-use crate::Patch;
+use crate::internal::relation_path::Path;
+use crate::model::Model;
 
 /// Something which "selects" a value from a certain table,
 /// by configuring a [`QueryContext`] and providing a [`Decoder`]
@@ -34,6 +33,29 @@ pub trait Selector {
     fn select(self, ctx: &mut QueryContext) -> Self::Decoder;
 }
 
+/// Combinator which wraps a selector to apply a path to it.
+pub struct PathedSelector<S, P> {
+    /// The wrapped selector
+    pub selector: S,
+    pub(crate) path: PhantomData<P>,
+}
+
+impl<S, P> Selector for PathedSelector<S, P>
+where
+    S: Selector,
+    P: Path<Current = S::Model>,
+{
+    type Result = S::Result;
+    type Model = P::Origin;
+    type Decoder = S::Decoder;
+    const INSERT_COMPATIBLE: bool = P::IS_ORIGIN && S::INSERT_COMPATIBLE;
+
+    fn select(self, ctx: &mut QueryContext) -> Self::Decoder {
+        let mut ctx = ctx.with_base_path::<P>();
+        self.selector.select(&mut *ctx)
+    }
+}
+
 impl<T, F, P, I> Selector for FieldProxy<I>
 where
     T: FieldType,
@@ -48,21 +70,6 @@ where
 
     fn select(self, ctx: &mut QueryContext) -> Self::Decoder {
         FieldDecoder::new(ctx, self)
-    }
-}
-
-#[doc(hidden)]
-impl<F, P, I> FieldProxy<I>
-where
-    F: Field + PathField<<F as Field>::Type>,
-    P: Path<Current = <F::ParentField as Field>::Model>,
-    I: FieldProxyImpl<Field = F, Path = P>,
-{
-    pub fn select_as<Ptch>(self) -> PatchSelector<Ptch, P::Step<F>>
-    where
-        Ptch: Patch<Model = <F::ChildField as Field>::Model>,
-    {
-        PatchSelector::new()
     }
 }
 

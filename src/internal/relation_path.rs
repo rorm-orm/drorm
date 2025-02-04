@@ -1,5 +1,8 @@
 //! Implicit join prototypes
 
+use std::fmt;
+
+use crate::internal::djb2;
 use crate::internal::field::foreign_model::{ForeignModelField, ForeignModelTrait};
 use crate::internal::field::{Field, SingleColumnField};
 use crate::internal::query_context::QueryContext;
@@ -54,6 +57,9 @@ use crate::{sealed, Model};
 pub trait Path: 'static {
     sealed!(trait);
 
+    /// Unique identifier for the path
+    const ID: PathId;
+
     /// The model this path originates from
     ///
     /// (In the context of sql,
@@ -81,6 +87,45 @@ pub trait Path: 'static {
 
     /// Add all joins required to use this path to the query context
     fn add_to_context(context: &mut QueryContext);
+
+    /// Compute the id for the path where `Self` was appended to some `base_path`.
+    ///
+    /// The caller is responsible for ensuring the join to be valid.
+    /// Failing to do so can lead to weird and hard to troubleshoot bugs in rorm's internals.
+    fn join_ids(base_path: PathId) -> PathId;
+}
+
+/// A unique identifier of a [`Path`]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct PathId {
+    hasher: djb2::Hasher,
+}
+impl PathId {
+    /// Construct the `PathId` for an origin
+    pub const fn new_origin<M: Model>() -> Self {
+        let mut hasher = djb2::Hasher::new();
+        hasher.write(M::TABLE.as_bytes());
+        Self { hasher }
+    }
+
+    /// Add a step to the path id
+    ///
+    /// The caller is responsible for ensuring the step to be valid.
+    /// Failing to do so can lead to weird and hard to troubleshoot bugs in rorm's internals.
+    pub const fn add_step<F: Field>(mut self) -> Self {
+        // Trick borrowed from std:
+        // Separate strings are joined with a single byte which can't occur in utf-8.
+        self.hasher.write(b"\xFF");
+
+        self.hasher.write(F::NAME.as_bytes());
+        self
+    }
+}
+
+impl fmt::Debug for PathId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "PathId({:#018x})", self.hasher.0)
+    }
 }
 
 /// A field representing a db relation which can be used to construct paths.
@@ -112,6 +157,7 @@ pub trait PathField<FieldType>: Field {
 
 impl<M: Model> Path for M {
     sealed!(impl);
+    const ID: PathId = PathId::new_origin::<M>();
 
     type Origin = M;
 
@@ -125,8 +171,14 @@ impl<M: Model> Path for M {
         F: Field + PathField<<F as Field>::Type>,
         F::ParentField: Field<Model = Self::Current>;
 
+    #[inline(always)]
     fn add_to_context(context: &mut QueryContext) {
         context.add_origin_path::<Self>();
+    }
+
+    #[inline(always)]
+    fn join_ids(base_path: PathId) -> PathId {
+        base_path
     }
 }
 
@@ -136,6 +188,8 @@ where
     P: Path<Current = <F::ParentField as Field>::Model>,
 {
     sealed!(impl);
+
+    const ID: PathId = P::ID.add_step::<F>();
 
     type Origin = P::Origin;
 
@@ -147,8 +201,14 @@ where
         F2: Field + PathField<<F2 as Field>::Type>,
         F2::ParentField: Field<Model = Self::Current>;
 
+    #[inline(always)]
     fn add_to_context(context: &mut QueryContext) {
         context.add_relation_path::<F, P>();
+    }
+
+    #[inline(always)]
+    fn join_ids(base_path: PathId) -> PathId {
+        P::join_ids(base_path).add_step::<F>()
     }
 }
 

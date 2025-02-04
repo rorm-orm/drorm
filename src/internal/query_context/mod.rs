@@ -13,12 +13,10 @@ use crate::crud::selector::AggregatedColumn;
 use crate::fields::proxy::FieldProxyImpl;
 use crate::internal::field::Field;
 use crate::internal::query_context::flat_conditions::{FlatCondition, GetConditionError};
-use crate::internal::query_context::ids::PathId;
-use crate::internal::relation_path::{Path, PathField};
+use crate::internal::relation_path::{Path, PathField, PathId};
 use crate::Model;
 
 pub mod flat_conditions;
-pub mod ids;
 
 /// Context for creating queries.
 ///
@@ -44,7 +42,7 @@ impl<'v> QueryContext<'v> {
         P::add_to_context(self);
         let alias = format!("{}", NumberAsAZ(self.selects.len()));
         self.selects.push(Select {
-            table_name: PathId::of::<P>(),
+            table_name: P::ID,
             column_name: F::NAME,
             select_alias: alias.clone(),
             aggregation: None,
@@ -60,7 +58,7 @@ impl<'v> QueryContext<'v> {
         I::Path::add_to_context(self);
         let alias = format!("{}", NumberAsAZ(self.selects.len()));
         self.selects.push(Select {
-            table_name: PathId::of::<I::Path>(),
+            table_name: I::Path::ID,
             column_name: I::Field::NAME,
             select_alias: alias.clone(),
             aggregation: Some(column.sql),
@@ -83,7 +81,7 @@ impl<'v> QueryContext<'v> {
         P::add_to_context(self);
         self.order_bys.push(OrderBy {
             column_name: F::NAME,
-            table_name: PathId::of::<P>(),
+            table_name: P::ID,
             ordering,
         })
     }
@@ -220,7 +218,7 @@ impl<'v> QueryContext<'v> {
     /// Add the origin model to the builder
     pub(crate) fn add_origin_path<M: Model>(&mut self) {
         self.join_aliases
-            .entry(PathId::of::<M>())
+            .entry(M::ID)
             .or_insert_with(|| M::TABLE.to_string());
     }
 
@@ -234,7 +232,7 @@ impl<'v> QueryContext<'v> {
         F: Field + PathField<<F as Field>::Type>,
         P: Path<Current = <F::ParentField as Field>::Model>,
     {
-        let path_id = PathId::of::<P::Step<F>>();
+        let path_id = <P::Step<F>>::ID;
         if !self.join_aliases.contains_key(&path_id) {
             P::add_to_context(self);
             let alias = format!("{}", NumberAsAZ(self.join_aliases.len()));
@@ -249,7 +247,7 @@ impl<'v> QueryContext<'v> {
             self.conditions.extend([
                 FlatCondition::BinaryCondition(BinaryOperator::Equals),
                 FlatCondition::Column(path_id, <F as PathField<_>>::ChildField::NAME),
-                FlatCondition::Column(PathId::of::<P>(), <F as PathField<_>>::ParentField::NAME),
+                FlatCondition::Column(P::ID, <F as PathField<_>>::ParentField::NAME),
             ]);
         }
     }

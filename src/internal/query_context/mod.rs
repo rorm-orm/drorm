@@ -4,6 +4,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Write;
+use std::ops::{Deref, DerefMut};
 
 use rorm_db::sql::join_table::JoinType;
 use rorm_db::sql::ordering::Ordering;
@@ -24,6 +25,8 @@ pub mod flat_conditions;
 /// This struct owns all the implicit data required to query something i.e. join and alias information.
 #[derive(Debug, Default)]
 pub struct QueryContext<'v> {
+    base_path: Option<PathId>,
+
     join_aliases: HashMap<PathId, String>,
     selects: Vec<Select>,
     joins: Vec<Join>,
@@ -39,10 +42,10 @@ impl<'v> QueryContext<'v> {
 
     /// Add a field to select returning its index and alias
     pub fn select_field<F: Field, P: Path>(&mut self) -> (usize, String) {
-        P::add_to_context(self);
+        let path_id = P::add_to_context(self);
         let alias = format!("{}", NumberAsAZ(self.selects.len()));
         self.selects.push(Select {
-            table_name: P::ID,
+            table_name: path_id,
             column_name: F::NAME,
             select_alias: alias.clone(),
             aggregation: None,
@@ -55,10 +58,10 @@ impl<'v> QueryContext<'v> {
         &mut self,
         column: AggregatedColumn<I, R>,
     ) -> (usize, String) {
-        I::Path::add_to_context(self);
+        let path_id = I::Path::add_to_context(self);
         let alias = format!("{}", NumberAsAZ(self.selects.len()));
         self.selects.push(Select {
-            table_name: I::Path::ID,
+            table_name: path_id,
             column_name: I::Field::NAME,
             select_alias: alias.clone(),
             aggregation: Some(column.sql),
@@ -78,10 +81,10 @@ impl<'v> QueryContext<'v> {
 
     /// Add a field to order by
     pub fn order_by_field<F: Field, P: Path>(&mut self, ordering: Ordering) {
-        P::add_to_context(self);
+        let path_id = P::add_to_context(self);
         self.order_bys.push(OrderBy {
             column_name: F::NAME,
-            table_name: P::ID,
+            table_name: path_id,
             ordering,
         })
     }
@@ -211,15 +214,93 @@ impl<'v> QueryContext<'v> {
         }
         Some(returning)
     }
+
+    /// Creates a temporary scope in which every path used will be implicitly appended to a base path `P`.
+    ///
+    /// The caller is responsible for ensuring those joins to be valid.
+    /// Failing to do so can lead to weird and hard to troubleshoot bugs in rorm's internals.
+    /// Similarly, the `QueryContext` may not be used until the guard returned by this method is dropped.
+    ///
+    /// ```
+    /// # use rorm::fields::proxy::{FieldProxy, FieldProxyImpl};
+    /// # use rorm::internal::query_context::QueryContext;
+    /// # use rorm::internal::relation_path::{PathId, Path};
+    /// # use rorm::prelude::*;
+    /// # #[derive(Model)]
+    /// # struct Group {
+    /// #     #[rorm(id)]
+    /// #     id: i64,
+    /// #     #[rorm(max_length = 255)]
+    /// #     name: String,
+    /// # }
+    /// # #[derive(Model)]
+    /// # struct User {
+    /// #     #[rorm(id)]
+    /// #     id: i64,
+    /// #     group: ForeignModel<Group>,
+    /// # }
+    /// # #[derive(Model)]
+    /// # struct Comment {
+    /// #     #[rorm(id)]
+    /// #     id: i64,
+    /// #     user: ForeignModel<User>,
+    /// # }
+    /// use rorm::crud::selector::Selector;
+    ///
+    /// let mut ctx = QueryContext::new();
+    /// Comment.user.group.id.select(&mut ctx);
+    /// {
+    ///     let mut ctx = ctx.with_base_path::<(__Comment_user, Comment)>();
+    ///     User.group.name.select(&mut *ctx);
+    /// }
+    /// let selects = ctx.get_selects();
+    /// assert_eq!(selects[0].table_name, selects[1].table_name);
+    /// ```
+    pub fn with_base_path<'ctx, P: Path>(&'ctx mut self) -> WithBasePath<'ctx, 'v> {
+        let prev_base_path = self.base_path;
+        self.base_path = Some(P::add_to_context(self));
+        WithBasePath {
+            ctx: self,
+            prev_base_path,
+        }
+    }
 }
+/// Guard like wrapper for `QueryContext` returned by [`QueryContext::with_base_path`]
+pub struct WithBasePath<'ctx, 'v> {
+    ctx: &'ctx mut QueryContext<'v>,
+    prev_base_path: Option<PathId>,
+}
+impl<'ctx, 'v> Drop for WithBasePath<'ctx, 'v> {
+    fn drop(&mut self) {
+        self.ctx.base_path = self.prev_base_path;
+    }
+}
+impl<'ctx, 'v> Deref for WithBasePath<'ctx, 'v> {
+    type Target = QueryContext<'v>;
+
+    fn deref(&self) -> &Self::Target {
+        &*self.ctx
+    }
+}
+impl<'ctx, 'v> DerefMut for WithBasePath<'ctx, 'v> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut *self.ctx
+    }
+}
+
 impl<'v> QueryContext<'v> {
     /// **Use [`Path::add_to_context`], this method is its impl detail!**
     ///
     /// Add the origin model to the builder
-    pub(crate) fn add_origin_path<M: Model>(&mut self) {
-        self.join_aliases
-            .entry(M::ID)
-            .or_insert_with(|| M::TABLE.to_string());
+    pub(crate) fn add_origin_path<M: Model>(&mut self) -> PathId {
+        if let Some(base_path) = self.base_path {
+            base_path
+        } else {
+            self.join_aliases
+                .entry(M::ID)
+                .or_insert_with(|| M::TABLE.to_string());
+            M::ID
+        }
     }
 
     /// **Use [`Path::add_to_context`], this method is its impl detail!**
@@ -227,14 +308,18 @@ impl<'v> QueryContext<'v> {
     /// Recursively add a relation path to the builder
     ///
     /// The generic parameters are the parameters defining the outer most [PathStep].
-    pub(crate) fn add_relation_path<F, P>(&mut self)
+    pub(crate) fn add_relation_path<F, P>(&mut self) -> PathId
     where
         F: Field + PathField<<F as Field>::Type>,
         P: Path<Current = <F::ParentField as Field>::Model>,
     {
-        let path_id = <P::Step<F>>::ID;
+        let path_id = if let Some(base_path) = self.base_path {
+            <P::Step<F>>::append_to_id(base_path)
+        } else {
+            <P::Step<F>>::ID
+        };
         if !self.join_aliases.contains_key(&path_id) {
-            P::add_to_context(self);
+            let parent_id = P::add_to_context(self);
             let alias = format!("{}", NumberAsAZ(self.join_aliases.len()));
             self.join_aliases.insert(path_id, alias);
             self.joins.push({
@@ -247,9 +332,10 @@ impl<'v> QueryContext<'v> {
             self.conditions.extend([
                 FlatCondition::BinaryCondition(BinaryOperator::Equals),
                 FlatCondition::Column(path_id, <F as PathField<_>>::ChildField::NAME),
-                FlatCondition::Column(P::ID, <F as PathField<_>>::ParentField::NAME),
+                FlatCondition::Column(parent_id, <F as PathField<_>>::ParentField::NAME),
             ]);
         }
+        path_id
     }
 }
 

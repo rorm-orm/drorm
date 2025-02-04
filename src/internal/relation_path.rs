@@ -86,7 +86,10 @@ pub trait Path: 'static {
     //    SubPath: Path<Origin = Self::Current>;
 
     /// Add all joins required to use this path to the query context
-    fn add_to_context(context: &mut QueryContext);
+    ///
+    /// The returned `PathId` is the id the path was actually added as.
+    /// It might differ from `Self::ID`, see [`QueryContext::with_base_path`].
+    fn add_to_context(context: &mut QueryContext) -> PathId;
 
     /// Compute the id for the path where `Self` was appended to some `base_path`.
     ///
@@ -207,8 +210,8 @@ impl<M: Model> Path for M {
         F::ParentField: Field<Model = Self::Current>;
 
     #[inline(always)]
-    fn add_to_context(context: &mut QueryContext) {
-        context.add_origin_path::<Self>();
+    fn add_to_context(context: &mut QueryContext) -> PathId {
+        context.add_origin_path::<Self>()
     }
 
     #[inline(always)]
@@ -237,8 +240,8 @@ where
         F2::ParentField: Field<Model = Self::Current>;
 
     #[inline(always)]
-    fn add_to_context(context: &mut QueryContext) {
-        context.add_relation_path::<F, P>();
+    fn add_to_context(context: &mut QueryContext) -> PathId {
+        context.add_relation_path::<F, P>()
     }
 
     #[inline(always)]

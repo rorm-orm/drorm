@@ -92,7 +92,42 @@ pub trait Path: 'static {
     ///
     /// The caller is responsible for ensuring the join to be valid.
     /// Failing to do so can lead to weird and hard to troubleshoot bugs in rorm's internals.
-    fn join_ids(base_path: PathId) -> PathId;
+    ///
+    /// ```
+    /// # use rorm::fields::proxy::{FieldProxy, FieldProxyImpl};
+    /// # use rorm::internal::relation_path::{PathId, Path};
+    /// # use rorm::prelude::*;
+    /// # #[derive(Model)]
+    /// # struct Group {
+    /// #     #[rorm(id)]
+    /// #     id: i64,
+    /// #     #[rorm(max_length = 255)]
+    /// #     name: String,
+    /// # }
+    /// # #[derive(Model)]
+    /// # struct User {
+    /// #     #[rorm(id)]
+    /// #     id: i64,
+    /// #     group: ForeignModel<Group>,
+    /// # }
+    /// # #[derive(Model)]
+    /// # struct Comment {
+    /// #     #[rorm(id)]
+    /// #     id: i64,
+    /// #     user: ForeignModel<User>,
+    /// # }
+    /// fn get_id<I: FieldProxyImpl>(_: FieldProxy<I>) -> PathId {
+    ///     I::Path::ID
+    /// }
+    /// fn join_ids<I: FieldProxyImpl>(parent: PathId, _child: FieldProxy<I>) -> PathId {
+    ///     I::Path::append_to_id(parent)
+    /// }
+    ///
+    /// let comment_to_user = get_id(Comment.user.id);
+    /// let comment_to_group = get_id(Comment.user.group.id);
+    /// assert_eq!(join_ids(comment_to_user, User.group.id), comment_to_group);
+    /// ```
+    fn append_to_id(base_path: PathId) -> PathId;
 }
 
 /// A unique identifier of a [`Path`]
@@ -177,7 +212,7 @@ impl<M: Model> Path for M {
     }
 
     #[inline(always)]
-    fn join_ids(base_path: PathId) -> PathId {
+    fn append_to_id(base_path: PathId) -> PathId {
         base_path
     }
 }
@@ -207,8 +242,8 @@ where
     }
 
     #[inline(always)]
-    fn join_ids(base_path: PathId) -> PathId {
-        P::join_ids(base_path).add_step::<F>()
+    fn append_to_id(base_path: PathId) -> PathId {
+        P::append_to_id(base_path).add_step::<F>()
     }
 }
 

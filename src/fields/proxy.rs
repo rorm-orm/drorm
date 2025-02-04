@@ -5,13 +5,13 @@ use std::mem::ManuallyDrop;
 
 use rorm_db::sql::aggregation::SelectAggregator;
 
-use crate::conditions::{Binary, Column, In, InOperator, Value};
+use crate::conditions::{Binary, Column, In, InOperator, Unary, UnaryOperator, Value};
 use crate::crud::selector::AggregatedColumn;
 use crate::fields::traits::{
     FieldAvg, FieldColumns, FieldCount, FieldEq, FieldLike, FieldMax, FieldMin, FieldOrd,
     FieldRegexp, FieldSum,
 };
-use crate::internal::field::Field;
+use crate::internal::field::{Field, SingleColumnField};
 use crate::internal::relation_path::Path;
 use crate::sealed;
 
@@ -30,6 +30,30 @@ macro_rules! FieldType {
 }
 
 impl<I: FieldProxyImpl> FieldProxy<I> {
+    /// Checks if the column contains `None`
+    pub fn is_none<T>(self) -> Unary<Column<I>>
+    where
+        // This would have to be a trait for multi-column fields
+        I::Field: SingleColumnField<Type = Option<T>>,
+    {
+        Unary {
+            operator: UnaryOperator::IsNull,
+            fst_arg: Column(self),
+        }
+    }
+
+    /// Checks if the column contains `Some`
+    pub fn is_some<T>(self) -> Unary<Column<I>>
+    where
+        // This would have to be a trait for multi-column fields
+        I::Field: SingleColumnField<Type = Option<T>>,
+    {
+        Unary {
+            operator: UnaryOperator::IsNull,
+            fst_arg: Column(self),
+        }
+    }
+
     /// Compare the field to another value using `==`
     pub fn equals<'rhs, Rhs: 'rhs, Any>(
         self,

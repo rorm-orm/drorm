@@ -9,7 +9,7 @@ const _: () = {
         const NULL: ::rorm::fields::traits::FieldColumns<
             Self,
             ::rorm::db::sql::value::NullType,
-        > = [::rorm::db::sql::value::NullType::String];
+        > = [::rorm::db::sql::value::NullType::Choice];
         fn into_values<'a>(
             self,
         ) -> ::rorm::fields::traits::FieldColumns<Self, ::rorm::conditions::Value<'a>> {

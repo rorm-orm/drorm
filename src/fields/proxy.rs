@@ -6,13 +6,13 @@ use std::mem::ManuallyDrop;
 use rorm_db::sql::aggregation::SelectAggregator;
 
 use crate::conditions::{Binary, Column, In, InOperator, Unary, UnaryOperator, Value};
-use crate::crud::selector::AggregatedColumn;
+use crate::crud::selector::{AggregatedColumn, PathedSelector, Selector};
 use crate::fields::traits::{
     FieldAvg, FieldColumns, FieldCount, FieldEq, FieldLike, FieldMax, FieldMin, FieldOrd,
     FieldRegexp, FieldSum,
 };
 use crate::internal::field::{Field, SingleColumnField};
-use crate::internal::relation_path::Path;
+use crate::internal::relation_path::{Path, PathField};
 use crate::sealed;
 
 /// This unit struct acts as a proxy exposing a model's field (the field's declaration not its value)
@@ -27,6 +27,24 @@ macro_rules! FieldType {
     ($I:ident) => {
         <<$I as FieldProxyImpl>::Field as Field>::Type
     };
+}
+
+impl<F, P, I> FieldProxy<I>
+where
+    F: Field + PathField<<F as Field>::Type>,
+    P: Path<Current = <F::ParentField as Field>::Model>,
+    I: FieldProxyImpl<Field = F, Path = P>,
+{
+    /// Select the model this field points to using `selector`
+    pub fn select_as<S>(self, selector: S) -> PathedSelector<S, <I::Path as Path>::Step<I::Field>>
+    where
+        S: Selector<Model = <F::ChildField as Field>::Model>,
+    {
+        PathedSelector {
+            selector,
+            path: Default::default(),
+        }
+    }
 }
 
 impl<I: FieldProxyImpl> FieldProxy<I> {

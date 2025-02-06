@@ -17,7 +17,6 @@ pub use r#in::{In, InOperator};
 use crate::fields::proxy::{FieldProxy, FieldProxyImpl};
 use crate::internal::field::Field;
 use crate::internal::query_context::flat_conditions::FlatCondition;
-use crate::internal::query_context::ids::PathId;
 use crate::internal::query_context::QueryContext;
 use crate::internal::relation_path::Path;
 
@@ -212,7 +211,7 @@ impl<'a, I: FieldProxyImpl> Condition<'a> for Column<I> {
     fn build(&self, context: &mut QueryContext<'a>) {
         I::Path::add_to_context(context);
         context.conditions.push(FlatCondition::Column(
-            PathId::of::<I::Path>(),
+            I::Path::ID,
             <I::Field as Field>::NAME,
         ))
     }

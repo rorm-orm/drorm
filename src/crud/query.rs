@@ -61,7 +61,7 @@ use crate::sealed;
 ///
 /// Example:
 /// ```no_run
-/// # use rorm::{Model, Database, query, FieldAccess};
+/// # use rorm::{Model, Database, query};
 /// #
 /// # #[derive(Model)]
 /// # struct User {

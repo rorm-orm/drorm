@@ -10,8 +10,8 @@
 
 use crate::conditions::collections::CollectionOperator;
 use crate::conditions::{BinaryOperator, TernaryOperator, UnaryOperator};
-use crate::internal::query_context::ids::PathId;
 use crate::internal::query_context::QueryContext;
+use crate::internal::relation_path::PathId;
 
 mod sql {
     pub use crate::db::sql::conditional::*;

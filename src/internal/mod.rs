@@ -4,6 +4,7 @@
 //! Anyway feel free to look at and maybe even use it.
 
 pub mod const_concat;
+mod djb2;
 pub mod field;
 pub mod hmr;
 pub mod patch;

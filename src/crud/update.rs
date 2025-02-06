@@ -19,7 +19,7 @@ use crate::{Model, Patch};
 ///
 /// # Basic usage
 /// ```no_run
-/// # use rorm::{Model, Database, update, FieldAccess};
+/// # use rorm::{Model, Database, update};
 /// # #[derive(Model)] struct User { #[rorm(id)] id: i64, #[rorm(max_length = 255)] password: String, }
 /// pub async fn set_good_password(db: &Database) {
 ///     update(db, User)
@@ -38,7 +38,7 @@ use crate::{Model, Patch};
 /// # Dynamic number of [`set`](UpdateBuilder::set)
 /// ```no_run
 /// # use std::collections::HashMap;
-/// # use rorm::{Model, Database, update, FieldAccess};
+/// # use rorm::{Model, Database, update};
 /// # #[derive(Model)] struct User { #[rorm(id)] id: i64, #[rorm(max_length = 255)] nickname: String, #[rorm(max_length = 255)] password: String, }
 /// /// POST endpoint allowing a user to change its nickname or password
 /// pub async fn update_user(db: &Database, id: i64, post_params: HashMap<String, String>) {

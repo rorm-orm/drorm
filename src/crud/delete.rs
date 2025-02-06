@@ -17,7 +17,7 @@ use crate::Patch;
 ///
 /// # Usage
 /// ```no_run
-/// # use rorm::{Model, Patch, Database, delete, FieldAccess};
+/// # use rorm::{Model, Patch, Database, delete};
 /// # #[derive(Model)] pub struct User { #[rorm(id)] id: i64, age: i32, }
 /// # #[derive(Patch)] #[rorm(model = "User")] pub struct UserPatch { id: i64, }
 /// pub async fn delete_single_user(db: &Database, user: &UserPatch) {

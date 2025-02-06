@@ -35,8 +35,8 @@ where
     P: Path<Current = <F::ParentField as Field>::Model>,
     I: FieldProxyImpl<Field = F, Path = P>,
 {
-    /// Select the model this field points to using `selector`
-    pub fn select_as<S>(self, selector: S) -> PathedSelector<S, <I::Path as Path>::Step<I::Field>>
+    /// Query the model this field points to using `selector`
+    pub fn query_as<S>(self, selector: S) -> PathedSelector<S, <I::Path as Path>::Step<I::Field>>
     where
         S: Selector<Model = <F::ChildField as Field>::Model>,
     {

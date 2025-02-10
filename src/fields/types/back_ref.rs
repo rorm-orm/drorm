@@ -2,8 +2,10 @@
 
 use std::collections::HashMap;
 use std::fmt;
+use std::future::poll_fn;
+use std::pin::pin;
 
-use futures::stream::TryStreamExt;
+use futures_core::Stream;
 use rorm_db::executor::Executor;
 use rorm_db::sql::value::NullType;
 use rorm_db::Error;
@@ -186,14 +188,20 @@ where
         let mut cache: HashMap<<foreign_model::RF<FMF> as Field>::Type, Option<Vec<FMF::Model>>> =
             HashMap::new();
         {
-            let mut stream = query(executor, <FMF::Model as Patch>::ValueSpaceImpl::default())
-                .condition(DynamicCollection {
-                    operator: Or,
-                    vector: patches.iter().map(Self::model_as_condition).collect(),
-                })
-                .stream();
+            let mut stream = pin!(query(
+                executor,
+                <FMF::Model as Patch>::ValueSpaceImpl::default()
+            )
+            .condition(DynamicCollection {
+                operator: Or,
+                vector: patches.iter().map(Self::model_as_condition).collect(),
+            })
+            .stream());
 
-            while let Some(instance) = stream.try_next().await? {
+            while let Some(instance) = poll_fn(|ctx| stream.as_mut().poll_next(ctx))
+                .await
+                .transpose()?
+            {
                 if let Some(key) = instance.borrow_field().as_key() {
                     cache
                         .entry(key.clone())

@@ -442,7 +442,7 @@ mod query_stream {
         }
     }
 
-    impl<'this, 'cond, D: Decoder> futures::stream::Stream for QueryStream<'this, 'cond, D> {
+    impl<'this, 'cond, D: Decoder> futures_core::Stream for QueryStream<'this, 'cond, D> {
         type Item = Result<D::Result, Error>;
 
         fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {

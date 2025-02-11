@@ -293,14 +293,13 @@ impl<'v> QueryContext<'v> {
     ///
     /// Add the origin model to the builder
     pub(crate) fn add_origin_path<M: Model>(&mut self) -> PathId {
-        if let Some(base_path) = self.base_path {
-            base_path
-        } else {
+        let path_id = M::id(self.base_path);
+        if self.base_path.is_none() {
             self.join_aliases
-                .entry(M::ID)
+                .entry(path_id)
                 .or_insert_with(|| M::TABLE.to_string());
-            M::ID
         }
+        path_id
     }
 
     /// **Use [`Path::add_to_context`], this method is its impl detail!**
@@ -313,11 +312,7 @@ impl<'v> QueryContext<'v> {
         F: Field + PathField<<F as Field>::Type>,
         P: Path<Current = <F::ParentField as Field>::Model>,
     {
-        let path_id = if let Some(base_path) = self.base_path {
-            <P::Step<F>>::append_to_id(base_path)
-        } else {
-            <P::Step<F>>::ID
-        };
+        let path_id = <P::Step<F>>::id(self.base_path);
         if !self.join_aliases.contains_key(&path_id) {
             let parent_id = P::add_to_context(self);
             let alias = format!("{}", NumberAsAZ(self.join_aliases.len()));

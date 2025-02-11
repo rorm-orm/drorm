@@ -209,11 +209,10 @@ pub struct Column<I: FieldProxyImpl>(pub FieldProxy<I>);
 
 impl<'a, I: FieldProxyImpl> Condition<'a> for Column<I> {
     fn build(&self, context: &mut QueryContext<'a>) {
-        I::Path::add_to_context(context);
-        context.conditions.push(FlatCondition::Column(
-            I::Path::ID,
-            <I::Field as Field>::NAME,
-        ))
+        let path_id = I::Path::add_to_context(context);
+        context
+            .conditions
+            .push(FlatCondition::Column(path_id, <I::Field as Field>::NAME))
     }
 }
 

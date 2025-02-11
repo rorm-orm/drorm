@@ -57,9 +57,6 @@ use crate::{sealed, Model};
 pub trait Path: 'static {
     sealed!(trait);
 
-    /// Unique identifier for the path
-    const ID: PathId;
-
     /// The model this path originates from
     ///
     /// (In the context of sql,
@@ -91,7 +88,10 @@ pub trait Path: 'static {
     /// It might differ from `Self::ID`, see [`QueryContext::with_base_path`].
     fn add_to_context(context: &mut QueryContext) -> PathId;
 
-    /// Compute the id for the path where `Self` was appended to some `base_path`.
+    /// Compute the path's id, a unique identifier
+    ///
+    /// The optional `base_path` can be provided to compute the id as if
+    /// `Self` were appended to the `Path` identifier by `base_path`.
     ///
     /// The caller is responsible for ensuring the join to be valid.
     /// Failing to do so can lead to weird and hard to troubleshoot bugs in rorm's internals.
@@ -119,18 +119,18 @@ pub trait Path: 'static {
     /// #     id: i64,
     /// #     user: ForeignModel<User>,
     /// # }
-    /// fn get_id<I: FieldProxyImpl>(_: FieldProxy<I>) -> PathId {
-    ///     I::Path::ID
+    /// fn id<I: FieldProxyImpl>(_: FieldProxy<I>, base_path: Option<PathId>) -> PathId {
+    ///     I::Path::id(base_path)
     /// }
     /// fn join_ids<I: FieldProxyImpl>(parent: PathId, _child: FieldProxy<I>) -> PathId {
-    ///     I::Path::append_to_id(parent)
+    ///     I::Path::id(Some(parent))
     /// }
     ///
-    /// let comment_to_user = get_id(Comment.user.id);
-    /// let comment_to_group = get_id(Comment.user.group.id);
-    /// assert_eq!(join_ids(comment_to_user, User.group.id), comment_to_group);
+    /// let comment_to_user = id(Comment.user.id, None);
+    /// let comment_to_group = id(Comment.user.group.id, None);
+    /// assert_eq!(id(User.group.id, Some(comment_to_user)), comment_to_group);
     /// ```
-    fn append_to_id(base_path: PathId) -> PathId;
+    fn id(base_path: Option<PathId>) -> PathId;
 }
 
 /// A unique identifier of a [`Path`]
@@ -195,7 +195,6 @@ pub trait PathField<FieldType>: Field {
 
 impl<M: Model> Path for M {
     sealed!(impl);
-    const ID: PathId = PathId::new_origin::<M>();
 
     type Origin = M;
 
@@ -215,8 +214,8 @@ impl<M: Model> Path for M {
     }
 
     #[inline(always)]
-    fn append_to_id(base_path: PathId) -> PathId {
-        base_path
+    fn id(base_path: Option<PathId>) -> PathId {
+        base_path.unwrap_or_else(PathId::new_origin::<M>)
     }
 }
 
@@ -226,8 +225,6 @@ where
     P: Path<Current = <F::ParentField as Field>::Model>,
 {
     sealed!(impl);
-
-    const ID: PathId = P::ID.add_step::<F>();
 
     type Origin = P::Origin;
 
@@ -245,8 +242,8 @@ where
     }
 
     #[inline(always)]
-    fn append_to_id(base_path: PathId) -> PathId {
-        P::append_to_id(base_path).add_step::<F>()
+    fn id(base_path: Option<PathId>) -> PathId {
+        P::id(base_path).add_step::<F>()
     }
 }
 

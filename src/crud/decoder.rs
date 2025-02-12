@@ -29,6 +29,18 @@ pub trait Decoder {
     fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>>;
 }
 
+impl<D: Decoder> Decoder for &'_ D {
+    type Result = D::Result;
+
+    fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
+        D::by_name(self, row)
+    }
+
+    fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
+        D::by_index(self, row)
+    }
+}
+
 /// A [`Decoder`] which directly decodes a [`T: DecodedOwned`](DecodeOwned)
 pub struct DirectDecoder<T> {
     pub(crate) result: PhantomData<T>,
@@ -91,3 +103,119 @@ macro_rules! decoder {
     };
 }
 rorm_macro::impl_tuple!(decoder, 1..33);
+
+/// Extension trait for [`Decoder`]
+///
+/// It provides combinators to tweak a decoder's behaviour.
+///
+/// This is an extension trait instead of part of the base trait,
+/// because I'm not sure yet, if, how and by whom those combinators would be used.
+pub trait DecoderExt: Decoder + Sized {
+    /// Borrows the decoder
+    ///
+    /// This method is an alternative to taking a reference
+    /// which might look awkward in a builder expression.
+    fn by_ref(&self) -> &Self {
+        self
+    }
+
+    /// Construct a decoder which applies a function to the result of `Self`.
+    fn map<F, U>(self, f: F) -> Map<Self, F>
+    where
+        F: Fn(Self::Result) -> U,
+    {
+        Map {
+            decoder: self,
+            function: f,
+        }
+    }
+
+    /// Construct a decoder which handles a `RowError::UnexpectedNull` by producing `None`
+    fn optional(self) -> Optional<Self> {
+        Optional { decoder: self }
+    }
+
+    // TODO: Where should RowError get its lifetime from?
+    //
+    // fn and_then<F, T>(self, f: F) -> AndThen<Self, F>
+    // where
+    //     F: Fn(Self::Result) -> Result<T, RowError<'static>>,
+    // {
+    //     AndThen {
+    //         decoder: self,
+    //         function: f,
+    //     }
+    // }
+}
+
+/// [`Decoder`] returned by [`DecoderExt::map`]
+pub struct Map<D, F> {
+    decoder: D,
+    function: F,
+}
+impl<D, F, T> Decoder for Map<D, F>
+where
+    D: Decoder,
+    F: Fn(D::Result) -> T,
+{
+    type Result = T;
+
+    fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
+        self.decoder.by_name(row).map(&self.function)
+    }
+
+    fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
+        self.decoder.by_index(row).map(&self.function)
+    }
+}
+
+/// [`Decoder`] returned by [`DecoderExt::decoder`]
+pub struct Optional<D> {
+    decoder: D,
+}
+impl<D> Decoder for Optional<D>
+where
+    D: Decoder,
+{
+    type Result = Option<D::Result>;
+
+    fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
+        match self.decoder.by_name(&row) {
+            Ok(result) => Ok(Some(result)),
+            Err(RowError::UnexpectedNull { .. }) => Ok(None),
+            Err(error) => Err(error),
+        }
+    }
+
+    fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
+        match self.decoder.by_index(&row) {
+            Ok(result) => Ok(Some(result)),
+            Err(RowError::UnexpectedNull { .. }) => Ok(None),
+            Err(error) => Err(error),
+        }
+    }
+}
+
+// /// [`Decoder`] returned by [`DecoderExt::and_then`]
+// pub struct AndThen<D, F> {
+//     decoder: D,
+//     function: F,
+// }
+//
+// impl<D, F, T> Decoder for AndThen<D, F>
+// where
+//     D: Decoder,
+//     F: Fn(D::Result) -> Result<T, RowError<'static>>,
+// {
+//     type Result = T;
+//
+//     TODO: RowError requires a single index, what to do when `D` decodes more than one column?
+//
+//     fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
+//         self.decoder.by_name(row).and_then(&self.function)
+//     }
+//
+//     fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
+//         self.decoder.by_name(row).and_then(&self.function)
+//     }
+// }

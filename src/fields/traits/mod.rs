@@ -149,7 +149,7 @@ impl<T: FieldType> Decoder for OptionDecoder<T> {
     }
 
     fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
-        self.0.by_name(row).map(Some).or_else(|error| match error {
+        self.0.by_index(row).map(Some).or_else(|error| match error {
             RowError::UnexpectedNull { .. } => Ok(None),
             _ => Err(error),
         })

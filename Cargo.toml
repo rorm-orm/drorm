@@ -6,6 +6,7 @@ members = [
     "rorm-macro",
     "rorm-macro-impl",
     "rorm-sql",
+    "example",
 ]
 
 [package]
@@ -26,18 +27,22 @@ name = "rorm"
 path = "src/lib.rs"
 
 [dependencies]
-# Stream trait
-futures-core = { version = "~0.3" }
+
+# Logging facade
+tracing = "~0.1"
+
+# Basic traits and types required for async
+futures-core = "~0.3" # Used for the stream trait
 
 # json serialization to communicate with the migrator
 serde_json = { version = "~1" }
 serde = { version = "~1" }
 
-# linker magic to create a slice containing all models defined by crates
-linkme = { version = "~0.3" }
+# Macro using linker magic to collect items from different code locations into a slice
+linkme = { version = "~0.3" } # Used to collect all models declared by any crate part of the final binary
 
-# Allow wrapping futures and streams
-pin-project = { version = "~1" }
+# Macro implemeting pin-projection
+pin-project = { version = "~1" } # Used to wrap futures and streams which are !Unpin
 
 rorm-db = { version = "~0.9", path = "./rorm-db", features = ["serde"] }
 rorm-macro = { version = ">=0.8.2", path = "./rorm-macro" }

@@ -2,12 +2,13 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::fmt;
 use std::fmt::Write;
 use std::ops::{Deref, DerefMut};
+use std::{fmt, mem};
 
 use rorm_db::sql::join_table::JoinType;
 use rorm_db::sql::ordering::Ordering;
+use tracing::{trace, trace_span, Span};
 
 use crate::conditions::{BinaryOperator, Condition, Value};
 use crate::crud::selector::AggregatedColumn;
@@ -23,8 +24,9 @@ pub mod flat_conditions;
 ///
 /// Since rorm-db borrows all of its parameters, there has to be someone who own it.
 /// This struct owns all the implicit data required to query something i.e. join and alias information.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct QueryContext<'v> {
+    span: Span,
     base_path: Option<PathId>,
 
     join_aliases: HashMap<PathId, String>,
@@ -33,6 +35,20 @@ pub struct QueryContext<'v> {
     order_bys: Vec<OrderBy>,
     pub(crate) conditions: Vec<FlatCondition>,
     pub(crate) values: Vec<Value<'v>>,
+}
+impl Default for QueryContext<'_> {
+    fn default() -> Self {
+        Self {
+            span: Span::none(),
+            base_path: Default::default(),
+            join_aliases: Default::default(),
+            selects: Default::default(),
+            joins: Default::default(),
+            order_bys: Default::default(),
+            conditions: Default::default(),
+            values: Default::default(),
+        }
+    }
 }
 impl<'v> QueryContext<'v> {
     /// Create an empty context
@@ -44,13 +60,26 @@ impl<'v> QueryContext<'v> {
     pub fn select_field<F: Field, P: Path>(&mut self) -> (usize, String) {
         let path_id = P::add_to_context(self);
         let alias = format!("{}", NumberAsAZ(self.selects.len()));
+        let index = self.selects.len();
+
         self.selects.push(Select {
             table_name: path_id,
             column_name: F::NAME,
             select_alias: alias.clone(),
             aggregation: None,
         });
-        (self.selects.len() - 1, alias)
+
+        self.span.in_scope(|| {
+            trace!(
+                table_name = self.join_aliases.get(&path_id),
+                column_name = F::NAME,
+                alias,
+                index,
+                "QueryContext::select_field"
+            )
+        });
+
+        (index, alias)
     }
 
     /// Add a field to aggregate returning its index and alias
@@ -60,13 +89,27 @@ impl<'v> QueryContext<'v> {
     ) -> (usize, String) {
         let path_id = I::Path::add_to_context(self);
         let alias = format!("{}", NumberAsAZ(self.selects.len()));
+        let index = self.selects.len();
+
         self.selects.push(Select {
             table_name: path_id,
             column_name: I::Field::NAME,
             select_alias: alias.clone(),
             aggregation: Some(column.sql),
         });
-        (self.selects.len() - 1, alias)
+
+        self.span.in_scope(|| {
+            trace!(
+                table_name = self.join_aliases.get(&path_id),
+                column_name = I::Field::NAME,
+                alias,
+                index,
+                aggregation = ?column.sql,
+                "QueryContext::select_aggregation"
+            )
+        });
+
+        (index, alias)
     }
 
     /// Adds a condition to the query context and returns its index
@@ -76,6 +119,15 @@ impl<'v> QueryContext<'v> {
     pub fn add_condition(&mut self, condition: &(impl Condition<'v> + ?Sized)) -> usize {
         let index = self.conditions.len();
         condition.build(self);
+
+        self.span.in_scope(|| {
+            trace!(
+                condition = ?self.conditions.get(index..),
+                index,
+                "QueryContext::add_condition"
+            )
+        });
+
         index
     }
 
@@ -86,7 +138,16 @@ impl<'v> QueryContext<'v> {
             column_name: F::NAME,
             table_name: path_id,
             ordering,
-        })
+        });
+
+        self.span.in_scope(|| {
+            trace!(
+                table_name = self.join_aliases.get(&path_id),
+                column_name = F::NAME,
+                ?ordering,
+                "QueryContext::order_by_field"
+            )
+        });
     }
 
     /// Create a vector borrowing the joins in rorm_db's format which can be passed to it as slice.
@@ -257,22 +318,37 @@ impl<'v> QueryContext<'v> {
     /// assert_eq!(selects[0].table_name, selects[1].table_name);
     /// ```
     pub fn with_base_path<'ctx, P: Path>(&'ctx mut self) -> WithBasePath<'ctx, 'v> {
-        let prev_base_path = self.base_path;
-        self.base_path = Some(P::add_to_context(self));
+        let new_base_path = P::add_to_context(self);
+
+        let new_span = self.span.in_scope(|| {
+            trace!(
+                table_name = self.join_aliases.get(&new_base_path),
+                "QueryContext::with_base_path"
+            );
+            trace_span!(
+                "QueryContext::with_base_path",
+                table_name = self.join_aliases.get(&new_base_path),
+            )
+        });
+
         WithBasePath {
+            prev_span: mem::replace(&mut self.span, new_span),
+            prev_base_path: mem::replace(&mut self.base_path, Some(new_base_path)),
             ctx: self,
-            prev_base_path,
         }
     }
 }
 /// Guard like wrapper for `QueryContext` returned by [`QueryContext::with_base_path`]
 pub struct WithBasePath<'ctx, 'v> {
-    ctx: &'ctx mut QueryContext<'v>,
+    prev_span: Span,
     prev_base_path: Option<PathId>,
+
+    ctx: &'ctx mut QueryContext<'v>,
 }
 impl<'ctx, 'v> Drop for WithBasePath<'ctx, 'v> {
     fn drop(&mut self) {
-        self.ctx.base_path = self.prev_base_path;
+        mem::swap(&mut self.ctx.span, &mut self.prev_span);
+        mem::swap(&mut self.ctx.base_path, &mut self.prev_base_path);
     }
 }
 impl<'ctx, 'v> Deref for WithBasePath<'ctx, 'v> {

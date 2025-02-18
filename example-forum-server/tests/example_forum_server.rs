@@ -11,7 +11,7 @@ use serde_json::json;
 use tokio::time::{sleep, timeout};
 
 #[tokio::test]
-async fn main() {
+async fn test_example_forum_server() {
     let working_dir = temp_dir().join(format!(
         "test-rorm-example-forum-server-{}",
         RandomState::new().build_hasher().finish()

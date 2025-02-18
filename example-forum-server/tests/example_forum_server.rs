@@ -52,13 +52,18 @@ async fn test_example_forum_server() {
         db_config: Some(db_config.clone()),
         command: Command::Start {},
     }));
-    let client_future = run_main(Cli {
-        db_config: Some(db_config.clone()),
-        command: Command::Test {},
-    });
     let mut client_future = pin!(async move {
         sleep(Duration::from_millis(500)).await;
-        client_future.await
+        run_main(Cli {
+            db_config: Some(db_config.clone()),
+            command: Command::Test {},
+        })
+        .await?;
+        run_main(Cli {
+            db_config: Some(db_config.clone()),
+            command: Command::Test {},
+        })
+        .await
     });
 
     timeout(

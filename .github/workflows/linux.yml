@@ -29,8 +29,11 @@ jobs:
       - name: Build rorm
         run: cargo build -p rorm
 
-      - name: Run cargo test
-        run: cargo nextest --profile ci run --all
+      - name: Run cargo nextest
+        run: cargo nextest --profile ci run --workspace
+
+      - name: Run cargo doctest
+        run: cargo test --workspace --doc
 
       - name: Run rust-clippy
         run: cargo clippy --workspace --message-format=json | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt

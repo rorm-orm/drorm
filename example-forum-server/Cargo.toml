@@ -3,9 +3,6 @@ name = "example-forum-server"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-path = "src/main.rs" # Hack to be able to import main from tests
-
 [dependencies]
 axum = { version = "~0.7", features = ["macros"] }
 tokio = { version = "~1", features = ["full"] }

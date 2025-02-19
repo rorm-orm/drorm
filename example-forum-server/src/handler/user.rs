@@ -19,7 +19,7 @@ pub async fn register(
     Json(request): Json<RegisterRequest>,
 ) -> ApiResult<()> {
     let mut tx = db.start_transaction().await?;
-    if rorm::query(&mut tx, (User.id,))
+    if rorm::query(&mut tx, User.id)
         .condition(User.username.equals(&*request.username))
         .optional()
         .await?
@@ -53,7 +53,7 @@ pub async fn login(
     session: Session,
     Json(request): Json<LoginRequest>,
 ) -> ApiResult<()> {
-    if let Some((id,)) = rorm::query(&db, (User.id,))
+    if let Some(id) = rorm::query(&db, User.id)
         .condition(and![
             User.username.equals(&request.username),
             User.password.equals(&request.password)
@@ -104,7 +104,7 @@ pub async fn profile(
         .optional()
         .await?
         .ok_or_else(|| ApiError::BadRequest(format!("Unknown user: {username}")))?;
-    let (posts,) = rorm::query(&mut tx, (User.posts.uuid.count(),))
+    let posts = rorm::query(&mut tx, User.posts.uuid.count())
         .condition(User.username.equals(&username))
         .one()
         .await?;

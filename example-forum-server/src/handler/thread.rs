@@ -139,14 +139,14 @@ pub async fn make_post(
 ) -> ApiResult<()> {
     let mut tx = db.start_transaction().await?;
 
-    rorm::query(&mut tx, (Thread.identifier,))
+    rorm::query(&mut tx, Thread.identifier)
         .condition(Thread.identifier.equals(&thread))
         .optional()
         .await?
         .ok_or_else(|| ApiError::BadRequest("Unknown thread".to_string()))?;
 
     if let Some(reply_to) = request.reply_to {
-        rorm::query(&mut tx, (Post.uuid,))
+        rorm::query(&mut tx, Post.uuid)
             .condition(and![
                 Post.uuid.equals(reply_to),
                 Post.thread.equals(&thread),

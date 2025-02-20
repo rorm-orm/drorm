@@ -50,7 +50,7 @@ pub enum GetConditionError {
     UnknownAlias,
 }
 
-impl<'v> QueryContext<'v> {
+impl QueryContext<'_> {
     pub(super) fn get_condition_inner(
         &self,
         head: FlatCondition,

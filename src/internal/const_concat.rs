@@ -24,6 +24,10 @@ pub struct ConstString<const MAX_LEN: usize> {
 
 impl<const MAX_LEN: usize> ConstString<MAX_LEN> {
     /// Creates a new empty `ConstString`.
+    #[expect(
+        clippy::new_without_default,
+        reason = "If you are able to call `Default`, then please you should use `String` instead of this type"
+    )]
     pub const fn new() -> Self {
         Self {
             len: 0,
@@ -104,6 +108,10 @@ pub struct ConstVec<T: Copy, const MAX_LEN: usize> {
 
 impl<T: Copy, const MAX_LEN: usize> ConstVec<T, MAX_LEN> {
     /// Creates a new empty `ConstString`.
+    #[expect(
+        clippy::new_without_default,
+        reason = "If you are able to call `Default`, then please you should use `Vec` instead of this type"
+    )]
     pub const fn new() -> Self {
         Self {
             len: 0,

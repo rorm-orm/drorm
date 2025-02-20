@@ -97,7 +97,7 @@ pub fn analyze_model(parsed: ParsedModel) -> darling::Result<AnalyzedModel> {
 
         // Replace `Self` in the field's type to the model's identifier
         struct ReplaceSelf<'a>(&'a Ident);
-        impl<'a> VisitMut for ReplaceSelf<'a> {
+        impl VisitMut for ReplaceSelf<'_> {
             fn visit_ident_mut(&mut self, i: &mut Ident) {
                 if i == "Self" {
                     *i = self.0.clone();

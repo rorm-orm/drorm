@@ -35,17 +35,17 @@ where
         if self.snd_arg.is_empty() {
             Value::Bool(false).build(context);
         } else {
-        }
-        context
-            .conditions
-            .push(FlatCondition::StartCollection(CollectionOperator::Or));
-        for snd_arg in self.snd_arg.iter() {
             context
                 .conditions
-                .push(FlatCondition::BinaryCondition(BinaryOperator::Equals));
-            self.fst_arg.build(context);
-            snd_arg.build(context);
+                .push(FlatCondition::StartCollection(CollectionOperator::Or));
+            for snd_arg in self.snd_arg.iter() {
+                context
+                    .conditions
+                    .push(FlatCondition::BinaryCondition(BinaryOperator::Equals));
+                self.fst_arg.build(context);
+                snd_arg.build(context);
+            }
+            context.conditions.push(FlatCondition::EndCollection);
         }
-        context.conditions.push(FlatCondition::EndCollection);
     }
 }

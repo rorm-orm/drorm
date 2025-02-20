@@ -111,9 +111,9 @@ pub struct ModelFieldAnnotations {
     /// `#[rorm(rename = "..")]`
     pub rename: Option<LitStr>,
 
-    /// `#[rorm(ignore)]`
-    //pub ignore: bool,
-
+    // /// `#[rorm(ignore)]`
+    // pub ignore: bool,
+    //
     /// Parse the `#[rorm(default = ..)]` annotation.
     ///
     /// It accepts a single literal as argument.

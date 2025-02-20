@@ -15,6 +15,7 @@ pub struct NumBytes;
 
 impl LenImpl for NumBytes {
     fn len(&self, string: &str) -> usize {
+        #[expect(clippy::needless_as_bytes, reason = "Makes the intent more explicit")]
         string.as_bytes().len()
     }
 }

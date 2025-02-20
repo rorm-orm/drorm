@@ -119,7 +119,7 @@ pub mod columns {
     pub struct MaybeEmpty;
 }
 
-impl<'rf, 'e, E, M> UpdateBuilder<'rf, E, M, columns::Empty>
+impl<'e, E, M> UpdateBuilder<'_, E, M, columns::Empty>
 where
     E: Executor<'e>,
     M: Model,
@@ -131,7 +131,7 @@ where
     }
 }
 
-impl<'rf, 'e, E, M, C> UpdateBuilder<'rf, E, M, C> {
+impl<'rf, E, M, C> UpdateBuilder<'rf, E, M, C> {
     fn set_column_state<C2>(self) -> UpdateBuilder<'rf, E, M, C2> {
         UpdateBuilder {
             executor: self.executor,
@@ -223,7 +223,7 @@ where
     }
 }
 
-impl<'rf, E, M> UpdateBuilder<'rf, E, M, columns::NonEmpty>
+impl<E, M> UpdateBuilder<'_, E, M, columns::NonEmpty>
 where
     M: Model,
 {

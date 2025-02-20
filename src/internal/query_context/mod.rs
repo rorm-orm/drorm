@@ -345,26 +345,26 @@ pub struct WithBasePath<'ctx, 'v> {
 
     ctx: &'ctx mut QueryContext<'v>,
 }
-impl<'ctx, 'v> Drop for WithBasePath<'ctx, 'v> {
+impl Drop for WithBasePath<'_, '_> {
     fn drop(&mut self) {
         mem::swap(&mut self.ctx.span, &mut self.prev_span);
         mem::swap(&mut self.ctx.base_path, &mut self.prev_base_path);
     }
 }
-impl<'ctx, 'v> Deref for WithBasePath<'ctx, 'v> {
+impl<'v> Deref for WithBasePath<'_, 'v> {
     type Target = QueryContext<'v>;
 
     fn deref(&self) -> &Self::Target {
         &*self.ctx
     }
 }
-impl<'ctx, 'v> DerefMut for WithBasePath<'ctx, 'v> {
+impl DerefMut for WithBasePath<'_, '_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut *self.ctx
     }
 }
 
-impl<'v> QueryContext<'v> {
+impl QueryContext<'_> {
     /// **Use [`Path::add_to_context`], this method is its impl detail!**
     ///
     /// Add the origin model to the builder

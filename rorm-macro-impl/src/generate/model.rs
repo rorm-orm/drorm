@@ -223,7 +223,7 @@ fn generate_field_annotations(annos: &AnalyzedModelFieldAnnotations) -> TokenStr
     let unique = unique.then(|| quote! {Unique});
     let max_length = max_length.as_ref().map(|len| quote! {MaxLength(#len)});
     let default = default.as_ref().map(|default| {
-        let variant = Ident::new(&default.variant, default.literal.span());
+        let variant = Ident::new(default.variant, default.literal.span());
         let literal = &default.literal;
         quote! {DefaultValue(::rorm::internal::hmr::annotations::DefaultValueData::#variant(#literal))}
     });

@@ -97,6 +97,13 @@ where
         self.len_impl.len(&self.string)
     }
 
+    /// Returns `true` if `self` has a [`len`](Self::len) of `0`
+    ///
+    /// Beware: The length is not necessarily in bytes but whatever the length implementation does.
+    pub fn is_empty(&self) -> bool {
+        self.len_impl.len(&self.string) == 0
+    }
+
     /// Borrow the wrapped string while remembering its `MAX_LEN`.
     pub fn as_ref(&self) -> MaxStr<MAX_LEN, &Impl, &str> {
         MaxStr {
@@ -145,7 +152,7 @@ where
     Str: Deref<Target = str>,
 {
     fn borrow(&self) -> &str {
-        &*self.string
+        &self.string
     }
 }
 

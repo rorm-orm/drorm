@@ -180,7 +180,7 @@ where
     type Result = Option<D::Result>;
 
     fn by_name<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
-        match self.decoder.by_name(&row) {
+        match self.decoder.by_name(row) {
             Ok(result) => Ok(Some(result)),
             Err(RowError::UnexpectedNull { .. }) => Ok(None),
             Err(error) => Err(error),
@@ -188,7 +188,7 @@ where
     }
 
     fn by_index<'index>(&'index self, row: &'_ Row) -> Result<Self::Result, RowError<'index>> {
-        match self.decoder.by_index(&row) {
+        match self.decoder.by_index(row) {
             Ok(result) => Ok(Some(result)),
             Err(RowError::UnexpectedNull { .. }) => Ok(None),
             Err(error) => Err(error),

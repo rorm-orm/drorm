@@ -154,7 +154,7 @@ pub enum Value<'a> {
     #[cfg(feature = "postgres-only")]
     BitVec(crate::fields::types::postgres_only::BitCow<'a>),
 }
-impl<'a> Value<'a> {
+impl Value<'_> {
     /// Convert into an [`sql::Value`](value::Value) instead of an [`sql::Condition`](conditional::Condition) directly.
     pub fn as_sql(&self) -> value::Value {
         match self {

@@ -7,7 +7,7 @@ pub fn vis_to_display(vis: &Visibility) -> impl std::fmt::Display + '_ {
     DisplayableVisibility(vis)
 }
 struct DisplayableVisibility<'a>(&'a Visibility);
-impl<'a> std::fmt::Display for DisplayableVisibility<'a> {
+impl std::fmt::Display for DisplayableVisibility<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.0 {
             Visibility::Public(_) => f.write_str("pub "),

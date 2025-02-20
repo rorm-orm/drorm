@@ -52,7 +52,7 @@ where
 
     fn select(self, ctx: &mut QueryContext) -> Self::Decoder {
         let mut ctx = ctx.with_base_path::<P>();
-        self.selector.select(&mut *ctx)
+        self.selector.select(&mut ctx)
     }
 }
 

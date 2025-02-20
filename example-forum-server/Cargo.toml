@@ -4,17 +4,35 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# Web framework
 axum = { version = "~0.7", features = ["macros"] }
+tower-sessions = { version = "~0.12" }
+
+# Async runtime
 tokio = { version = "~1", features = ["full"] }
+
+# Extension traits for `Future` and `Stream`
+futures-util = "0.3.30" # Used for consuming streams of db results
+
+# Database abstraction
 rorm = { path = "..", features = ["cli"] }
+
+# Cli argument parser
 clap = { version = "~4", features = ["derive"] }
-anyhow = "~1"
-log = { version = "~0.4" }
-env_logger = { version = "~0.11" }
+
+# Fancy boxed error
+anyhow = { version = "~1" }
+
+# Logging
+tracing = { version = "~0.1" }
+tracing-subscriber = { version = "~0.3", features = ["env-filter"] }
+
+# Json serialization
 serde = { version = "~1", features = ["derive"] }
-serde_json = "~1"
+serde_json = { version = "~1" }
+
+# Web client
+reqwest = { version = "~0.12", features = ["json", "cookies"] } # Used by the test subcommand
+
 time = "~0.3"
 uuid = { version = "~1", features = ["v4", "serde"] }
-tower-sessions = "~0.12"
-futures-util = "0.3.30"
-reqwest = { version = "~0.12", features = ["json", "cookies"] }

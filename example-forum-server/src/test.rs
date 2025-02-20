@@ -1,5 +1,5 @@
-use log::info;
 use rorm::fields::types::MaxStr;
+use tracing::info;
 
 use crate::handler::thread::{CreateThreadRequest, ListResponse, MakePostRequest};
 use crate::handler::user::{LoginRequest, ProfileResponse, RegisterRequest};

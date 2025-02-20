@@ -6,11 +6,11 @@ use std::fs;
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
-use log::info;
 use rorm::config::DatabaseConfig;
 use rorm::{Database, DatabaseConfiguration, DatabaseDriver};
 use tokio::net::TcpListener;
 use tower_sessions::{MemoryStore, SessionManagerLayer};
+use tracing::info;
 
 /// The cli
 #[derive(Parser)]

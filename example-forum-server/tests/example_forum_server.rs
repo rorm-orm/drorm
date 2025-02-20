@@ -3,7 +3,7 @@ use std::fs;
 use std::future::{poll_fn, Future};
 use std::hash::{BuildHasher, Hasher, RandomState};
 use std::pin::pin;
-use std::task::{ready, Poll};
+use std::task::Poll;
 use std::time::Duration;
 
 use example_forum_server::{run_main, Cli, Command};
